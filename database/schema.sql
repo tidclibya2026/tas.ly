@@ -206,6 +206,7 @@ CREATE TABLE audit_logs (
 -- بيانات أولية
 -- =========================================================
 
+
 INSERT INTO facility_types (name_ar, code) VALUES
 ('فندق', 'HOT'),
 ('قرية سياحية', 'VIL'),
@@ -222,3 +223,4 @@ INSERT INTO municipalities (name_ar, code) VALUES
 ('زوارة', 'ZWR'),
 ('شحات', 'SHA'),
 ('سبها', 'SEB');
+INSERT INTO facility_types ...
