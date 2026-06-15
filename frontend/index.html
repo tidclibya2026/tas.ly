@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة الإيواء السياحي الليبية TAS.LY</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header class="top-header">
+        <h1>منظومة الإيواء السياحي الليبية</h1>
+        <p>مركز المعلومات والتوثيق السياحي - وزارة السياحة والصناعات التقليدية</p>
+    </header>
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <h2>القائمة الرئيسية</h2>
+
+            <a href="#" onclick="showSection('dashboard')">لوحة التحكم</a>
+            <a href="#" onclick="showSection('facilities')">سجل المرافق</a>
+            <a href="#" onclick="showSection('addFacility')">إضافة مرفق</a>
+            <a href="#" onclick="showSection('licenses')">التراخيص</a>
+            <a href="#" onclick="showSection('occupancy')">الإشغال الشهري</a>
+            <a href="#" onclick="showSection('reports')">التقارير</a>
+        </aside>
+
+        <main class="content">
+
+            <section id="dashboard" class="section active">
+                <h2>لوحة التحكم</h2>
+
+                <div class="cards">
+                    <div class="card">
+                        <h3>إجمالي المرافق</h3>
+                        <p id="totalFacilities">0</p>
+                    </div>
+
+                    <div class="card">
+                        <h3>إجمالي الغرف</h3>
+                        <p id="totalRooms">0</p>
+                    </div>
+
+                    <div class="card">
+                        <h3>إجمالي الأسرة</h3>
+                        <p id="totalBeds">0</p>
+                    </div>
+
+                    <div class="card">
+                        <h3>التراخيص السارية</h3>
+                        <p id="activeLicenses">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="facilities" class="section">
+                <h2>سجل المرافق السياحية</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم المرفق</th>
+                            <th>النوع</th>
+                            <th>المدينة</th>
+                            <th>عدد الغرف</th>
+                            <th>عدد الأسرة</th>
+                            <th>التصنيف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="facilitiesTable"></tbody>
+                </table>
+            </section>
+
+            <section id="addFacility" class="section">
+                <h2>إضافة مرفق سياحي</h2>
+
+                <form id="facilityForm">
+                    <div class="form-grid">
+                        <div>
+                            <label>اسم المرفق</label>
+                            <input type="text" id="facilityName" required>
+                        </div>
+
+                        <div>
+                            <label>نوع المرفق</label>
+                            <select id="facilityType">
+                                <option value="فندق">فندق</option>
+                                <option value="قرية سياحية">قرية سياحية</option>
+                                <option value="منتجع">منتجع</option>
+                                <option value="شقق فندقية">شقق فندقية</option>
+                                <option value="نزل">نزل</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label>المدينة</label>
+                            <input type="text" id="facilityCity" required>
+                        </div>
+
+                        <div>
+                            <label>عدد الغرف</label>
+                            <input type="number" id="roomsCount" value="0">
+                        </div>
+
+                        <div>
+                            <label>عدد الأسرة</label>
+                            <input type="number" id="bedsCount" value="0">
+                        </div>
+
+                        <div>
+                            <label>التصنيف</label>
+                            <select id="classification">
+                                <option value="غير مصنف">غير مصنف</option>
+                                <option value="نجمة">نجمة</option>
+                                <option value="نجمتان">نجمتان</option>
+                                <option value="ثلاث نجوم">ثلاث نجوم</option>
+                                <option value="أربع نجوم">أربع نجوم</option>
+                                <option value="خمس نجوم">خمس نجوم</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit">حفظ المرفق</button>
+                </form>
+            </section>
+
+            <section id="licenses" class="section">
+                <h2>التراخيص وأذونات المزاولة</h2>
+                <p>هذه الشاشة ستستخدم لاحقاً لإصدار وتجديد أذونات المزاولة.</p>
+            </section>
+
+            <section id="occupancy" class="section">
+                <h2>الإشغال الشهري والليالي السياحية</h2>
+                <p>هذه الشاشة ستستخدم لاحقاً لإدخال بيانات الإشغال الشهري.</p>
+            </section>
+
+            <section id="reports" class="section">
+                <h2>التقارير والإحصائيات</h2>
+                <p>هذه الشاشة ستستخدم لاحقاً لإصدار تقارير PDF وExcel.</p>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
