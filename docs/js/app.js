@@ -66,7 +66,7 @@ document.getElementById("loginForm").addEventListener("submit", function(event) 
 
 async function loadFacilitiesData() {
     try {
-        const response = await fetch('../data/facilities.json');
+ const response = await fetch('data/facilities.json');
 
         if (!response.ok) {
             throw new Error("لم يتم العثور على ملف البيانات");

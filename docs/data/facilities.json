@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "facility_code": "LY-ACC-HOT-BEN-000001",
+    "name": "فندق الريان",
+    "type": "فندق",
+    "city": "بنغازي",
+    "municipality": "بنغازي",
+    "rooms": 80,
+    "beds": 160,
+    "classification": "ثلاث نجوم",
+    "licenseStatus": "Active"
+  },
+  {
+    "id": 2,
+    "facility_code": "LY-ACC-RES-BEN-000002",
+    "name": "منتجع الماسة",
+    "type": "منتجع",
+    "city": "بنغازي",
+    "municipality": "بنغازي",
+    "rooms": 50,
+    "beds": 100,
+    "classification": "أربع نجوم",
+    "licenseStatus": "Active"
+  },
+  {
+    "id": 3,
+    "facility_code": "LY-ACC-APT-BEN-000003",
+    "name": "شقق العون",
+    "type": "شقق فندقية",
+    "city": "بنغازي",
+    "municipality": "بنغازي",
+    "rooms": 30,
+    "beds": 60,
+    "classification": "نجمتان",
+    "licenseStatus": "Active"
+  }
+]
