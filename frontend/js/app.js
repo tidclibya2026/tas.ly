@@ -13,6 +13,35 @@ async function loadFacilitiesData() {
     }
 }
 
+function getFacilityTypeCode(type) {
+    if (type === "فندق") return "HOT";
+    if (type === "قرية سياحية") return "VIL";
+    if (type === "منتجع") return "RES";
+    if (type === "شقق فندقية") return "APT";
+    if (type === "نزل") return "HST";
+    return "ACC";
+}
+
+function getCityCode(city) {
+    if (city === "طرابلس") return "TRP";
+    if (city === "بنغازي") return "BEN";
+    if (city === "مصراتة") return "MIS";
+    if (city === "الخمس") return "KHM";
+    if (city === "زوارة") return "ZWR";
+    if (city === "شحات") return "SHA";
+    if (city === "سبها") return "SEB";
+    return "LYB";
+}
+
+function generateFacilityCode(type, city) {
+    const typeCode = getFacilityTypeCode(type);
+    const cityCode = getCityCode(city);
+    const nextNumber = facilities.length + 1;
+    const serial = String(nextNumber).padStart(6, "0");
+
+    return `LY-ACC-${typeCode}-${cityCode}-${serial}`;
+}
+
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
@@ -49,6 +78,7 @@ function renderFacilitiesTable() {
         const row = document.createElement('tr');
 
         row.innerHTML = `
+            <td>${item.facility_code || '-'}</td>
             <td>${item.name}</td>
             <td>${item.type}</td>
             <td>${item.city}</td>
@@ -64,10 +94,15 @@ function renderFacilitiesTable() {
 document.getElementById('facilityForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
+    const facilityType = document.getElementById('facilityType').value;
+    const facilityCity = document.getElementById('facilityCity').value;
+
     const newFacility = {
+        id: facilities.length + 1,
+        facility_code: generateFacilityCode(facilityType, facilityCity),
         name: document.getElementById('facilityName').value,
-        type: document.getElementById('facilityType').value,
-        city: document.getElementById('facilityCity').value,
+        type: facilityType,
+        city: facilityCity,
         rooms: Number(document.getElementById('roomsCount').value || 0),
         beds: Number(document.getElementById('bedsCount').value || 0),
         classification: document.getElementById('classification').value,
@@ -76,7 +111,7 @@ document.getElementById('facilityForm').addEventListener('submit', function(even
 
     facilities.push(newFacility);
 
-    alert("تم حفظ المرفق بنجاح");
+    alert(`تم حفظ المرفق بنجاح\nالكود الوطني: ${newFacility.facility_code}`);
 
     document.getElementById('facilityForm').reset();
 
