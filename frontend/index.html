@@ -433,16 +433,117 @@
                 </section>
 
                 <!-- التراخيص -->
-                <section id="licenses" class="section">
-                    <div class="section-header">
-                        <h2>التراخيص وأذونات المزاولة</h2>
-                        <p>هذه الشاشة ستستخدم لإصدار وتجديد أذونات مزاولة النشاط السياحي.</p>
-                    </div>
+                <!-- التراخيص -->
+<section id="licenses" class="section">
+    <div class="section-header">
+        <h2>التراخيص وأذونات المزاولة</h2>
+        <p>إدارة إصدار وتجديد ومتابعة تراخيص منشآت الإيواء السياحي</p>
+    </div>
 
-                    <div class="placeholder-box">
-                        سيتم تطوير هذه الوحدة بعد الانتهاء من شاشة إضافة المرافق.
-                    </div>
-                </section>
+    <form id="licenseForm">
+
+        <div class="form-section">
+            <h3>أولاً: بيانات المرفق والترخيص</h3>
+
+            <div class="form-grid">
+                <div>
+                    <label for="licenseFacility">اسم المرفق</label>
+                    <select id="licenseFacility" required>
+                        <option value="">اختر المرفق...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="licenseNumber">رقم الترخيص</label>
+                    <input type="text" id="licenseNumber" placeholder="مثال: LY-LIC-2026-000001" required>
+                </div>
+
+                <div>
+                    <label for="licenseType">نوع الترخيص</label>
+                    <select id="licenseType" required>
+                        <option value="إذن مزاولة">إذن مزاولة</option>
+                        <option value="تجديد إذن مزاولة">تجديد إذن مزاولة</option>
+                        <option value="ترخيص مؤقت">ترخيص مؤقت</option>
+                        <option value="ترخيص نهائي">ترخيص نهائي</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="licenseStatusInput">حالة الترخيص</label>
+                    <select id="licenseStatusInput" required>
+                        <option value="Active">ساري</option>
+                        <option value="Expired">منتهي</option>
+                        <option value="Pending">قيد الإجراء</option>
+                        <option value="Suspended">موقوف</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="licenseIssueDate">تاريخ الإصدار</label>
+                    <input type="date" id="licenseIssueDate" required>
+                </div>
+
+                <div>
+                    <label for="licenseExpiryDate">تاريخ الانتهاء</label>
+                    <input type="date" id="licenseExpiryDate" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>ثانياً: بيانات التجديد والملاحظات</h3>
+
+            <div class="form-grid">
+                <div>
+                    <label for="renewalCount">عدد مرات التجديد</label>
+                    <input type="number" id="renewalCount" min="0" value="0">
+                </div>
+
+                <div>
+                    <label for="licenseDocument">مرفق الترخيص</label>
+                    <input type="file" id="licenseDocument">
+                </div>
+
+                <div style="grid-column: span 2;">
+                    <label for="licenseNotes">ملاحظات</label>
+                    <textarea id="licenseNotes" placeholder="أي ملاحظات حول الترخيص أو التجديد"></textarea>
+                </div>
+            </div>
+
+            <p class="file-note">
+                رفع ملف الترخيص للتجربة فقط حالياً. الحفظ الفعلي للملفات سيتم عند ربط النظام بالخادم.
+            </p>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">حفظ الترخيص</button>
+            <button type="reset" class="secondary-button">مسح البيانات</button>
+        </div>
+
+    </form>
+
+    <div class="form-section licenses-list-section">
+        <h3>سجل التراخيص</h3>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>رقم الترخيص</th>
+                        <th>اسم المرفق</th>
+                        <th>نوع الترخيص</th>
+                        <th>تاريخ الإصدار</th>
+                        <th>تاريخ الانتهاء</th>
+                        <th>الحالة</th>
+                        <th>عدد التجديدات</th>
+                        <th>المرفق</th>
+                    </tr>
+                </thead>
+                <tbody id="licensesTable"></tbody>
+            </table>
+        </div>
+    </div>
+</section>
 
                 <!-- الإشغال الشهري -->
                 <section id="occupancy" class="section">

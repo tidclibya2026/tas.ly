@@ -13,6 +13,8 @@ const demoUser = {
 // ===============================
 
 let facilities = [];
+let licenses = [];
+
 let map = null;
 let marker = null;
 
@@ -60,9 +62,10 @@ async function loadFacilitiesData() {
             facilities = JSON.parse(savedFacilities);
             updateDashboard();
             renderFacilitiesTable();
+            populateFacilitySelect();
             return;
         } catch (error) {
-            console.error("خطأ في قراءة البيانات المحفوظة:", error);
+            console.error("خطأ في قراءة بيانات المرافق المحفوظة:", error);
             localStorage.removeItem("tas_facilities");
         }
     }
@@ -75,7 +78,7 @@ async function loadFacilitiesData() {
         }
 
         if (!response.ok) {
-            throw new Error("لم يتم العثور على ملف البيانات");
+            throw new Error("لم يتم العثور على ملف بيانات المرافق");
         }
 
         facilities = await response.json();
@@ -83,11 +86,13 @@ async function loadFacilitiesData() {
 
         updateDashboard();
         renderFacilitiesTable();
+        populateFacilitySelect();
     } catch (error) {
         console.error("خطأ في تحميل بيانات المرافق:", error);
         facilities = [];
         updateDashboard();
         renderFacilitiesTable();
+        populateFacilitySelect();
     }
 }
 
@@ -96,7 +101,33 @@ function saveFacilitiesToLocalStorage() {
 }
 
 // ===============================
-// توليد الكود الوطني
+// تحميل وحفظ بيانات التراخيص
+// ===============================
+
+function loadLicensesData() {
+    const savedLicenses = localStorage.getItem("tas_licenses");
+
+    if (savedLicenses) {
+        try {
+            licenses = JSON.parse(savedLicenses);
+        } catch (error) {
+            console.error("خطأ في قراءة بيانات التراخيص المحفوظة:", error);
+            localStorage.removeItem("tas_licenses");
+            licenses = [];
+        }
+    } else {
+        licenses = [];
+    }
+
+    renderLicensesTable();
+}
+
+function saveLicensesToLocalStorage() {
+    localStorage.setItem("tas_licenses", JSON.stringify(licenses));
+}
+
+// ===============================
+// توليد الكود الوطني للمنشأة
 // ===============================
 
 function getFacilityTypeCode(type) {
@@ -164,6 +195,11 @@ function showSection(sectionId) {
             }
         }, 300);
     }
+
+    if (sectionId === "licenses") {
+        populateFacilitySelect();
+        renderLicensesTable();
+    }
 }
 
 // ===============================
@@ -181,14 +217,23 @@ function updateDashboard() {
         return sum + Number(item.beds || 0);
     }, 0);
 
-    const activeLicenses = facilities.filter(item => {
+    const activeLicenses = licenses.filter(item => {
+        return item.license_status === "Active";
+    }).length;
+
+    const activeLicensesFromFacilities = facilities.filter(item => {
         return item.licenseStatus === "Active";
     }).length;
 
     document.getElementById("totalFacilities").textContent = totalFacilities;
     document.getElementById("totalRooms").textContent = totalRooms;
     document.getElementById("totalBeds").textContent = totalBeds;
-    document.getElementById("activeLicenses").textContent = activeLicenses;
+
+    if (licenses.length > 0) {
+        document.getElementById("activeLicenses").textContent = activeLicenses;
+    } else {
+        document.getElementById("activeLicenses").textContent = activeLicensesFromFacilities;
+    }
 }
 
 // ===============================
@@ -450,6 +495,7 @@ function handleFacilitySubmit(event) {
 
     updateDashboard();
     renderFacilitiesTable();
+    populateFacilitySelect();
 
     alert(`تم حفظ المرفق بنجاح\nالكود الوطني: ${newFacility.facility_code}`);
 
@@ -481,6 +527,129 @@ function getMultipleFileNames(inputId) {
 }
 
 // ===============================
+// شاشة التراخيص
+// ===============================
+
+function populateFacilitySelect() {
+    const select = document.getElementById("licenseFacility");
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `<option value="">اختر المرفق...</option>`;
+
+    facilities.forEach(facility => {
+        const option = document.createElement("option");
+        option.value = facility.facility_code;
+        option.textContent = `${facility.name} - ${facility.facility_code || "بدون كود"}`;
+        select.appendChild(option);
+    });
+}
+
+function getFacilityByCode(facilityCode) {
+    return facilities.find(facility => facility.facility_code === facilityCode);
+}
+
+function handleLicenseSubmit(event) {
+    event.preventDefault();
+
+    const facilityCode = document.getElementById("licenseFacility").value;
+    const facility = getFacilityByCode(facilityCode);
+
+    if (!facility) {
+        alert("يرجى اختيار مرفق صحيح");
+        return;
+    }
+
+    const licenseNumber = document.getElementById("licenseNumber").value.trim();
+    const licenseType = document.getElementById("licenseType").value;
+    const licenseStatus = document.getElementById("licenseStatusInput").value;
+    const issueDate = document.getElementById("licenseIssueDate").value;
+    const expiryDate = document.getElementById("licenseExpiryDate").value;
+    const renewalCount = Number(document.getElementById("renewalCount").value || 0);
+    const licenseNotes = document.getElementById("licenseNotes").value.trim();
+
+    if (!licenseNumber || !issueDate || !expiryDate) {
+        alert("يرجى إدخال رقم الترخيص وتاريخ الإصدار وتاريخ الانتهاء");
+        return;
+    }
+
+    const newLicense = {
+        id: licenses.length + 1,
+        facility_code: facility.facility_code,
+        facility_name: facility.name,
+        license_number: licenseNumber,
+        license_type: licenseType,
+        license_status: licenseStatus,
+        issue_date: issueDate,
+        expiry_date: expiryDate,
+        renewal_count: renewalCount,
+        license_document: getFileName("licenseDocument"),
+        notes: licenseNotes,
+        created_at: new Date().toISOString()
+    };
+
+    licenses.push(newLicense);
+    saveLicensesToLocalStorage();
+
+    facility.licenseStatus = licenseStatus;
+    saveFacilitiesToLocalStorage();
+
+    renderLicensesTable();
+    renderFacilitiesTable();
+    updateDashboard();
+
+    alert(`تم حفظ الترخيص بنجاح\nرقم الترخيص: ${newLicense.license_number}`);
+
+    document.getElementById("licenseForm").reset();
+}
+
+function renderLicensesTable() {
+    const tableBody = document.getElementById("licensesTable");
+
+    if (!tableBody) {
+        return;
+    }
+
+    tableBody.innerHTML = "";
+
+    if (licenses.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td colspan="8">لا توجد تراخيص مسجلة حالياً</td>
+        `;
+        tableBody.appendChild(row);
+        return;
+    }
+
+    licenses.forEach(license => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${license.license_number || "-"}</td>
+            <td>${license.facility_name || "-"}</td>
+            <td>${license.license_type || "-"}</td>
+            <td>${license.issue_date || "-"}</td>
+            <td>${license.expiry_date || "-"}</td>
+            <td>${getLicenseStatusArabic(license.license_status)}</td>
+            <td>${license.renewal_count || 0}</td>
+            <td>${license.license_document || "-"}</td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+}
+
+function getLicenseStatusArabic(status) {
+    if (status === "Active") return "ساري";
+    if (status === "Expired") return "منتهي";
+    if (status === "Pending") return "قيد الإجراء";
+    if (status === "Suspended") return "موقوف";
+    return "-";
+}
+
+// ===============================
 // ربط الأحداث
 // ===============================
 
@@ -496,6 +665,8 @@ function bindEvents() {
             showApp();
             updateDashboard();
             renderFacilitiesTable();
+            populateFacilitySelect();
+            renderLicensesTable();
         } else {
             alert("بيانات الدخول غير صحيحة");
         }
@@ -507,6 +678,11 @@ function bindEvents() {
 
     document.getElementById("latitude").addEventListener("input", updateMapFromInputs);
     document.getElementById("longitude").addEventListener("input", updateMapFromInputs);
+
+    const licenseForm = document.getElementById("licenseForm");
+    if (licenseForm) {
+        licenseForm.addEventListener("submit", handleLicenseSubmit);
+    }
 }
 
 // ===============================
@@ -517,3 +693,4 @@ bindEvents();
 toggleFacilityFields();
 checkLoginStatus();
 loadFacilitiesData();
+loadLicensesData();
