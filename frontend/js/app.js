@@ -49,17 +49,22 @@ function logout() {
 }
 
 // ===============================
-// تحميل بيانات المرافق
+// تحميل وحفظ بيانات المرافق
 // ===============================
 
 async function loadFacilitiesData() {
     const savedFacilities = localStorage.getItem("tas_facilities");
 
     if (savedFacilities) {
-        facilities = JSON.parse(savedFacilities);
-        updateDashboard();
-        renderFacilitiesTable();
-        return;
+        try {
+            facilities = JSON.parse(savedFacilities);
+            updateDashboard();
+            renderFacilitiesTable();
+            return;
+        } catch (error) {
+            console.error("خطأ في قراءة البيانات المحفوظة:", error);
+            localStorage.removeItem("tas_facilities");
+        }
     }
 
     try {
@@ -153,6 +158,7 @@ function showSection(sectionId) {
     if (sectionId === "addFacility") {
         setTimeout(() => {
             initMap();
+
             if (map) {
                 map.invalidateSize();
             }
@@ -326,7 +332,7 @@ function resetMap() {
 }
 
 // ===============================
-// قراءة أرقام الطاقة الاستيعابية حسب النوع
+// قراءة الطاقة الاستيعابية حسب النوع
 // ===============================
 
 function getCapacityByType(type) {
