@@ -14,6 +14,7 @@ const demoUser = {
 
 let facilities = [];
 let licenses = [];
+let occupancyReports = [];
 
 let map = null;
 let marker = null;
@@ -60,10 +61,16 @@ async function loadFacilitiesData() {
     if (savedFacilities) {
         try {
             facilities = JSON.parse(savedFacilities);
-            updateDashboard();
-            renderFacilitiesTable();
-            populateFacilitySelect();
-            return;
+
+            if (Array.isArray(facilities) && facilities.length > 0) {
+                updateDashboard();
+                renderFacilitiesTable();
+                populateFacilitySelect();
+                populateOccupancyFacilitySelect();
+                return;
+            }
+
+            localStorage.removeItem("tas_facilities");
         } catch (error) {
             console.error("خطأ في قراءة بيانات المرافق المحفوظة:", error);
             localStorage.removeItem("tas_facilities");
@@ -82,17 +89,27 @@ async function loadFacilitiesData() {
         }
 
         facilities = await response.json();
+
+        if (!Array.isArray(facilities)) {
+            facilities = [];
+        }
+
         saveFacilitiesToLocalStorage();
 
         updateDashboard();
         renderFacilitiesTable();
         populateFacilitySelect();
+        populateOccupancyFacilitySelect();
+
     } catch (error) {
         console.error("خطأ في تحميل بيانات المرافق:", error);
+
         facilities = [];
+
         updateDashboard();
         renderFacilitiesTable();
         populateFacilitySelect();
+        populateOccupancyFacilitySelect();
     }
 }
 
@@ -120,10 +137,37 @@ function loadLicensesData() {
     }
 
     renderLicensesTable();
+    updateDashboard();
 }
 
 function saveLicensesToLocalStorage() {
     localStorage.setItem("tas_licenses", JSON.stringify(licenses));
+}
+
+// ===============================
+// تحميل وحفظ بيانات الإشغال الشهري
+// ===============================
+
+function loadOccupancyData() {
+    const savedReports = localStorage.getItem("tas_occupancy_reports");
+
+    if (savedReports) {
+        try {
+            occupancyReports = JSON.parse(savedReports);
+        } catch (error) {
+            console.error("خطأ في قراءة بيانات الإشغال:", error);
+            localStorage.removeItem("tas_occupancy_reports");
+            occupancyReports = [];
+        }
+    } else {
+        occupancyReports = [];
+    }
+
+    renderOccupancyTable();
+}
+
+function saveOccupancyToLocalStorage() {
+    localStorage.setItem("tas_occupancy_reports", JSON.stringify(occupancyReports));
 }
 
 // ===============================
@@ -136,11 +180,12 @@ function getFacilityTypeCode(type) {
     if (type === "منتجع") return "RES";
     if (type === "شقق فندقية") return "APT";
     if (type === "نزل") return "HST";
+
     return "ACC";
 }
 
 function getCityCode(city) {
-    const normalizedCity = city.trim();
+    const normalizedCity = String(city || "").trim();
 
     if (normalizedCity === "طرابلس") return "TRP";
     if (normalizedCity === "بنغازي") return "BEN";
@@ -176,7 +221,13 @@ function showSection(sectionId) {
         section.classList.remove("active");
     });
 
-    document.getElementById(sectionId).classList.add("active");
+    const selectedSection = document.getElementById(sectionId);
+
+    if (!selectedSection) {
+        return;
+    }
+
+    selectedSection.classList.add("active");
 
     if (sectionId === "dashboard") {
         updateDashboard();
@@ -200,6 +251,12 @@ function showSection(sectionId) {
         populateFacilitySelect();
         renderLicensesTable();
     }
+
+    if (sectionId === "occupancy") {
+        populateOccupancyFacilitySelect();
+        updateMonthDays();
+        renderOccupancyTable();
+    }
 }
 
 // ===============================
@@ -207,6 +264,15 @@ function showSection(sectionId) {
 // ===============================
 
 function updateDashboard() {
+    const totalFacilitiesElement = document.getElementById("totalFacilities");
+    const totalRoomsElement = document.getElementById("totalRooms");
+    const totalBedsElement = document.getElementById("totalBeds");
+    const activeLicensesElement = document.getElementById("activeLicenses");
+
+    if (!totalFacilitiesElement || !totalRoomsElement || !totalBedsElement || !activeLicensesElement) {
+        return;
+    }
+
     const totalFacilities = facilities.length;
 
     const totalRooms = facilities.reduce((sum, item) => {
@@ -225,14 +291,14 @@ function updateDashboard() {
         return item.licenseStatus === "Active";
     }).length;
 
-    document.getElementById("totalFacilities").textContent = totalFacilities;
-    document.getElementById("totalRooms").textContent = totalRooms;
-    document.getElementById("totalBeds").textContent = totalBeds;
+    totalFacilitiesElement.textContent = totalFacilities;
+    totalRoomsElement.textContent = totalRooms;
+    totalBedsElement.textContent = totalBeds;
 
     if (licenses.length > 0) {
-        document.getElementById("activeLicenses").textContent = activeLicenses;
+        activeLicensesElement.textContent = activeLicenses;
     } else {
-        document.getElementById("activeLicenses").textContent = activeLicensesFromFacilities;
+        activeLicensesElement.textContent = activeLicensesFromFacilities;
     }
 }
 
@@ -242,9 +308,14 @@ function updateDashboard() {
 
 function renderFacilitiesTable() {
     const tableBody = document.getElementById("facilitiesTable");
+
+    if (!tableBody) {
+        return;
+    }
+
     tableBody.innerHTML = "";
 
-    if (facilities.length === 0) {
+    if (!Array.isArray(facilities) || facilities.length === 0) {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td colspan="9">لا توجد بيانات مرافق حالياً</td>
@@ -277,27 +348,38 @@ function renderFacilitiesTable() {
 // ===============================
 
 function toggleFacilityFields() {
-    const type = document.getElementById("facilityType").value;
+    const typeElement = document.getElementById("facilityType");
 
-    document.getElementById("hotelFields").classList.add("hidden");
-    document.getElementById("villageResortFields").classList.add("hidden");
-    document.getElementById("apartmentsFields").classList.add("hidden");
-    document.getElementById("hostelFields").classList.add("hidden");
-
-    if (type === "فندق") {
-        document.getElementById("hotelFields").classList.remove("hidden");
+    if (!typeElement) {
+        return;
     }
 
-    if (type === "قرية سياحية" || type === "منتجع") {
-        document.getElementById("villageResortFields").classList.remove("hidden");
+    const type = typeElement.value;
+
+    const hotelFields = document.getElementById("hotelFields");
+    const villageResortFields = document.getElementById("villageResortFields");
+    const apartmentsFields = document.getElementById("apartmentsFields");
+    const hostelFields = document.getElementById("hostelFields");
+
+    if (hotelFields) hotelFields.classList.add("hidden");
+    if (villageResortFields) villageResortFields.classList.add("hidden");
+    if (apartmentsFields) apartmentsFields.classList.add("hidden");
+    if (hostelFields) hostelFields.classList.add("hidden");
+
+    if (type === "فندق" && hotelFields) {
+        hotelFields.classList.remove("hidden");
     }
 
-    if (type === "شقق فندقية") {
-        document.getElementById("apartmentsFields").classList.remove("hidden");
+    if ((type === "قرية سياحية" || type === "منتجع") && villageResortFields) {
+        villageResortFields.classList.remove("hidden");
     }
 
-    if (type === "نزل") {
-        document.getElementById("hostelFields").classList.remove("hidden");
+    if (type === "شقق فندقية" && apartmentsFields) {
+        apartmentsFields.classList.remove("hidden");
+    }
+
+    if (type === "نزل" && hostelFields) {
+        hostelFields.classList.remove("hidden");
     }
 }
 
@@ -307,6 +389,12 @@ function toggleFacilityFields() {
 
 function initMap() {
     if (map !== null) {
+        return;
+    }
+
+    const mapElement = document.getElementById("map");
+
+    if (!mapElement) {
         return;
     }
 
@@ -344,8 +432,11 @@ function initMap() {
 }
 
 function updateLocationFields(lat, lng) {
-    document.getElementById("latitude").value = lat.toFixed(6);
-    document.getElementById("longitude").value = lng.toFixed(6);
+    const latitude = document.getElementById("latitude");
+    const longitude = document.getElementById("longitude");
+
+    if (latitude) latitude.value = lat.toFixed(6);
+    if (longitude) longitude.value = lng.toFixed(6);
 }
 
 function updateMarker(lat, lng, zoom = 15) {
@@ -353,7 +444,8 @@ function updateMarker(lat, lng, zoom = 15) {
         return;
     }
 
-    const facilityName = document.getElementById("facilityName").value || "المرفق الجديد";
+    const facilityNameElement = document.getElementById("facilityName");
+    const facilityName = facilityNameElement ? facilityNameElement.value || "المرفق الجديد" : "المرفق الجديد";
 
     marker.setLatLng([lat, lng]);
     marker.bindPopup(`موقع ${facilityName}`).openPopup();
@@ -361,8 +453,15 @@ function updateMarker(lat, lng, zoom = 15) {
 }
 
 function updateMapFromInputs() {
-    const lat = parseFloat(document.getElementById("latitude").value);
-    const lng = parseFloat(document.getElementById("longitude").value);
+    const latitude = document.getElementById("latitude");
+    const longitude = document.getElementById("longitude");
+
+    if (!latitude || !longitude) {
+        return;
+    }
+
+    const lat = parseFloat(latitude.value);
+    const lng = parseFloat(longitude.value);
 
     if (!isNaN(lat) && !isNaN(lng)) {
         updateMarker(lat, lng, 15);
@@ -380,6 +479,16 @@ function resetMap() {
 // قراءة الطاقة الاستيعابية حسب النوع
 // ===============================
 
+function getNumberValue(id) {
+    const element = document.getElementById(id);
+    return element ? Number(element.value || 0) : 0;
+}
+
+function getTextValue(id) {
+    const element = document.getElementById(id);
+    return element ? String(element.value || "").trim() : "";
+}
+
 function getCapacityByType(type) {
     const capacity = {
         suites: 0,
@@ -393,31 +502,31 @@ function getCapacityByType(type) {
     };
 
     if (type === "فندق") {
-        capacity.suites = Number(document.getElementById("suitesCount").value || 0);
-        capacity.rooms = Number(document.getElementById("roomsCount").value || 0);
-        capacity.beds = Number(document.getElementById("bedsCount").value || 0);
-        capacity.local_workers = Number(document.getElementById("localWorkers").value || 0);
-        capacity.foreign_workers = Number(document.getElementById("foreignWorkers").value || 0);
+        capacity.suites = getNumberValue("suitesCount");
+        capacity.rooms = getNumberValue("roomsCount");
+        capacity.beds = getNumberValue("bedsCount");
+        capacity.local_workers = getNumberValue("localWorkers");
+        capacity.foreign_workers = getNumberValue("foreignWorkers");
     }
 
     if (type === "قرية سياحية" || type === "منتجع") {
-        capacity.chalets = Number(document.getElementById("chaletsCount").value || 0);
-        capacity.rooms = Number(document.getElementById("vrRoomsCount").value || 0);
-        capacity.beds = Number(document.getElementById("vrBedsCount").value || 0);
-        capacity.extras = document.getElementById("villageResortExtras").value.trim();
+        capacity.chalets = getNumberValue("chaletsCount");
+        capacity.rooms = getNumberValue("vrRoomsCount");
+        capacity.beds = getNumberValue("vrBedsCount");
+        capacity.extras = getTextValue("villageResortExtras");
     }
 
     if (type === "شقق فندقية") {
-        capacity.apartments = Number(document.getElementById("apartmentsCount").value || 0);
-        capacity.rooms = Number(document.getElementById("apRoomsCount").value || 0);
-        capacity.beds = Number(document.getElementById("apBedsCount").value || 0);
+        capacity.apartments = getNumberValue("apartmentsCount");
+        capacity.rooms = getNumberValue("apRoomsCount");
+        capacity.beds = getNumberValue("apBedsCount");
     }
 
     if (type === "نزل") {
-        capacity.rooms = Number(document.getElementById("hsRoomsCount").value || 0);
-        capacity.beds = Number(document.getElementById("hsBedsCount").value || 0);
-        capacity.local_workers = Number(document.getElementById("hsLocalWorkers").value || 0);
-        capacity.foreign_workers = Number(document.getElementById("hsForeignWorkers").value || 0);
+        capacity.rooms = getNumberValue("hsRoomsCount");
+        capacity.beds = getNumberValue("hsBedsCount");
+        capacity.local_workers = getNumberValue("hsLocalWorkers");
+        capacity.foreign_workers = getNumberValue("hsForeignWorkers");
     }
 
     return capacity;
@@ -430,19 +539,19 @@ function getCapacityByType(type) {
 function handleFacilitySubmit(event) {
     event.preventDefault();
 
-    const facilityName = document.getElementById("facilityName").value.trim();
-    const facilityType = document.getElementById("facilityType").value;
-    const facilityMunicipality = document.getElementById("facilityMunicipality").value.trim();
-    const facilityCity = document.getElementById("facilityCity").value.trim();
-    const facilityAddress = document.getElementById("facilityAddress").value.trim();
+    const facilityName = getTextValue("facilityName");
+    const facilityType = getTextValue("facilityType");
+    const facilityMunicipality = getTextValue("facilityMunicipality");
+    const facilityCity = getTextValue("facilityCity");
+    const facilityAddress = getTextValue("facilityAddress");
 
     if (!facilityName || !facilityMunicipality || !facilityCity || !facilityAddress) {
         alert("يرجى إدخال اسم المرفق والبلدية والمدينة والعنوان");
         return;
     }
 
-    const latitudeValue = document.getElementById("latitude").value;
-    const longitudeValue = document.getElementById("longitude").value;
+    const latitudeValue = getTextValue("latitude");
+    const longitudeValue = getTextValue("longitude");
 
     const capacity = getCapacityByType(facilityType);
 
@@ -456,18 +565,18 @@ function handleFacilitySubmit(event) {
         city: facilityCity,
         address: facilityAddress,
 
-        owner_name: document.getElementById("ownerName").value.trim(),
-        operator_name: document.getElementById("operatorName").value.trim(),
-        manager_name: document.getElementById("managerName").value.trim(),
-        phone: document.getElementById("facilityPhone").value.trim(),
-        email: document.getElementById("facilityEmail").value.trim(),
-        website: document.getElementById("facilityWebsite").value.trim(),
+        owner_name: getTextValue("ownerName"),
+        operator_name: getTextValue("operatorName"),
+        manager_name: getTextValue("managerName"),
+        phone: getTextValue("facilityPhone"),
+        email: getTextValue("facilityEmail"),
+        website: getTextValue("facilityWebsite"),
 
-        classification: document.getElementById("classification").value,
-        affiliation: document.getElementById("facilityAffiliation").value,
-        status: document.getElementById("facilityStatus").value,
-        licenseStatus: document.getElementById("licenseStatus").value,
-        establishment_date: document.getElementById("establishmentDate").value,
+        classification: getTextValue("classification"),
+        affiliation: getTextValue("facilityAffiliation"),
+        status: getTextValue("facilityStatus"),
+        licenseStatus: getTextValue("licenseStatus"),
+        establishment_date: getTextValue("establishmentDate"),
 
         latitude: latitudeValue ? parseFloat(latitudeValue) : null,
         longitude: longitudeValue ? parseFloat(longitudeValue) : null,
@@ -496,10 +605,13 @@ function handleFacilitySubmit(event) {
     updateDashboard();
     renderFacilitiesTable();
     populateFacilitySelect();
+    populateOccupancyFacilitySelect();
 
     alert(`تم حفظ المرفق بنجاح\nالكود الوطني: ${newFacility.facility_code}`);
 
-    document.getElementById("facilityForm").reset();
+    const form = document.getElementById("facilityForm");
+    if (form) form.reset();
+
     toggleFacilityFields();
     resetMap();
 
@@ -539,10 +651,21 @@ function populateFacilitySelect() {
 
     select.innerHTML = `<option value="">اختر المرفق...</option>`;
 
+    if (!Array.isArray(facilities) || facilities.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "لا توجد مرافق محفوظة - أضف مرفقاً أولاً";
+        option.disabled = true;
+        select.appendChild(option);
+        return;
+    }
+
     facilities.forEach(facility => {
         const option = document.createElement("option");
+
         option.value = facility.facility_code;
-        option.textContent = `${facility.name} - ${facility.facility_code || "بدون كود"}`;
+        option.textContent = `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
+
         select.appendChild(option);
     });
 }
@@ -554,7 +677,7 @@ function getFacilityByCode(facilityCode) {
 function handleLicenseSubmit(event) {
     event.preventDefault();
 
-    const facilityCode = document.getElementById("licenseFacility").value;
+    const facilityCode = getTextValue("licenseFacility");
     const facility = getFacilityByCode(facilityCode);
 
     if (!facility) {
@@ -562,13 +685,13 @@ function handleLicenseSubmit(event) {
         return;
     }
 
-    const licenseNumber = document.getElementById("licenseNumber").value.trim();
-    const licenseType = document.getElementById("licenseType").value;
-    const licenseStatus = document.getElementById("licenseStatusInput").value;
-    const issueDate = document.getElementById("licenseIssueDate").value;
-    const expiryDate = document.getElementById("licenseExpiryDate").value;
-    const renewalCount = Number(document.getElementById("renewalCount").value || 0);
-    const licenseNotes = document.getElementById("licenseNotes").value.trim();
+    const licenseNumber = getTextValue("licenseNumber");
+    const licenseType = getTextValue("licenseType");
+    const licenseStatus = getTextValue("licenseStatusInput");
+    const issueDate = getTextValue("licenseIssueDate");
+    const expiryDate = getTextValue("licenseExpiryDate");
+    const renewalCount = getNumberValue("renewalCount");
+    const licenseNotes = getTextValue("licenseNotes");
 
     if (!licenseNumber || !issueDate || !expiryDate) {
         alert("يرجى إدخال رقم الترخيص وتاريخ الإصدار وتاريخ الانتهاء");
@@ -602,7 +725,8 @@ function handleLicenseSubmit(event) {
 
     alert(`تم حفظ الترخيص بنجاح\nرقم الترخيص: ${newLicense.license_number}`);
 
-    document.getElementById("licenseForm").reset();
+    const form = document.getElementById("licenseForm");
+    if (form) form.reset();
 }
 
 function renderLicensesTable() {
@@ -614,7 +738,7 @@ function renderLicensesTable() {
 
     tableBody.innerHTML = "";
 
-    if (licenses.length === 0) {
+    if (!Array.isArray(licenses) || licenses.length === 0) {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td colspan="8">لا توجد تراخيص مسجلة حالياً</td>
@@ -646,7 +770,256 @@ function getLicenseStatusArabic(status) {
     if (status === "Expired") return "منتهي";
     if (status === "Pending") return "قيد الإجراء";
     if (status === "Suspended") return "موقوف";
+
     return "-";
+}
+
+// ===============================
+// شاشة الإشغال الشهري والليالي السياحية
+// ===============================
+
+function populateOccupancyFacilitySelect() {
+    const select = document.getElementById("occupancyFacility");
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `<option value="">اختر المرفق...</option>`;
+
+    if (!Array.isArray(facilities) || facilities.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "لا توجد مرافق محفوظة - أضف مرفقاً أولاً";
+        option.disabled = true;
+        select.appendChild(option);
+        return;
+    }
+
+    facilities.forEach(facility => {
+        const option = document.createElement("option");
+
+        option.value = facility.facility_code;
+        option.textContent = `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
+
+        select.appendChild(option);
+    });
+}
+
+function fillFacilityCapacityForOccupancy() {
+    const facilityCode = getTextValue("occupancyFacility");
+    const facility = facilities.find(item => item.facility_code === facilityCode);
+
+    const occupancyRooms = document.getElementById("occupancyRooms");
+    const occupancyBeds = document.getElementById("occupancyBeds");
+
+    if (!facility) {
+        if (occupancyRooms) occupancyRooms.value = 0;
+        if (occupancyBeds) occupancyBeds.value = 0;
+
+        calculateOccupancyIndicators();
+        return;
+    }
+
+    if (occupancyRooms) occupancyRooms.value = Number(facility.rooms || 0);
+    if (occupancyBeds) occupancyBeds.value = Number(facility.beds || 0);
+
+    calculateOccupancyIndicators();
+}
+
+function updateMonthDays() {
+    const year = getNumberValue("occupancyYear") || new Date().getFullYear();
+    const month = getNumberValue("occupancyMonth") || 1;
+
+    const days = new Date(year, month, 0).getDate();
+
+    const monthDays = document.getElementById("monthDays");
+    if (monthDays) {
+        monthDays.value = days;
+    }
+
+    calculateOccupancyIndicators();
+}
+
+function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.value = value;
+    }
+}
+
+function calculateOccupancyIndicators() {
+    const monthDays = getNumberValue("monthDays");
+    const rooms = getNumberValue("occupancyRooms");
+    const beds = getNumberValue("occupancyBeds");
+
+    const libyanGuests = getNumberValue("libyanGuests");
+    const arabGuests = getNumberValue("arabGuests");
+    const foreignGuests = getNumberValue("foreignGuests");
+
+    const libyanGuestNights = getNumberValue("libyanGuestNights");
+    const arabGuestNights = getNumberValue("arabGuestNights");
+    const foreignGuestNights = getNumberValue("foreignGuestNights");
+
+    const soldRoomNights = getNumberValue("soldRoomNights");
+
+    const totalGuests = libyanGuests + arabGuests + foreignGuests;
+    const totalGuestNights = libyanGuestNights + arabGuestNights + foreignGuestNights;
+
+    const availableRoomNights = rooms * monthDays;
+    const availableBedNights = beds * monthDays;
+
+    const roomOccupancyRate = availableRoomNights > 0
+        ? (soldRoomNights / availableRoomNights) * 100
+        : 0;
+
+    const bedOccupancyRate = availableBedNights > 0
+        ? (totalGuestNights / availableBedNights) * 100
+        : 0;
+
+    const averageLengthOfStay = totalGuests > 0
+        ? totalGuestNights / totalGuests
+        : 0;
+
+    setValue("totalGuests", totalGuests);
+    setValue("totalGuestNights", totalGuestNights);
+    setValue("availableRoomNights", availableRoomNights);
+    setValue("availableBedNights", availableBedNights);
+    setValue("roomOccupancyRate", `${roomOccupancyRate.toFixed(2)}%`);
+    setValue("bedOccupancyRate", `${bedOccupancyRate.toFixed(2)}%`);
+    setValue("averageLengthOfStay", `${averageLengthOfStay.toFixed(2)} ليلة`);
+}
+
+function handleOccupancySubmit(event) {
+    event.preventDefault();
+
+    calculateOccupancyIndicators();
+
+    const facilityCode = getTextValue("occupancyFacility");
+    const facility = facilities.find(item => item.facility_code === facilityCode);
+
+    if (!facility) {
+        alert("يرجى اختيار مرفق صحيح");
+        return;
+    }
+
+    const year = getNumberValue("occupancyYear");
+    const month = getNumberValue("occupancyMonth");
+
+    const existingReport = occupancyReports.find(report => {
+        return report.facility_code === facilityCode &&
+               report.year === year &&
+               report.month === month;
+    });
+
+    if (existingReport) {
+        alert("يوجد تقرير محفوظ مسبقاً لهذا المرفق في نفس الشهر والسنة");
+        return;
+    }
+
+    const report = {
+        id: occupancyReports.length + 1,
+
+        facility_code: facility.facility_code,
+        facility_name: facility.name,
+
+        year: year,
+        month: month,
+        month_days: getNumberValue("monthDays"),
+
+        rooms: getNumberValue("occupancyRooms"),
+        beds: getNumberValue("occupancyBeds"),
+
+        libyan_guests: getNumberValue("libyanGuests"),
+        arab_guests: getNumberValue("arabGuests"),
+        foreign_guests: getNumberValue("foreignGuests"),
+        total_guests: getNumberValue("totalGuests"),
+
+        libyan_guest_nights: getNumberValue("libyanGuestNights"),
+        arab_guest_nights: getNumberValue("arabGuestNights"),
+        foreign_guest_nights: getNumberValue("foreignGuestNights"),
+        total_guest_nights: getNumberValue("totalGuestNights"),
+
+        sold_room_nights: getNumberValue("soldRoomNights"),
+        available_room_nights: getNumberValue("availableRoomNights"),
+        available_bed_nights: getNumberValue("availableBedNights"),
+
+        room_occupancy_rate: getTextValue("roomOccupancyRate"),
+        bed_occupancy_rate: getTextValue("bedOccupancyRate"),
+        average_length_of_stay: getTextValue("averageLengthOfStay"),
+
+        notes: getTextValue("occupancyNotes"),
+
+        created_at: new Date().toISOString()
+    };
+
+    occupancyReports.push(report);
+    saveOccupancyToLocalStorage();
+
+    renderOccupancyTable();
+
+    alert("تم حفظ تقرير الإشغال الشهري بنجاح");
+
+    const form = document.getElementById("occupancyForm");
+    if (form) form.reset();
+
+    updateMonthDays();
+}
+
+function renderOccupancyTable() {
+    const tableBody = document.getElementById("occupancyTable");
+
+    if (!tableBody) {
+        return;
+    }
+
+    tableBody.innerHTML = "";
+
+    if (!Array.isArray(occupancyReports) || occupancyReports.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td colspan="9">لا توجد تقارير إشغال محفوظة حالياً</td>
+        `;
+        tableBody.appendChild(row);
+        return;
+    }
+
+    occupancyReports.forEach(report => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${report.facility_name || "-"}</td>
+            <td>${report.year}</td>
+            <td>${getMonthName(report.month)}</td>
+            <td>${report.total_guests}</td>
+            <td>${report.total_guest_nights}</td>
+            <td>${report.sold_room_nights}</td>
+            <td>${report.room_occupancy_rate}</td>
+            <td>${report.bed_occupancy_rate}</td>
+            <td>${report.average_length_of_stay}</td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+}
+
+function getMonthName(month) {
+    const months = {
+        1: "يناير",
+        2: "فبراير",
+        3: "مارس",
+        4: "أبريل",
+        5: "مايو",
+        6: "يونيو",
+        7: "يوليو",
+        8: "أغسطس",
+        9: "سبتمبر",
+        10: "أكتوبر",
+        11: "نوفمبر",
+        12: "ديسمبر"
+    };
+
+    return months[month] || "-";
 }
 
 // ===============================
@@ -654,35 +1027,93 @@ function getLicenseStatusArabic(status) {
 // ===============================
 
 function bindEvents() {
-    document.getElementById("loginForm").addEventListener("submit", function(event) {
-        event.preventDefault();
+    const loginForm = document.getElementById("loginForm");
+    if (loginForm) {
+        loginForm.addEventListener("submit", function(event) {
+            event.preventDefault();
 
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value.trim();
+            const email = getTextValue("loginEmail");
+            const password = getTextValue("loginPassword");
 
-        if (email === demoUser.email && password === demoUser.password) {
-            localStorage.setItem("tas_logged_in", "true");
-            showApp();
-            updateDashboard();
-            renderFacilitiesTable();
-            populateFacilitySelect();
-            renderLicensesTable();
-        } else {
-            alert("بيانات الدخول غير صحيحة");
-        }
-    });
+            if (email === demoUser.email && password === demoUser.password) {
+                localStorage.setItem("tas_logged_in", "true");
 
-    document.getElementById("facilityForm").addEventListener("submit", handleFacilitySubmit);
+                showApp();
+                updateDashboard();
+                renderFacilitiesTable();
+                populateFacilitySelect();
+                populateOccupancyFacilitySelect();
+                renderLicensesTable();
+                renderOccupancyTable();
+            } else {
+                alert("بيانات الدخول غير صحيحة");
+            }
+        });
+    }
 
-    document.getElementById("facilityType").addEventListener("change", toggleFacilityFields);
+    const facilityForm = document.getElementById("facilityForm");
+    if (facilityForm) {
+        facilityForm.addEventListener("submit", handleFacilitySubmit);
+    }
 
-    document.getElementById("latitude").addEventListener("input", updateMapFromInputs);
-    document.getElementById("longitude").addEventListener("input", updateMapFromInputs);
+    const facilityType = document.getElementById("facilityType");
+    if (facilityType) {
+        facilityType.addEventListener("change", toggleFacilityFields);
+    }
+
+    const latitude = document.getElementById("latitude");
+    if (latitude) {
+        latitude.addEventListener("input", updateMapFromInputs);
+    }
+
+    const longitude = document.getElementById("longitude");
+    if (longitude) {
+        longitude.addEventListener("input", updateMapFromInputs);
+    }
 
     const licenseForm = document.getElementById("licenseForm");
     if (licenseForm) {
         licenseForm.addEventListener("submit", handleLicenseSubmit);
     }
+
+    const occupancyForm = document.getElementById("occupancyForm");
+    if (occupancyForm) {
+        occupancyForm.addEventListener("submit", handleOccupancySubmit);
+    }
+
+    const occupancyFacility = document.getElementById("occupancyFacility");
+    if (occupancyFacility) {
+        occupancyFacility.addEventListener("change", fillFacilityCapacityForOccupancy);
+    }
+
+    const occupancyYear = document.getElementById("occupancyYear");
+    if (occupancyYear) {
+        occupancyYear.addEventListener("input", updateMonthDays);
+    }
+
+    const occupancyMonth = document.getElementById("occupancyMonth");
+    if (occupancyMonth) {
+        occupancyMonth.addEventListener("change", updateMonthDays);
+    }
+
+    [
+        "monthDays",
+        "occupancyRooms",
+        "occupancyBeds",
+        "libyanGuests",
+        "arabGuests",
+        "foreignGuests",
+        "libyanGuestNights",
+        "arabGuestNights",
+        "foreignGuestNights",
+        "soldRoomNights"
+    ].forEach(id => {
+        const field = document.getElementById(id);
+
+        if (field) {
+            field.addEventListener("input", calculateOccupancyIndicators);
+        }
+    });
 }
 
 // ===============================
@@ -692,5 +1123,7 @@ function bindEvents() {
 bindEvents();
 toggleFacilityFields();
 checkLoginStatus();
+
 loadFacilitiesData();
 loadLicensesData();
+loadOccupancyData();
