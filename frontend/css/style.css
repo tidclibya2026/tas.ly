@@ -9,9 +9,9 @@
 body {
     margin: 0;
     font-family: 'Cairo', sans-serif;
-    background: #eef7fb;
+    background: #eef6fb;
     direction: rtl;
-    color: #333;
+    color: #263238;
 }
 
 .hidden {
@@ -24,7 +24,7 @@ body {
 
 .login-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #025c8f, #0288d1, #e0f7fa);
+    background: linear-gradient(135deg, #014f7a, #0288d1, #e0f7fa);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -34,37 +34,37 @@ body {
 .login-card {
     width: 430px;
     max-width: 100%;
-    background: white;
+    background: #ffffff;
     border-radius: 18px;
-    padding: 35px;
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.20);
+    padding: 36px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
     text-align: center;
 }
 
 .login-logo {
-    width: 95px;
-    height: 95px;
+    width: 92px;
+    height: 92px;
     margin: 0 auto 18px;
     border-radius: 50%;
-    background: #0288d1;
-    color: white;
+    background: linear-gradient(135deg, #0277bd, #03a9f4);
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
     font-weight: 700;
     letter-spacing: 1px;
-    box-shadow: 0 8px 20px rgba(2, 136, 209, 0.35);
+    box-shadow: 0 10px 25px rgba(2, 136, 209, 0.35);
 }
 
 .login-card h1 {
-    color: #0277bd;
+    color: #015f96;
     font-size: 25px;
     margin: 0 0 8px;
 }
 
 .login-card p {
-    color: #666;
+    color: #607d8b;
     margin: 0 0 25px;
 }
 
@@ -75,8 +75,8 @@ body {
 .login-card label {
     display: block;
     margin-bottom: 7px;
-    font-weight: 600;
-    color: #333;
+    font-weight: 700;
+    color: #37474f;
 }
 
 .login-card input {
@@ -84,17 +84,17 @@ body {
     padding: 13px;
     margin-bottom: 16px;
     border: 1px solid #cfd8dc;
-    border-radius: 9px;
+    border-radius: 10px;
     font-family: 'Cairo', sans-serif;
     font-size: 15px;
-    background: #f9fafb;
+    background: #f9fbfc;
 }
 
 .login-card input:focus {
     outline: none;
     border-color: #0288d1;
-    box-shadow: 0 0 8px rgba(2, 136, 209, 0.25);
-    background: white;
+    box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.15);
+    background: #ffffff;
 }
 
 .login-card button {
@@ -103,10 +103,10 @@ body {
     background: #0288d1;
     color: white;
     border: none;
-    border-radius: 9px;
+    border-radius: 10px;
     font-family: 'Cairo', sans-serif;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
 }
 
@@ -119,14 +119,14 @@ body {
     background: #f1f8fc;
     border: 1px solid #d7edf8;
     padding: 12px;
-    border-radius: 9px;
+    border-radius: 10px;
     font-size: 14px;
-    color: #444;
+    color: #455a64;
     line-height: 1.8;
 }
 
 /* =========================
-   الحاوية العامة للنظام
+   الحاوية العامة
 ========================= */
 
 .app-container {
@@ -135,10 +135,10 @@ body {
 
 .top-header {
     background: linear-gradient(90deg, #0277bd, #0288d1);
-    color: white;
-    padding: 22px 30px;
+    color: #ffffff;
+    padding: 20px 30px;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
 .top-header h1 {
@@ -163,16 +163,16 @@ body {
 ========================= */
 
 .sidebar {
-    width: 260px;
+    width: 255px;
     background: #0277bd;
     color: white;
-    padding: 22px 18px;
+    padding: 24px 18px;
     flex-shrink: 0;
 }
 
 .sidebar h2 {
     font-size: 20px;
-    margin: 0 0 22px;
+    margin: 0 0 24px;
     text-align: center;
     color: white;
 }
@@ -182,38 +182,41 @@ body {
     color: white;
     text-decoration: none;
     padding: 13px 14px;
-    margin-bottom: 9px;
-    border-radius: 8px;
+    margin-bottom: 10px;
+    border-radius: 9px;
     font-size: 15px;
     transition: 0.2s ease;
 }
 
 .sidebar a:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.17);
     transform: translateX(-3px);
 }
 
 .logout-link {
-    margin-top: 25px;
-    background: rgba(255, 255, 255, 0.14);
+    margin-top: 26px;
+    background: rgba(255, 255, 255, 0.15);
 }
 
 /* =========================
-   المحتوى
+   المحتوى العام
 ========================= */
 
 .content {
     flex: 1;
-    padding: 30px;
+    padding: 28px;
     overflow-x: hidden;
 }
 
 .section {
     display: none;
-    background: white;
-    padding: 28px;
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 1380px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 18px;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
 }
 
 .section.active {
@@ -221,20 +224,21 @@ body {
 }
 
 .section-header {
-    margin-bottom: 25px;
-    border-bottom: 1px solid #e5eef3;
-    padding-bottom: 15px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid #dceaf1;
+    padding-bottom: 16px;
 }
 
 .section-header h2 {
-    color: #0277bd;
+    color: #015f96;
     margin: 0;
-    font-size: 26px;
+    font-size: 27px;
+    font-weight: 700;
 }
 
 .section-header p {
-    margin: 6px 0 0;
-    color: #666;
+    margin: 8px 0 0;
+    color: #607d8b;
     font-size: 15px;
 }
 
@@ -249,73 +253,121 @@ body {
 }
 
 .card {
-    background: linear-gradient(180deg, #ffffff, #f7fbfd);
-    border-radius: 14px;
-    padding: 22px;
+    background: linear-gradient(180deg, #ffffff, #f5fbfe);
+    border-radius: 15px;
+    padding: 24px;
     text-align: center;
-    border: 1px solid #e2edf3;
-    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.05);
+    border: 1px solid #dceaf1;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
 }
 
 .card h3 {
-    color: #0288d1;
+    color: #0277bd;
     margin: 0 0 12px;
     font-size: 17px;
 }
 
 .card p {
-    font-size: 32px;
+    font-size: 33px;
     font-weight: 700;
     margin: 0;
-    color: #0277bd;
+    color: #015f96;
 }
 
 /* =========================
-   أقسام النماذج
+   تحسين شاشة إضافة المرفق
 ========================= */
 
-.form-section {
-    background: #fbfdfe;
-    border: 1px solid #e1edf3;
-    border-radius: 14px;
-    padding: 22px;
+#addFacility.section {
+    background: #f7fbfd;
+    box-shadow: none;
+    border: 1px solid #dceaf1;
+}
+
+#addFacility .section-header {
+    background: #ffffff;
+    border: 1px solid #dceaf1;
+    border-radius: 16px;
+    padding: 22px 24px;
     margin-bottom: 22px;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.04);
+}
+
+#facilityForm {
+    width: 100%;
+}
+
+/* بطاقة كل قسم */
+.form-section {
+    background: #ffffff;
+    border: 1px solid #dceaf1;
+    border-right: 5px solid #0288d1;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 22px;
+    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.045);
 }
 
 .form-section h3 {
-    color: #0277bd;
-    margin: 0 0 18px;
+    color: #015f96;
+    margin: 0 0 20px;
     font-size: 20px;
+    font-weight: 700;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #c9dce6;
 }
 
+/* تنظيم الحقول */
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(4, minmax(190px, 1fr));
+    gap: 18px 18px;
+    align-items: end;
+}
+
+.form-grid > div {
+    min-width: 0;
+}
+
+/* جعل بعض الحقول المهمة أوسع */
+#facilityAddress,
+#facilityWebsite,
+#villageResortExtras {
+    width: 100%;
 }
 
 label {
     display: block;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 7px;
-    color: #333;
+    color: #37474f;
+    font-size: 14px;
 }
 
 input,
 select,
 textarea {
     width: 100%;
-    padding: 12px;
+    height: 47px;
+    padding: 11px 12px;
     border: 1px solid #cfd8dc;
-    border-radius: 8px;
+    border-radius: 9px;
     font-family: 'Cairo', sans-serif;
-    font-size: 15px;
-    background: white;
+    font-size: 14.5px;
+    background: #ffffff;
+    color: #263238;
 }
 
 textarea {
+    height: auto;
     min-height: 105px;
     resize: vertical;
+    line-height: 1.7;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #90a4ae;
 }
 
 input:focus,
@@ -323,12 +375,20 @@ select:focus,
 textarea:focus {
     outline: none;
     border-color: #0288d1;
-    box-shadow: 0 0 8px rgba(2, 136, 209, 0.20);
+    box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.14);
+    background: #ffffff;
 }
 
 input[type="file"] {
-    background: #f9fafb;
-    padding: 10px;
+    height: auto;
+    background: #f8fbfd;
+    padding: 11px;
+}
+
+/* تحسين حقول النوع الديناميكية */
+.facility-type-fields {
+    background: #ffffff;
+    border-right-color: #00acc1;
 }
 
 /* =========================
@@ -336,27 +396,34 @@ input[type="file"] {
 ========================= */
 
 .form-actions {
+    position: sticky;
+    bottom: 0;
+    background: rgba(247, 251, 253, 0.96);
+    backdrop-filter: blur(4px);
     display: flex;
     gap: 12px;
-    margin-top: 20px;
-    flex-wrap: wrap;
+    margin-top: 24px;
+    padding: 18px 0 4px;
+    border-top: 1px solid #dceaf1;
+    z-index: 10;
 }
 
 button {
     background: #0288d1;
     color: white;
     border: none;
-    border-radius: 8px;
-    padding: 13px 26px;
+    border-radius: 9px;
+    padding: 13px 28px;
     font-family: 'Cairo', sans-serif;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: 0.2s ease;
 }
 
 button:hover {
     background: #0277bd;
+    transform: translateY(-1px);
 }
 
 .secondary-button {
@@ -372,25 +439,25 @@ button:hover {
 ========================= */
 
 #map {
-    height: 420px;
+    height: 390px;
     width: 100%;
     margin-top: 18px;
-    border-radius: 12px;
-    border: 1px solid #d7e7ef;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+    border-radius: 14px;
+    border: 1px solid #c9dce6;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.10);
     overflow: hidden;
+    background: #eef7fb;
 }
 
-.map-note {
-    margin: 12px 0 0;
-    color: #607d8b;
-    font-size: 14px;
-}
-
+.map-note,
 .file-note {
-    margin: 14px 0 0;
+    margin: 13px 0 0;
     color: #607d8b;
     font-size: 14px;
+    background: #f1f8fc;
+    border: 1px solid #d7edf8;
+    padding: 10px 12px;
+    border-radius: 9px;
 }
 
 /* =========================
@@ -400,13 +467,15 @@ button:hover {
 .table-wrapper {
     width: 100%;
     overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #dceaf1;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    min-width: 900px;
+    min-width: 1000px;
 }
 
 th,
@@ -438,15 +507,15 @@ tr:hover {
 .placeholder-box {
     background: #f1f8fc;
     border: 1px dashed #90caf9;
-    border-radius: 12px;
-    padding: 25px;
+    border-radius: 13px;
+    padding: 28px;
     color: #455a64;
     font-size: 16px;
     text-align: center;
 }
 
 /* =========================
-   تحسينات Leaflet للاتجاه العربي
+   Leaflet
 ========================= */
 
 .leaflet-container {
@@ -455,6 +524,22 @@ tr:hover {
 
 .leaflet-control-attribution {
     font-size: 11px;
+}
+
+/* =========================
+   تحسين العرض على الشاشات المتوسطة
+========================= */
+
+@media (max-width: 1300px) {
+    .form-grid {
+        grid-template-columns: repeat(3, minmax(190px, 1fr));
+    }
+}
+
+@media (max-width: 1100px) {
+    .form-grid {
+        grid-template-columns: repeat(2, minmax(190px, 1fr));
+    }
 }
 
 /* =========================
@@ -468,12 +553,17 @@ tr:hover {
 
     .sidebar {
         width: 100%;
-        display: block;
+        padding: 16px;
+    }
+
+    .sidebar h2 {
+        margin-bottom: 14px;
     }
 
     .sidebar a {
         display: inline-block;
         margin: 4px;
+        padding: 10px 12px;
     }
 
     .content {
@@ -481,7 +571,11 @@ tr:hover {
     }
 
     .section {
-        padding: 20px;
+        padding: 22px;
+    }
+
+    .form-actions {
+        position: static;
     }
 }
 
@@ -536,7 +630,7 @@ tr:hover {
 
     .section {
         padding: 16px;
-        border-radius: 12px;
+        border-radius: 13px;
     }
 
     .form-section {
