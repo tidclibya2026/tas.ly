@@ -5,45 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة الإيواء السياحي الليبية TAS.LY</title>
 
+    <!-- الخط -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- ملف التنسيق -->
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
     <!-- شاشة تسجيل الدخول -->
     <div id="loginPage" class="login-page">
         <div class="login-card">
+            <div class="login-logo">TAS.LY</div>
+
             <h1>منظومة الإيواء السياحي الليبية</h1>
-            <p>تسجيل الدخول إلى النظام</p>
+            <p>مركز المعلومات والتوثيق السياحي</p>
 
             <form id="loginForm">
-                <label>البريد الإلكتروني</label>
+                <label for="loginEmail">البريد الإلكتروني</label>
                 <input type="email" id="loginEmail" placeholder="admin@tourism.gov.ly" required>
 
-                <label>كلمة المرور</label>
+                <label for="loginPassword">كلمة المرور</label>
                 <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
 
                 <button type="submit">دخول النظام</button>
             </form>
 
             <div class="login-note">
-                <strong>بيانات تجريبية:</strong><br>
+                <strong>بيانات الدخول التجريبية</strong><br>
                 admin@tourism.gov.ly<br>
                 admin123
             </div>
         </div>
     </div>
 
-    <!-- حاوية النظام بعد تسجيل الدخول -->
+    <!-- حاوية النظام -->
     <div id="appContainer" class="app-container hidden">
 
+        <!-- رأس النظام -->
         <header class="top-header">
-            <h1>منظومة الإيواء السياحي الليبية</h1>
-            <p>مركز المعلومات والتوثيق السياحي - وزارة السياحة والصناعات التقليدية</p>
+            <div>
+                <h1>منظومة الإيواء السياحي الليبية</h1>
+                <p>وزارة السياحة والصناعات التقليدية - مركز المعلومات والتوثيق السياحي</p>
+            </div>
         </header>
 
         <div class="layout">
 
+            <!-- القائمة الجانبية -->
             <aside class="sidebar">
                 <h2>القائمة الرئيسية</h2>
 
@@ -53,14 +66,18 @@
                 <a href="#" onclick="showSection('licenses')">التراخيص</a>
                 <a href="#" onclick="showSection('occupancy')">الإشغال الشهري</a>
                 <a href="#" onclick="showSection('reports')">التقارير</a>
-                <a href="#" onclick="logout()">تسجيل الخروج</a>
+                <a href="#" onclick="logout()" class="logout-link">تسجيل الخروج</a>
             </aside>
 
+            <!-- المحتوى -->
             <main class="content">
 
                 <!-- لوحة التحكم -->
                 <section id="dashboard" class="section active">
-                    <h2>لوحة التحكم</h2>
+                    <div class="section-header">
+                        <h2>لوحة التحكم</h2>
+                        <p>ملخص مؤشرات منظومة الإيواء السياحي</p>
+                    </div>
 
                     <div class="cards">
                         <div class="card">
@@ -87,100 +104,378 @@
 
                 <!-- سجل المرافق -->
                 <section id="facilities" class="section">
-                    <h2>سجل المرافق السياحية</h2>
+                    <div class="section-header">
+                        <h2>سجل المرافق السياحية</h2>
+                        <p>قائمة الفنادق والقرى والمنتجعات والشقق الفندقية والنزل</p>
+                    </div>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الكود الوطني</th>
-                                <th>اسم المرفق</th>
-                                <th>النوع</th>
-                                <th>المدينة</th>
-                                <th>عدد الغرف</th>
-                                <th>عدد الأسرة</th>
-                                <th>التصنيف</th>
-                            </tr>
-                        </thead>
-                        <tbody id="facilitiesTable"></tbody>
-                    </table>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>الكود الوطني</th>
+                                    <th>اسم المرفق</th>
+                                    <th>النوع</th>
+                                    <th>البلدية</th>
+                                    <th>المدينة</th>
+                                    <th>الغرف</th>
+                                    <th>الأسرة</th>
+                                    <th>التصنيف</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="facilitiesTable"></tbody>
+                        </table>
+                    </div>
                 </section>
 
                 <!-- إضافة مرفق -->
                 <section id="addFacility" class="section">
-                    <h2>إضافة مرفق سياحي</h2>
+                    <div class="section-header">
+                        <h2>إضافة مرفق إيواء سياحي</h2>
+                        <p>تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، أو نزل ضمن السجل الوطني</p>
+                    </div>
 
                     <form id="facilityForm">
-                        <div class="form-grid">
-                            <div>
-                                <label>اسم المرفق</label>
-                                <input type="text" id="facilityName" required>
-                            </div>
 
-                            <div>
-                                <label>نوع المرفق</label>
-                                <select id="facilityType">
-                                    <option value="فندق">فندق</option>
-                                    <option value="قرية سياحية">قرية سياحية</option>
-                                    <option value="منتجع">منتجع</option>
-                                    <option value="شقق فندقية">شقق فندقية</option>
-                                    <option value="نزل">نزل</option>
-                                </select>
-                            </div>
+                        <!-- البيانات الأساسية -->
+                        <div class="form-section">
+                            <h3>أولاً: البيانات الأساسية</h3>
 
-                            <div>
-                                <label>المدينة</label>
-                                <input type="text" id="facilityCity" required>
-                            </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="facilityName">اسم المرفق</label>
+                                    <input type="text" id="facilityName" required>
+                                </div>
 
-                            <div>
-                                <label>عدد الغرف</label>
-                                <input type="number" id="roomsCount" value="0" min="0">
-                            </div>
+                                <div>
+                                    <label for="facilityType">نوع المرفق</label>
+                                    <select id="facilityType" onchange="toggleFacilityFields()" required>
+                                        <option value="فندق">فندق</option>
+                                        <option value="قرية سياحية">قرية سياحية</option>
+                                        <option value="منتجع">منتجع</option>
+                                        <option value="شقق فندقية">شقق فندقية</option>
+                                        <option value="نزل">نزل</option>
+                                    </select>
+                                </div>
 
-                            <div>
-                                <label>عدد الأسرة</label>
-                                <input type="number" id="bedsCount" value="0" min="0">
-                            </div>
+                                <div>
+                                    <label for="facilityMunicipality">البلدية</label>
+                                    <input type="text" id="facilityMunicipality" required>
+                                </div>
 
-                            <div>
-                                <label>التصنيف</label>
-                                <select id="classification">
-                                    <option value="غير مصنف">غير مصنف</option>
-                                    <option value="نجمة">نجمة</option>
-                                    <option value="نجمتان">نجمتان</option>
-                                    <option value="ثلاث نجوم">ثلاث نجوم</option>
-                                    <option value="أربع نجوم">أربع نجوم</option>
-                                    <option value="خمس نجوم">خمس نجوم</option>
-                                </select>
+                                <div>
+                                    <label for="facilityCity">المدينة</label>
+                                    <input type="text" id="facilityCity" required>
+                                </div>
+
+                                <div>
+                                    <label for="establishmentDate">تاريخ الإنشاء</label>
+                                    <input type="date" id="establishmentDate">
+                                </div>
+
+                                <div>
+                                    <label for="facilityAddress">العنوان</label>
+                                    <input type="text" id="facilityAddress" required>
+                                </div>
                             </div>
                         </div>
 
-                        <button type="submit">حفظ المرفق</button>
+                        <!-- بيانات الإدارة والاتصال -->
+                        <div class="form-section">
+                            <h3>ثانياً: بيانات الإدارة والاتصال</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="ownerName">اسم المالك</label>
+                                    <input type="text" id="ownerName">
+                                </div>
+
+                                <div>
+                                    <label for="operatorName">اسم المشغل</label>
+                                    <input type="text" id="operatorName">
+                                </div>
+
+                                <div>
+                                    <label for="managerName">اسم المدير</label>
+                                    <input type="text" id="managerName">
+                                </div>
+
+                                <div>
+                                    <label for="facilityPhone">رقم الهاتف / النقال</label>
+                                    <input type="text" id="facilityPhone">
+                                </div>
+
+                                <div>
+                                    <label for="facilityEmail">البريد الإلكتروني</label>
+                                    <input type="email" id="facilityEmail">
+                                </div>
+
+                                <div>
+                                    <label for="facilityWebsite">الموقع الإلكتروني</label>
+                                    <input type="url" id="facilityWebsite" placeholder="https://example.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- التصنيف والحالة -->
+                        <div class="form-section">
+                            <h3>ثالثاً: التصنيف والحالة</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="classification">درجة التصنيف</label>
+                                    <select id="classification">
+                                        <option value="غير مصنف">غير مصنف</option>
+                                        <option value="نجمة">نجمة</option>
+                                        <option value="نجمتان">نجمتان</option>
+                                        <option value="ثلاث نجوم">ثلاث نجوم</option>
+                                        <option value="أربع نجوم">أربع نجوم</option>
+                                        <option value="خمس نجوم">خمس نجوم</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="facilityAffiliation">تبعية المرفق</label>
+                                    <select id="facilityAffiliation">
+                                        <option value="">اختر...</option>
+                                        <option value="عام">عام</option>
+                                        <option value="خاص">خاص</option>
+                                        <option value="استثمار">استثمار</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="facilityStatus">حالة المرفق</label>
+                                    <select id="facilityStatus">
+                                        <option value="يعمل">يعمل</option>
+                                        <option value="مقفل">مقفل</option>
+                                        <option value="صيانة">صيانة</option>
+                                        <option value="قوة قاهرة">قوة قاهرة</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="licenseStatus">حالة الترخيص</label>
+                                    <select id="licenseStatus">
+                                        <option value="Active">ساري</option>
+                                        <option value="Expired">منتهي</option>
+                                        <option value="Pending">قيد الإجراء</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- تفاصيل الفندق -->
+                        <div id="hotelFields" class="form-section facility-type-fields">
+                            <h3>رابعاً: الطاقة الاستيعابية للفندق</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="suitesCount">عدد الأجنحة</label>
+                                    <input type="number" id="suitesCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="roomsCount">عدد الغرف</label>
+                                    <input type="number" id="roomsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="bedsCount">عدد الأسرة</label>
+                                    <input type="number" id="bedsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="localWorkers">عدد العاملين المحليين</label>
+                                    <input type="number" id="localWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="foreignWorkers">عدد العاملين الأجانب</label>
+                                    <input type="number" id="foreignWorkers" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- تفاصيل القرية أو المنتجع -->
+                        <div id="villageResortFields" class="form-section facility-type-fields hidden">
+                            <h3>رابعاً: الطاقة الاستيعابية للقرية / المنتجع</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="chaletsCount">عدد الشاليهات</label>
+                                    <input type="number" id="chaletsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="vrRoomsCount">عدد الغرف</label>
+                                    <input type="number" id="vrRoomsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="vrBedsCount">عدد الأسرة</label>
+                                    <input type="number" id="vrBedsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="villageResortExtras">الإضافات الأخرى</label>
+                                    <textarea id="villageResortExtras" placeholder="مثال: مسبح، مطعم، قاعة مناسبات، شاطئ خاص"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- تفاصيل الشقق الفندقية -->
+                        <div id="apartmentsFields" class="form-section facility-type-fields hidden">
+                            <h3>رابعاً: الطاقة الاستيعابية للشقق الفندقية</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="apartmentsCount">عدد الشقق</label>
+                                    <input type="number" id="apartmentsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="apRoomsCount">عدد الغرف</label>
+                                    <input type="number" id="apRoomsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="apBedsCount">عدد الأسرة</label>
+                                    <input type="number" id="apBedsCount" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- تفاصيل النزل -->
+                        <div id="hostelFields" class="form-section facility-type-fields hidden">
+                            <h3>رابعاً: الطاقة الاستيعابية للنزل</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="hsRoomsCount">عدد الغرف</label>
+                                    <input type="number" id="hsRoomsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="hsBedsCount">عدد الأسرة</label>
+                                    <input type="number" id="hsBedsCount" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="hsLocalWorkers">عدد العاملين المحليين</label>
+                                    <input type="number" id="hsLocalWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="hsForeignWorkers">عدد العاملين الأجانب</label>
+                                    <input type="number" id="hsForeignWorkers" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الموقع الجغرافي -->
+                        <div class="form-section">
+                            <h3>خامساً: الموقع الجغرافي</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="latitude">خط العرض Latitude</label>
+                                    <input type="number" id="latitude" step="any" placeholder="32.8872">
+                                </div>
+
+                                <div>
+                                    <label for="longitude">خط الطول Longitude</label>
+                                    <input type="number" id="longitude" step="any" placeholder="13.1913">
+                                </div>
+                            </div>
+
+                            <div id="map"></div>
+
+                            <p class="map-note">
+                                يمكنك تحديد موقع المرفق بالنقر على الخريطة أو بسحب العلامة.
+                            </p>
+                        </div>
+
+                        <!-- المستندات -->
+                        <div class="form-section">
+                            <h3>سادساً: المستندات</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="passportFile">جواز السفر / مستند هوية المالك</label>
+                                    <input type="file" id="passportFile">
+                                </div>
+
+                                <div>
+                                    <label for="nationalIdFile">الرقم الوطني / مستند التحقق</label>
+                                    <input type="file" id="nationalIdFile">
+                                </div>
+
+                                <div>
+                                    <label for="facilityDocuments">مستندات المرفق</label>
+                                    <input type="file" id="facilityDocuments" multiple>
+                                </div>
+                            </div>
+
+                            <p class="file-note">
+                                هذه الحقول للتجربة حالياً. رفع الملفات الفعلي سيتم تفعيله عند ربط النظام بالخادم وقاعدة البيانات.
+                            </p>
+                        </div>
+
+                        <!-- أزرار الحفظ -->
+                        <div class="form-actions">
+                            <button type="submit">حفظ المرفق وتوليد الكود الوطني</button>
+                            <button type="reset" class="secondary-button">مسح النموذج</button>
+                        </div>
+
                     </form>
                 </section>
 
                 <!-- التراخيص -->
                 <section id="licenses" class="section">
-                    <h2>التراخيص وأذونات المزاولة</h2>
-                    <p>هذه الشاشة ستستخدم لاحقاً لإصدار وتجديد أذونات المزاولة.</p>
+                    <div class="section-header">
+                        <h2>التراخيص وأذونات المزاولة</h2>
+                        <p>هذه الشاشة ستستخدم لإصدار وتجديد أذونات مزاولة النشاط السياحي.</p>
+                    </div>
+
+                    <div class="placeholder-box">
+                        سيتم تطوير هذه الوحدة بعد الانتهاء من شاشة إضافة المرافق.
+                    </div>
                 </section>
 
                 <!-- الإشغال الشهري -->
                 <section id="occupancy" class="section">
-                    <h2>الإشغال الشهري والليالي السياحية</h2>
-                    <p>هذه الشاشة ستستخدم لاحقاً لإدخال بيانات الإشغال الشهري.</p>
+                    <div class="section-header">
+                        <h2>الإشغال الشهري والليالي السياحية</h2>
+                        <p>إدخال وتحليل بيانات الإشغال الشهري والليالي السياحية.</p>
+                    </div>
+
+                    <div class="placeholder-box">
+                        سيتم تطوير هذه الوحدة وربطها بسجل المرافق لاحقاً.
+                    </div>
                 </section>
 
                 <!-- التقارير -->
                 <section id="reports" class="section">
-                    <h2>التقارير والإحصائيات</h2>
-                    <p>هذه الشاشة ستستخدم لاحقاً لإصدار تقارير PDF وExcel.</p>
+                    <div class="section-header">
+                        <h2>التقارير والإحصائيات</h2>
+                        <p>إصدار التقارير الإحصائية بصيغ PDF وExcel.</p>
+                    </div>
+
+                    <div class="placeholder-box">
+                        سيتم تطوير شاشة التقارير بعد تثبيت نموذج البيانات النهائي.
+                    </div>
                 </section>
 
             </main>
         </div>
     </div>
 
+    <!-- Leaflet Map -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- ملف التشغيل -->
     <script src="js/app.js"></script>
 </body>
 </html>
