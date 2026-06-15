@@ -1,0 +1,3325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الإيواء السياحي - ليبيا</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0288d1;
+            --primary-dark: #0277bd;
+            --secondary-color: #4caf50;
+            --accent-color: #ff9800;
+            --warning-color: #f44336;
+            --light-bg: #e0f7fa;
+            --light-bg2: #b2ebf2;
+            --white: #fff;
+            --text-dark: #333;
+            --text-light: #666;
+            --shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, var(--light-bg), var(--light-bg2));
+            color: var(--text-dark);
+            direction: rtl;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .wrapper {
+            display: flex;
+            min-height: calc(100vh - 120px);
+        }
+
+        .sidebar {
+            width: 250px;
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100%;
+            overflow-y: auto;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+        .sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .sidebar h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .sidebar a {
+            color: var(--white);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .main-content {
+            margin-right: 250px;
+            flex-grow: 1;
+            padding: 30px;
+            transition: var(--transition);
+        }
+
+        .main-content.expanded {
+            margin-right: 70px;
+        }
+
+        .container {
+            background: var(--white);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-dark);
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin: 20px 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #444;
+            display: block;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: #f9fafb;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(2, 136, 209, 0.2);
+            outline: none;
+        }
+
+        button {
+            padding: 14px 25px;
+            background: var(--primary-color);
+            color: var(--white);
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+        }
+
+        .btn-secondary:hover {
+            background: #45a049;
+        }
+
+        .btn-accent {
+            background: var(--accent-color);
+        }
+
+        .btn-accent:hover {
+            background: #f57c00;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+        }
+
+        .btn-warning:hover {
+            background: #d32f2f;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        th {
+            background: var(--primary-color);
+            color: var(--white);
+            font-weight: 700;
+        }
+
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        tr:hover {
+            background: #e0f7fa;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .filters select, .filters input {
+            padding: 8px;
+            width: 200px;
+        }
+
+        .export-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .file-upload {
+            grid-column: 1 / -1;
+            margin-top: 10px;
+        }
+
+        .file-upload input[type="file"] {
+            padding: 8px;
+            background: var(--white);
+            border: 1px dashed var(--primary-color);
+        }
+
+        .classification-history {
+            margin-top: 20px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .classification-history th, .classification-history td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .classification-history th {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .classification-history tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .classification-history tr:hover {
+            background: #e0f7fa;
+        }
+
+        .add-classification-btn {
+            background: var(--secondary-color);
+            width: auto;
+            padding: 10px 20px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .add-classification-btn:hover {
+            background: #45a049;
+        }
+
+        .update-btn {
+            background: var(--accent-color);
+            width: auto;
+            padding: 10px 20px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .update-btn:hover {
+            background: #f57c00;
+        }
+
+        .required {
+            color: #d32f2f;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+        }
+
+        .stat-card .trend {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .trend.up {
+            color: var(--secondary-color);
+        }
+
+        .trend.down {
+            color: var(--warning-color);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .quick-action {
+            background: var(--white);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quick-action:hover {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .quick-action i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--warning-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .notification-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .notification-icon.info {
+            background: var(--primary-color);
+        }
+
+        .notification-icon.warning {
+            background: var(--accent-color);
+        }
+
+        .notification-icon.alert {
+            background: var(--warning-color);
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            padding-right: 40px;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom: 3px solid var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-inactive {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-pending {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .pagination button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 15px 20px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(-150%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: var(--secondary-color);
+        }
+
+        .toast.warning {
+            background: var(--accent-color);
+        }
+
+        .toast.error {
+            background: var(--warning-color);
+        }
+
+        .event-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-image {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .event-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: flex-end;
+            padding: 15px;
+            color: white;
+        }
+
+        .event-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .event-details {
+            padding: 15px;
+        }
+
+        .event-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .event-description {
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .wrapper {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: static;
+                height: auto;
+            }
+            .sidebar.collapsed {
+                width: 100%;
+            }
+            .sidebar.collapsed .sidebar-text {
+                display: inline;
+            }
+            .main-content {
+                margin-right: 0;
+                padding: 20px;
+            }
+            .main-content.expanded {
+                margin-right: 0;
+            }
+            .filters {
+                flex-direction: column;
+            }
+            .filters select, .filters input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            .form-group {
+                grid-template-columns: 1fr;
+            }
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>وزارة السياحة والصناعات التقليدية</h1>
+                <p>مركز المعلومات والتوثيق السياحي - نظام الإيواء السياحي</p>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <div>مدير النظام</div>
+                    <div style="font-size: 0.8rem; opacity: 0.8;">admin@tourism.gov.ly</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-text">القائمة الرئيسية</h2>
+                <button class="toggle-sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <ul>
+                <li><a href="#" class="nav-link active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="sidebar-text">لوحة التحكم</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-section="add-hotel">
+                    <i class="fas fa-plus-circle"></i>
+                    <span class="sidebar-text">إضافة مرفق جديد</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-section="view-hotels">
+                    <i class="fas fa-hotel"></i>
+                    <span class="sidebar-text">سجل المرافق</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-section="tourist-nights">
+                    <i class="fas fa-moon"></i>
+                    <span class="sidebar-text">الليالي السياحية</span>
+                    <span class="notification-badge">2</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-section="renew-license">
+                    <i class="fas fa-file-contract"></i>
+                    <span class="sidebar-text">تجديد إذن المزاولة</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-section="annual-report">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="sidebar-text">التقرير السنوي</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-section="reports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="sidebar-text">التقارير والإحصائيات</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span class="sidebar-text">الإعدادات</span>
+                </a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <!-- لوحة التحكم -->
+            <div class="section active" id="dashboard">
+                <div class="container">
+                    <h1>لوحة تحكم نظام الإيواء السياحي</h1>
+                    
+                    <div class="quick-actions">
+                        <div class="quick-action" onclick="showSection('add-hotel')">
+                            <i class="fas fa-plus-circle"></i>
+                            <div>إضافة مرفق</div>
+                        </div>
+                        <div class="quick-action" onclick="showSection('tourist-nights')">
+                            <i class="fas fa-calendar-plus"></i>
+                            <div>إضافة فعالية</div>
+                        </div>
+                        <div class="quick-action" onclick="showSection('renew-license')">
+                            <i class="fas fa-file-signature"></i>
+                            <div>تجديد ترخيص</div>
+                        </div>
+                        <div class="quick-action" onclick="showSection('annual-report')">
+                            <i class="fas fa-file-export"></i>
+                            <div>تقرير سنوي</div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-stats">
+                        <div class="stat-card" onclick="showSection('view-hotels')">
+                            <h3>إجمالي المرافق</h3>
+                            <div class="number" id="total-facilities">0</div>
+                            <div class="trend up">+5% عن الشهر الماضي</div>
+                        </div>
+                        <div class="stat-card" onclick="showSection('tourist-nights')">
+                            <h3>الفعاليات القادمة</h3>
+                            <div class="number" id="total-events">0</div>
+                            <div class="trend up">+3 فعاليات جديدة</div>
+                        </div>
+                        <div class="stat-card" onclick="showSection('tourist-nights')">
+                            <h3>مشاركون متوقعون</h3>
+                            <div class="number" id="total-participants">0</div>
+                            <div class="trend up">+15% عن الشهر الماضي</div>
+                        </div>
+                        <div class="stat-card" onclick="showSection('reports')">
+                            <h3>الإيرادات المتوقعة</h3>
+                            <div class="number" id="total-revenue">0 د.ل</div>
+                            <div class="trend up">+12% عن الشهر الماضي</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>الفعاليات القادمة</h2>
+                            <div class="tabs">
+                                <div class="tab active" data-tab="upcoming-events">القادمة</div>
+                                <div class="tab" data-tab="past-events">المنتهية</div>
+                            </div>
+                        </div>
+                        <div class="tab-content active" id="upcoming-events">
+                            <div class="events-grid" id="upcoming-events-grid">
+                                <!-- سيتم ملؤها ديناميكياً -->
+                            </div>
+                        </div>
+                        <div class="tab-content" id="past-events">
+                            <div class="events-grid" id="past-events-grid">
+                                <!-- سيتم ملؤها ديناميكياً -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>آخر الإشعارات</h2>
+                            <button class="btn-secondary" onclick="markAllAsRead()">تعيين الكل كمقروء</button>
+                        </div>
+                        <div id="notifications-list">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- إضافة فندق جديد -->
+            <div class="section" id="add-hotel">
+                <div class="container">
+                    <h1>إضافة مرفق سياحي جديد</h1>
+                    <form id="add-hotel-form">
+                        <div class="form-group">
+                            <div>
+                                <label for="hotel_name">اسم المرفق:</label>
+                                <input type="text" id="hotel_name" name="hotel_name" required>
+                            </div>
+                            <div>
+                                <label for="type">نوع المرفق:</label>
+                                <select id="type" name="type" onchange="toggleFields()">
+                                    <option value="فندق">فندق</option>
+                                    <option value="قرية سياحية">قرية سياحية</option>
+                                    <option value="منتجع">منتجع</option>
+                                    <option value="شقق فندقية">شقق فندقية</option>
+                                    <option value="نزل">نزل</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="city">المدينة:</label>
+                                <input type="text" id="city" name="city" required>
+                            </div>
+                            <div>
+                                <label for="municipality">البلدية:</label>
+                                <input type="text" id="municipality" name="municipality" required>
+                            </div>
+                            <div>
+                                <label for="owner">المالك:</label>
+                                <input type="text" id="owner" name="owner">
+                            </div>
+                            <div>
+                                <label for="manager_name">اسم المدير:</label>
+                                <input type="text" id="manager_name" name="manager_name">
+                            </div>
+                            <div>
+                                <label for="phone">النقال:</label>
+                                <input type="text" id="phone" name="phone">
+                            </div>
+                            <div>
+                                <label for="email">البريد الإلكتروني:</label>
+                                <input type="email" id="email" name="email">
+                            </div>
+                            <div>
+                                <label for="classification">درجة التصنيف:</label>
+                                <select id="classification" name="classification">
+                                    <option value="غير مصنف">غير مصنف</option>
+                                    <option value="نجمة">نجمة</option>
+                                    <option value="نجمتان">نجمتان</option>
+                                    <option value="ثلاث نجوم">ثلاث نجوم</option>
+                                    <option value="أربع نجوم">أربع نجوم</option>
+                                    <option value="خمس نجوم">خمس نجوم</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="affiliation">تبعية المرفق:</label>
+                                <select id="affiliation" name="affiliation">
+                                    <option value="">اختر...</option>
+                                    <option value="عام">عام</option>
+                                    <option value="خاص">خاص</option>
+                                    <option value="استثمار">استثمار</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="status">حالة المرفق:</label>
+                                <select id="status" name="status">
+                                    <option value="">اختر...</option>
+                                    <option value="يعمل">يعمل</option>
+                                    <option value="مقفل">مقفل</option>
+                                    <option value="صيانة">صيانة</option>
+                                    <option value="قوة قاهرة">قوة قاهرة</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="establishment_date">تاريخ الإنشاء:</label>
+                                <input type="date" id="establishment_date" name="establishment_date">
+                            </div>
+                        </div>
+
+                        <!-- حقول ديناميكية لكل نوع -->
+                        <h2>تفاصيل المرفق</h2>
+                        <div id="hotel-fields" class="form-group">
+                            <div>
+                                <label for="suites">عدد الأجنحة:</label>
+                                <input type="number" id="suites" name="suites" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="rooms">عدد الغرف:</label>
+                                <input type="number" id="rooms" name="rooms" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="beds">عدد الأسرة:</label>
+                                <input type="number" id="beds" name="beds" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="local_workers">عدد العاملين المحليين:</label>
+                                <input type="number" id="local_workers" name="local_workers" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="foreign_workers">عدد العاملين الأجانب:</label>
+                                <input type="number" id="foreign_workers" name="foreign_workers" min="0" value="0">
+                            </div>
+                        </div>
+                        <div id="village-resort-fields" class="form-group hidden">
+                            <div>
+                                <label for="chalets">عدد الشاليهات:</label>
+                                <input type="number" id="chalets" name="chalets" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="rooms_vr">عدد الغرف:</label>
+                                <input type="number" id="rooms_vr" name="rooms_vr" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="beds_vr">عدد الأسرة:</label>
+                                <input type="number" id="beds_vr" name="beds_vr" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="extras">الإضافات الأخرى:</label>
+                                <textarea id="extras" name="extras" placeholder="اكتب الإضافات (مثل مسبح، مطعم)"></textarea>
+                            </div>
+                        </div>
+                        <div id="apartments-fields" class="form-group hidden">
+                            <div>
+                                <label for="apartments">عدد الشقق:</label>
+                                <input type="number" id="apartments" name="apartments" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="rooms_ap">عدد الغرف:</label>
+                                <input type="number" id="rooms_ap" name="rooms_ap" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="beds_ap">عدد الأسرة:</label>
+                                <input type="number" id="beds_ap" name="beds_ap" min="0" value="0">
+                            </div>
+                        </div>
+                        <div id="hostel-fields" class="form-group hidden">
+                            <div>
+                                <label for="rooms_hs">عدد الغرف:</label>
+                                <input type="number" id="rooms_hs" name="rooms_hs" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="beds_hs">عدد الأسرة:</label>
+                                <input type="number" id="beds_hs" name="beds_hs" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="local_workers_hs">عدد العاملين المحليين:</label>
+                                <input type="number" id="local_workers_hs" name="local_workers_hs" min="0" value="0">
+                            </div>
+                            <div>
+                                <label for="foreign_workers_hs">عدد العاملين الأجانب:</label>
+                                <input type="number" id="foreign_workers_hs" name="foreign_workers_hs" min="0" value="0">
+                            </div>
+                        </div>
+
+                        <!-- حقول الموقع -->
+                        <h2>موقع المرفق</h2>
+                        <div class="form-group">
+                            <div>
+                                <label for="address">العنوان:</label>
+                                <input type="text" id="address" name="address" required>
+                            </div>
+                            <div>
+                                <label for="latitude">خط العرض (Latitude):</label>
+                                <input type="number" id="latitude" name="latitude" step="any" required oninput="updateMapFromInput()">
+                            </div>
+                            <div>
+                                <label for="longitude">خط الطول (Longitude):</label>
+                                <input type="number" id="longitude" name="longitude" step="any" required oninput="updateMapFromInput()">
+                            </div>
+                        </div>
+                        <div id="map-add-hotel"></div>
+
+                        <!-- رفع المستندات -->
+                        <h2>رفع المستندات</h2>
+                        <div class="form-group">
+                            <div class="file-upload">
+                                <label for="passport_file">جواز السفر:</label>
+                                <input type="file" id="passport_file" name="passport_file">
+                            </div>
+                            <div class="file-upload">
+                                <label for="national_id_file">الرقم الوطني:</label>
+                                <input type="file" id="national_id_file" name="national_id_file">
+                            </div>
+                            <div class="file-upload">
+                                <label for="facility_documents">مستندات المرفق:</label>
+                                <input type="file" id="facility_documents" name="facility_documents[]" multiple>
+                                <p>(الحد الأقصى 30 ميجابايت)</p>
+                            </div>
+                        </div>
+
+                        <button type="submit">إضافة المرفق</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- سجل الفنادق -->
+            <div class="section" id="view-hotels">
+                <div class="container">
+                    <div class="header">
+                        <p>وزارة السياحة والصناعات التقليدية</p>
+                        <p>إدارة المهن والرقابة السياحية</p>
+                        <p>قسم الفنادق</p>
+                    </div>
+                    <h1>سجل المرافق السياحية</h1>
+                    <div class="filters">
+                        <input type="text" id="name-filter" placeholder="ابحث باسم المرفق" onkeyup="filterTable()">
+                        <select id="classification-filter" onchange="filterTable()">
+                            <option value="">كل التصنيفات</option>
+                            <option value="نجمة">نجمة</option>
+                            <option value="نجمتان">نجمتان</option>
+                            <option value="ثلاث نجوم">ثلاث نجوم</option>
+                            <option value="أربع نجوم">أربع نجوم</option>
+                            <option value="خمس نجوم">خمس نجوم</option>
+                        </select>
+                        <input type="text" id="city-filter" placeholder="ابحث بالمدينة" onkeyup="filterTable()">
+                    </div>
+                    <table id="hotels-table">
+                        <thead>
+                            <tr>
+                                <th>اسم المرفق</th>
+                                <th>المدينة</th>
+                                <th>المالك</th>
+                                <th>اسم المدير</th>
+                                <th>رقم الهاتف</th>
+                                <th>عدد الغرف</th>
+                                <th>عدد الأسرة</th>
+                                <th>التصنيف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hotels-table-body"></tbody>
+                    </table>
+                    <div class="export-buttons">
+                        <button onclick="exportToExcel()">تصدير إلى Excel</button>
+                        <button onclick="exportToPDF()">تصدير إلى PDF</button>
+                    </div>
+                    <div id="chart-container">
+                        <h2>إجماليات المرافق</h2>
+                        <canvas id="hotels-chart"></canvas>
+                        <p id="totals"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الليالي السياحية -->
+            <div class="section" id="tourist-nights">
+                <div class="container">
+                    <h1>إدارة الليالي السياحية</h1>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>الفعاليات والأنشطة السياحية</h2>
+                            <button class="btn-secondary" onclick="showModal('add-event-modal')">إضافة فعالية جديدة</button>
+                        </div>
+                        
+                        <div class="filters">
+                            <input type="text" id="event-search" placeholder="ابحث باسم الفعالية">
+                            <select id="event-type">
+                                <option value="">جميع الأنواع</option>
+                                <option value="ثقافية">ثقافية</option>
+                                <option value="ترفيهية">ترفيهية</option>
+                                <option value="تراثية">تراثية</option>
+                                <option value="رياضية">رياضية</option>
+                                <option value="موسيقية">موسيقية</option>
+                            </select>
+                            <select id="event-status">
+                                <option value="">جميع الحالات</option>
+                                <option value="مخطط">مخطط</option>
+                                <option value="جاري">جاري</option>
+                                <option value="منتهي">منتهي</option>
+                                <option value="ملغى">ملغى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="events-grid" id="events-grid">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                        
+                        <div class="pagination">
+                            <button onclick="changeEventPage(1)" class="active">1</button>
+                            <button onclick="changeEventPage(2)">2</button>
+                            <button onclick="changeEventPage(3)">3</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تجديد إذن المزاولة -->
+            <div class="section" id="renew-license">
+                <div class="container">
+                    <h1>تجديد إذن المزاولة</h1>
+                    <form action="/renew-license" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <div>
+                                <label for="hotel_select">اختر المرفق:</label>
+                                <select id="hotel_select" name="hotel_select" onchange="fillHotelData()">
+                                    <option value="">اختر مرفق...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="hotel_name">اسم المرفق:</label>
+                                <input type="text" id="hotel_name" name="hotel_name" required>
+                            </div>
+                            <div>
+                                <label for="license_number">رقم إذن المزاولة:</label>
+                                <input type="text" id="license_number" name="license_number" required placeholder="مثال: LY-12345">
+                            </div>
+                            <div>
+                                <label for="city">المدينة:</label>
+                                <input type="text" id="city" name="city">
+                            </div>
+                            <div>
+                                <label for="description">وصف المرفق:</label>
+                                <input type="text" id="description" name="description">
+                            </div>
+                        </div>
+                        <h2>تفاصيل إضافية</h2>
+                        <div class="form-group">
+                            <div>
+                                <label for="apartments">عدد الشقق:</label>
+                                <input type="number" id="apartments" name="apartments" min="0">
+                            </div>
+                            <div>
+                                <label for="rooms">عدد الغرف:</label>
+                                <input type="number" id="rooms" name="rooms" min="0">
+                            </div>
+                            <div>
+                                <label for="beds">عدد الأسرة:</label>
+                                <input type="number" id="beds" name="beds" min="0">
+                            </div>
+                            <div>
+                                <label for="phone">الهاتف:</label>
+                                <input type="text" id="phone" name="phone">
+                            </div>
+                            <div>
+                                <label for="email">البريد الإلكتروني:</label>
+                                <input type="text" id="email" name="email">
+                            </div>
+                        </div>
+                        <h2>موقع المرفق</h2>
+                        <div class="form-group">
+                            <div>
+                                <label for="address">عنوان المرفق:</label>
+                                <input type="text" id="address" name="address">
+                            </div>
+                            <div>
+                                <label for="latitude">خط العرض (Latitude):</label>
+                                <input type="number" id="latitude" name="latitude" step="any" oninput="updateMap()">
+                            </div>
+                            <div>
+                                <label for="longitude">خط الطول (Longitude):</label>
+                                <input type="number" id="longitude" name="longitude" step="any" oninput="updateMap()">
+                            </div>
+                        </div>
+                        <div id="map-renew-license"></div>
+                        <button type="button" class="update-btn" onclick="updateHotelData()">تحديث بيانات المرفق</button>
+                        <h2>تاريخ التصنيف</h2>
+                        <table class="classification-history">
+                            <thead>
+                                <tr>
+                                    <th>السنة</th>
+                                    <th>التصنيف</th>
+                                    <th>تاريخ التصنيف</th>
+                                    <th>تاريخ التفتيش</th>
+                                    <th>تقرير اللجنة</th>
+                                    <th>الأسباب</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classification-table-body"></tbody>
+                        </table>
+                        <h2>إضافة تصنيف جديد</h2>
+                        <div class="form-group">
+                            <div>
+                                <label for="new_classification">التصنيف الجديد:</label>
+                                <select id="new_classification" name="new_classification">
+                                    <option value="غير مصنف">غير مصنف</option>
+                                    <option value="نجمة">نجمة</option>
+                                    <option value="نجمتان">نجمتان</option>
+                                    <option value="ثلاث نجوم">ثلاث نجوم</option>
+                                    <option value="أربع نجوم">أربع نجوم</option>
+                                    <option value="خمس نجوم">خمس نجوم</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="classification_date">تاريخ التصنيف:</label>
+                                <input type="date" id="classification_date" name="classification_date">
+                            </div>
+                            <div>
+                                <label for="inspection_date">تاريخ التفتيش:</label>
+                                <input type="date" id="inspection_date" name="inspection_date">
+                            </div>
+                            <div>
+                                <label for="inspection_report">تقرير اللجنة:</label>
+                                <input type="file" id="inspection_report" name="inspection_report" accept=".pdf,.jpg,.png">
+                            </div>
+                            <div>
+                                <label for="reasons">أسباب التغيير:</label>
+                                <textarea id="reasons" name="reasons" placeholder="اكتب أسباب تغيير التصنيف"></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="add-classification-btn" onclick="addClassification()">إضافة التصنيف</button>
+                        <button type="submit">حفظ وتجديد الإذن</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- التقرير السنوي -->
+            <div class="section" id="annual-report">
+                <div class="container">
+                    <header class="form-header">
+                        <h1>التقرير السنوي لإشغال الغرف والأسرة</h1>
+                        <p>يرجى تعبئة البيانات بدقة لكل شهر</p>
+                    </header>
+
+                    <form id="annual-report-form">
+                        <!-- معلومات المرفق -->
+                        <div class="form-section">
+                            <h2>معلومات المرفق</h2>
+                            <div class="form-group">
+                                <div class="form-group">
+                                    <label for="facility-name">اسم المرفق <span class="required">*</span></label>
+                                    <input type="text" id="facility-name" name="facility-name" placeholder="أدخل اسم المرفق" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="city">المدينة <span class="required">*</span></label>
+                                    <input type="text" id="city" name="city" placeholder="أدخل اسم المدينة" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="district">المحلة</label>
+                                    <input type="text" id="district" name="district" placeholder="أدخل اسم المحلة">
+                                </div>
+                                <div class="form-group">
+                                    <label for="operator">الجهة المسيرة للمرفق</label>
+                                    <input type="text" id="operator" name="operator" placeholder="أدخل اسم الجهة">
+                                </div>
+                                <div class="form-group">
+                                    <label for="rating">التصنيف</label>
+                                    <select id="rating" name="rating">
+                                        <option value="">اختر...</option>
+                                        <option value="غير مصنف">غير مصنف</option>
+                                        <option value="*">*</option>
+                                        <option value="**">**</option>
+                                        <option value="***">***</option>
+                                        <option value="****">****</option>
+                                        <option value="*****">*****</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">الهاتف</label>
+                                    <input type="tel" id="phone" name="phone" placeholder="مثال: 0911234567" pattern="[0-9]{9,10}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="fax">البريد المصور</label>
+                                    <input type="text" id="fax" name="fax" placeholder="أدخل رقم الفاكس">
+                                </div>
+                                <div class="form-group">
+                                    <label for="website">الموقع الإلكتروني</label>
+                                    <input type="url" id="website" name="website" placeholder="مثال: www.example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">البريد الإلكتروني</label>
+                                    <input type="email" id="email" name="email" placeholder="مثال: example@domain.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- جدول التقرير الشهري -->
+                        <div class="form-section">
+                            <h2>بيانات الإشغال الشهري</h2>
+                            <table id="monthly-data">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">الشهر</th>
+                                        <th rowspan="2">عدد الغرف بالمرفق خلال الشهر</th>
+                                        <th rowspan="2">عدد الأسرة بالمرفق خلال الشهر</th>
+                                        <th rowspan="2">الغرف المؤجرة خلال الشهر</th>
+                                        <th rowspan="2">مجموع الدخل الشهري للغرف</th>
+                                        <th rowspan="2">عدد الليالي المؤجرة خلال الشهر</th>
+                                        <th colspan="3">عدد النزلاء خلال الشهر</th>
+                                    </tr>
+                                    <tr>
+                                        <th>ليبيين</th>
+                                        <th>عرب</th>
+                                        <th>أجانب</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>يناير</td>
+                                        <td><input type="number" name="rooms-jan" min="0"></td>
+                                        <td><input type="number" name="beds-jan" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-jan" min="0"></td>
+                                        <td><input type="number" name="income-jan" min="0"></td>
+                                        <td><input type="number" name="nights-jan" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-jan" min="0"></td>
+                                        <td><input type="number" name="guests-arab-jan" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-jan" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>فبراير</td>
+                                        <td><input type="number" name="rooms-feb" min="0"></td>
+                                        <td><input type="number" name="beds-feb" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-feb" min="0"></td>
+                                        <td><input type="number" name="income-feb" min="0"></td>
+                                        <td><input type="number" name="nights-feb" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-feb" min="0"></td>
+                                        <td><input type="number" name="guests-arab-feb" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-feb" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>مارس</td>
+                                        <td><input type="number" name="rooms-mar" min="0"></td>
+                                        <td><input type="number" name="beds-mar" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-mar" min="0"></td>
+                                        <td><input type="number" name="income-mar" min="0"></td>
+                                        <td><input type="number" name="nights-mar" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-mar" min="0"></td>
+                                        <td><input type="number" name="guests-arab-mar" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-mar" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>أبريل</td>
+                                        <td><input type="number" name="rooms-apr" min="0"></td>
+                                        <td><input type="number" name="beds-apr" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-apr" min="0"></td>
+                                        <td><input type="number" name="income-apr" min="0"></td>
+                                        <td><input type="number" name="nights-apr" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-apr" min="0"></td>
+                                        <td><input type="number" name="guests-arab-apr" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-apr" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>مايو</td>
+                                        <td><input type="number" name="rooms-may" min="0"></td>
+                                        <td><input type="number" name="beds-may" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-may" min="0"></td>
+                                        <td><input type="number" name="income-may" min="0"></td>
+                                        <td><input type="number" name="nights-may" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-may" min="0"></td>
+                                        <td><input type="number" name="guests-arab-may" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-may" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>يونيو</td>
+                                        <td><input type="number" name="rooms-jun" min="0"></td>
+                                        <td><input type="number" name="beds-jun" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-jun" min="0"></td>
+                                        <td><input type="number" name="income-jun" min="0"></td>
+                                        <td><input type="number" name="nights-jun" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-jun" min="0"></td>
+                                        <td><input type="number" name="guests-arab-jun" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-jun" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>يوليو</td>
+                                        <td><input type="number" name="rooms-jul" min="0"></td>
+                                        <td><input type="number" name="beds-jul" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-jul" min="0"></td>
+                                        <td><input type="number" name="income-jul" min="0"></td>
+                                        <td><input type="number" name="nights-jul" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-jul" min="0"></td>
+                                        <td><input type="number" name="guests-arab-jul" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-jul" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>أغسطس</td>
+                                        <td><input type="number" name="rooms-aug" min="0"></td>
+                                        <td><input type="number" name="beds-aug" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-aug" min="0"></td>
+                                        <td><input type="number" name="income-aug" min="0"></td>
+                                        <td><input type="number" name="nights-aug" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-aug" min="0"></td>
+                                        <td><input type="number" name="guests-arab-aug" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-aug" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>سبتمبر</td>
+                                        <td><input type="number" name="rooms-sep" min="0"></td>
+                                        <td><input type="number" name="beds-sep" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-sep" min="0"></td>
+                                        <td><input type="number" name="income-sep" min="0"></td>
+                                        <td><input type="number" name="nights-sep" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-sep" min="0"></td>
+                                        <td><input type="number" name="guests-arab-sep" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-sep" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>أكتوبر</td>
+                                        <td><input type="number" name="rooms-oct" min="0"></td>
+                                        <td><input type="number" name="beds-oct" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-oct" min="0"></td>
+                                        <td><input type="number" name="income-oct" min="0"></td>
+                                        <td><input type="number" name="nights-oct" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-oct" min="0"></td>
+                                        <td><input type="number" name="guests-arab-oct" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-oct" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>نوفمبر</td>
+                                        <td><input type="number" name="rooms-nov" min="0"></td>
+                                        <td><input type="number" name="beds-nov" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-nov" min="0"></td>
+                                        <td><input type="number" name="income-nov" min="0"></td>
+                                        <td><input type="number" name="nights-nov" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-nov" min="0"></td>
+                                        <td><input type="number" name="guests-arab-nov" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-nov" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>ديسمبر</td>
+                                        <td><input type="number" name="rooms-dec" min="0"></td>
+                                        <td><input type="number" name="beds-dec" min="0"></td>
+                                        <td><input type="number" name="rented-rooms-dec" min="0"></td>
+                                        <td><input type="number" name="income-dec" min="0"></td>
+                                        <td><input type="number" name="nights-dec" min="0"></td>
+                                        <td><input type="number" name="guests-libyan-dec" min="0"></td>
+                                        <td><input type="number" name="guests-arab-dec" min="0"></td>
+                                        <td><input type="number" name="guests-foreign-dec" min="0"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="submit" class="submit-btn">تحليل وحفظ التقرير</button>
+
+                        <!-- قسم التحليل والرسوم البيانية -->
+                        <div class="analysis-section" id="analysis-results" style="display: none;">
+                            <h2>تحليل البيانات السنوية</h2>
+                            <table class="analysis-table">
+                                <thead>
+                                    <tr>
+                                        <th>البيان</th>
+                                        <th>الإجمالي السنوي</th>
+                                        <th>نسبة الإشغال</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analysis-body">
+                                    <tr>
+                                        <td>عدد الغرف المتاحة</td>
+                                        <td id="total-rooms"></td>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>عدد الأسرة المتاحة</td>
+                                        <td id="total-beds"></td>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>الغرف المؤجرة</td>
+                                        <td id="total-rented-rooms"></td>
+                                        <td id="occupancy-rooms"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>مجموع الدخل السنوي</td>
+                                        <td id="total-income"></td>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>عدد الليالي المؤجرة</td>
+                                        <td id="total-nights"></td>
+                                        <td id="occupancy-nights"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>عدد النزلاء (ليبيين)</td>
+                                        <td id="total-guests-libyan"></td>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>عدد النزلاء (عرب)</td>
+                                        <td id="total-guests-arab"></td>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>عدد النزلاء (أجانب)</td>
+                                        <td id="total-guests-foreign"></td>
+                                        <td>-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="chart-container">
+                                <canvas id="lineChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="pieChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="barChart"></canvas>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- التقارير والإحصائيات -->
+            <div class="section" id="reports">
+                <div class="container">
+                    <h1>التقارير والإحصائيات</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>تقارير الأداء</h2>
+                            <div class="export-buttons">
+                                <button class="btn-secondary" onclick="exportReport('performance')">تصدير التقرير</button>
+                            </div>
+                        </div>
+                        <div class="tabs">
+                            <div class="tab active" data-tab="revenue-report">الإيرادات</div>
+                            <div class="tab" data-tab="occupancy-report">الإشغال</div>
+                            <div class="tab" data-tab="guest-report">النزلاء</div>
+                        </div>
+                        <div class="tab-content active" id="revenue-report">
+                            <div class="chart-container">
+                                <canvas id="revenue-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="tab-content" id="occupancy-report">
+                            <div class="chart-container">
+                                <canvas id="occupancy-report-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="tab-content" id="guest-report">
+                            <div class="chart-container">
+                                <canvas id="guest-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الإعدادات -->
+            <div class="section" id="settings">
+                <div class="container">
+                    <h1>الإعدادات</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>إعدادات النظام</h2>
+                        </div>
+                        <div class="form-group">
+                            <div>
+                                <label for="system-name">اسم النظام:</label>
+                                <input type="text" id="system-name" value="نظام الإيواء السياحي">
+                            </div>
+                            <div>
+                                <label for="language">اللغة:</label>
+                                <select id="language">
+                                    <option value="ar">العربية</option>
+                                    <option value="en">English</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="date-format">تنسيق التاريخ:</label>
+                                <select id="date-format">
+                                    <option value="dd/mm/yyyy">يوم/شهر/سنة</option>
+                                    <option value="mm/dd/yyyy">شهر/يوم/سنة</option>
+                                    <option value="yyyy-mm-dd">سنة-شهر-يوم</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="currency">العملة:</label>
+                                <select id="currency">
+                                    <option value="LYD">دينار ليبي (LYD)</option>
+                                    <option value="USD">دولار أمريكي (USD)</option>
+                                    <option value="EUR">يورو (EUR)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn-secondary" onclick="saveSettings()">حفظ الإعدادات</button>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>إدارة المستخدمين</h2>
+                            <button class="btn-secondary" onclick="showModal('add-user-modal')">إضافة مستخدم</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>اسم المستخدم</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>الدور</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- النوافذ المنبثقة -->
+    <div class="modal" id="add-event-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>إضافة فعالية سياحية جديدة</h2>
+                <button class="close-modal" onclick="closeModal('add-event-modal')">&times;</button>
+            </div>
+            <form id="add-event-form">
+                <div class="form-group">
+                    <div>
+                        <label for="event-name">اسم الفعالية:</label>
+                        <input type="text" id="event-name" required>
+                    </div>
+                    <div>
+                        <label for="event-type">نوع الفعالية:</label>
+                        <select id="event-type" required>
+                            <option value="">اختر النوع...</option>
+                            <option value="ثقافية">ثقافية</option>
+                            <option value="ترفيهية">ترفيهية</option>
+                            <option value="تراثية">تراثية</option>
+                            <option value="رياضية">رياضية</option>
+                            <option value="موسيقية">موسيقية</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="event-date">تاريخ الفعالية:</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+                    <div>
+                        <label for="event-time">وقت الفعالية:</label>
+                        <input type="time" id="event-time" required>
+                    </div>
+                    <div>
+                        <label for="event-location">موقع الفعالية:</label>
+                        <input type="text" id="event-location" required>
+                    </div>
+                    <div>
+                        <label for="event-organizer">المنظم:</label>
+                        <input type="text" id="event-organizer" required>
+                    </div>
+                    <div>
+                        <label for="event-capacity">السعة المتوقعة:</label>
+                        <input type="number" id="event-capacity" min="1" required>
+                    </div>
+                    <div>
+                        <label for="event-cost">التكلفة (د.ل):</label>
+                        <input type="number" id="event-cost" min="0" step="0.01">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="event-description">وصف الفعالية:</label>
+                    <textarea id="event-description" rows="4"></textarea>
+                </div>
+                
+                <div class="file-upload">
+                    <label for="event-image">صورة الفعالية:</label>
+                    <input type="file" id="event-image" accept="image/*">
+                </div>
+                
+                <button type="submit" class="btn-secondary">إضافة الفعالية</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="add-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>إضافة مستخدم جديد</h2>
+                <button class="close-modal" onclick="closeModal('add-user-modal')">&times;</button>
+            </div>
+            <form id="add-user-form">
+                <div class="form-group">
+                    <div>
+                        <label for="user-name">اسم المستخدم:</label>
+                        <input type="text" id="user-name" required>
+                    </div>
+                    <div>
+                        <label for="user-email">البريد الإلكتروني:</label>
+                        <input type="email" id="user-email" required>
+                    </div>
+                    <div>
+                        <label for="user-role">الدور:</label>
+                        <select id="user-role" required>
+                            <option value="admin">مدير النظام</option>
+                            <option value="manager">مدير</option>
+                            <option value="operator">مشغل</option>
+                            <option value="viewer">مشاهد</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="user-password">كلمة المرور:</label>
+                        <input type="password" id="user-password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-secondary">إضافة المستخدم</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">تمت العملية بنجاح</span>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // البيانات الأساسية
+        let hotelsData = [];
+        let touristEventsData = [];
+        let usersData = [];
+        let notificationsData = [];
+        let currentSection = 'dashboard';
+        let isSidebarCollapsed = false;
+
+        // تهيئة التطبيق
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحميل البيانات من localStorage إذا كانت موجودة
+            loadData();
+            
+            // تهيئة التنقل بين الأقسام
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    showSection(sectionId);
+                });
+            });
+
+            // تهيئة الأقسام
+            initAddHotelSection();
+            initViewHotelsSection();
+            initRenewLicenseSection();
+            initAnnualReportSection();
+            initTouristNightsSection();
+            initReportsSection();
+            initSettingsSection();
+            updateDashboard();
+            
+            // إظهار القسم الأول
+            showSection('dashboard');
+            
+            // تهيئة الألسنة (Tabs)
+            initTabs();
+            
+            // تهيئة النماذج
+            initModals();
+            
+            // تهيئة زر طي/فتح القائمة الجانبية
+            document.querySelector('.toggle-sidebar').addEventListener('click', toggleSidebar);
+            
+            // إنشاء إشعارات تجريبية
+            createSampleNotifications();
+        });
+
+        // تحميل البيانات
+        function loadData() {
+            const savedHotelsData = localStorage.getItem('hotelsData');
+            const savedTouristEventsData = localStorage.getItem('touristEventsData');
+            const savedUsersData = localStorage.getItem('usersData');
+            const savedNotificationsData = localStorage.getItem('notificationsData');
+            
+            if (savedHotelsData) {
+                hotelsData = JSON.parse(savedHotelsData);
+            } else {
+                // بيانات افتراضية إذا لم تكن هناك بيانات محفوظة
+                hotelsData = [
+                    { id: 1, name: "فندق الريان", type: "فندق", city: "بنغازي", owner: "محمد علي", manager_name: "أحمد سالم", phone: "094-0834000", rooms: 80, beds: 160, classification: "ثلاث نجوم", local_workers: 20, foreign_workers: 5 },
+                    { id: 2, name: "منتجع الماسة", type: "منتجع", city: "بنغازي", owner: "علي حسن", manager_name: "خالد عمر", phone: "092-4737500", rooms: 50, beds: 100, classification: "أربع نجوم", chalets: 20, local_workers: 30, foreign_workers: 10 },
+                    { id: 3, name: "شقق العون", type: "شقق فندقية", city: "بنغازي", owner: "بدر سالم", manager_name: "يوسف بدر", phone: "094-5565545", rooms: 30, beds: 60, classification: "نجمتان", apartments: 15, local_workers: 15, foreign_workers: 3 }
+                ];
+            }
+            
+            if (savedTouristEventsData) {
+                touristEventsData = JSON.parse(savedTouristEventsData);
+            } else {
+                // بيانات افتراضية للفعاليات السياحية
+                touristEventsData = [
+                    { 
+                        id: 1, 
+                        name: "ليلة تراثية في واحة غدامس", 
+                        type: "تراثية", 
+                        date: "2023-11-15", 
+                        time: "19:00", 
+                        location: "واحة غدامس", 
+                        organizer: "جمعية التراث الليبي", 
+                        capacity: 200, 
+                        cost: 50, 
+                        description: "ليلة تراثية تعرض العادات والتقاليد الليبية الأصيلة في واحة غدامس المسجلة على قائمة اليونسكو للتراث العالمي.", 
+                        status: "مخطط",
+                        image: "https://via.placeholder.com/400x200?text=ليلة+تراثية",
+                        participants: 150
+                    },
+                    { 
+                        id: 2, 
+                        name: "مهرجان الموسيقى الصحراوية", 
+                        type: "موسيقية", 
+                        date: "2023-11-20", 
+                        time: "20:00", 
+                        location: "منتجع الماسة", 
+                        organizer: "وزارة الثقافة", 
+                        capacity: 500, 
+                        cost: 75, 
+                        description: "مهرجان يضم فرق موسيقية صحراوية من مختلف مناطق ليبيا لعرض التراث الموسيقي الليبي الأصيل.", 
+                        status: "مخطط",
+                        image: "https://via.placeholder.com/400x200?text=مهرجان+موسيقي",
+                        participants: 320
+                    },
+                    { 
+                        id: 3, 
+                        name: "رحلة سفاري في الصحراء", 
+                        type: "ترفيهية", 
+                        date: "2023-10-30", 
+                        time: "08:00", 
+                        location: "صحراء مرزق", 
+                        organizer: "شركة سياحة ومغامرات", 
+                        capacity: 40, 
+                        cost: 150, 
+                        description: "رحلة سفاري مثيرة في صحراء مرزق تشمل ركوب الجمال ومشاهدة الكثبان الرملية الذهبية والتمتع بليلة صحراوية ساحرة.", 
+                        status: "منتهي",
+                        image: "https://via.placeholder.com/400x200?text=رحلة+سفاري",
+                        participants: 38
+                    }
+                ];
+            }
+            
+            if (savedUsersData) {
+                usersData = JSON.parse(savedUsersData);
+            } else {
+                // بيانات افتراضية للمستخدمين
+                usersData = [
+                    { id: 1, name: "مدير النظام", email: "admin@tourism.gov.ly", role: "admin", status: "active" },
+                    { id: 2, name: "أحمد محمد", email: "ahmed@tourism.gov.ly", role: "manager", status: "active" },
+                    { id: 3, name: "سارة علي", email: "sara@tourism.gov.ly", role: "operator", status: "inactive" }
+                ];
+            }
+            
+            if (savedNotificationsData) {
+                notificationsData = JSON.parse(savedNotificationsData);
+            }
+        }
+
+        // حفظ البيانات
+        function saveData() {
+            localStorage.setItem('hotelsData', JSON.stringify(hotelsData));
+            localStorage.setItem('touristEventsData', JSON.stringify(touristEventsData));
+            localStorage.setItem('usersData', JSON.stringify(usersData));
+            localStorage.setItem('notificationsData', JSON.stringify(notificationsData));
+        }
+
+        // إنشاء إشعارات تجريبية
+        function createSampleNotifications() {
+            if (notificationsData.length === 0) {
+                notificationsData = [
+                    { id: 1, type: "warning", title: "ترخيص على وشك الانتهاء", message: "ترخيص فندق الريان سينتهي خلال 15 يوم", time: "منذ ساعتين", read: false },
+                    { id: 2, type: "info", title: "فعالية جديدة", message: "تم إضافة فعالية 'ليلة تراثية في واحة غدامس'", time: "منذ يوم", read: false },
+                    { id: 3, type: "alert", title: "تقرير شهري جاهز", message: "تم إنشاء التقرير الشهري لشهر أكتوبر", time: "منذ 3 أيام", read: true }
+                ];
+                saveData();
+            }
+            updateNotifications();
+        }
+
+        // تحديث الإشعارات
+        function updateNotifications() {
+            const notificationsList = document.getElementById('notifications-list');
+            notificationsList.innerHTML = '';
+            
+            const unreadCount = notificationsData.filter(n => !n.read).length;
+            const badge = document.querySelector('.nav-link[data-section="tourist-nights"] .notification-badge');
+            if (badge) {
+                badge.textContent = unreadCount > 0 ? unreadCount : '';
+            }
+            
+            notificationsData.forEach(notification => {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = 'notification-item';
+                notificationItem.innerHTML = `
+                    <div class="notification-icon ${notification.type}">
+                        <i class="fas fa-${notification.type === 'info' ? 'info-circle' : notification.type === 'warning' ? 'exclamation-triangle' : 'bell'}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div><strong>${notification.title}</strong></div>
+                        <div>${notification.message}</div>
+                        <div class="notification-time">${notification.time}</div>
+                    </div>
+                    ${!notification.read ? '<div class="notification-badge"></div>' : ''}
+                `;
+                notificationsList.appendChild(notificationItem);
+            });
+        }
+
+        // تعيين جميع الإشعارات كمقروءة
+        function markAllAsRead() {
+            notificationsData.forEach(notification => {
+                notification.read = true;
+            });
+            saveData();
+            updateNotifications();
+            showToast('تم تعيين جميع الإشعارات كمقروءة', 'success');
+        }
+
+        // إظهار وإخفاء الأقسام
+        function showSection(sectionId) {
+            // إخفاء جميع الأقسام
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // إزالة النشط من جميع الروابط
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // إظهار القسم المطلوب
+            document.getElementById(sectionId).classList.add('active');
+            
+            // إضافة النشط للرابط المطلوب
+            document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
+            
+            // حفظ القسم الحالي
+            currentSection = sectionId;
+            
+            // تحديث البيانات حسب القسم
+            if (sectionId === 'dashboard') {
+                updateDashboard();
+            } else if (sectionId === 'view-hotels') {
+                populateTable(hotelsData);
+                updateChart(hotelsData);
+            } else if (sectionId === 'tourist-nights') {
+                updateTouristNights();
+            } else if (sectionId === 'reports') {
+                updateReports();
+            } else if (sectionId === 'settings') {
+                updateUsersTable();
+            }
+        }
+
+        // تحديث لوحة التحكم
+        function updateDashboard() {
+            const totalFacilities = hotelsData.length;
+            const totalEvents = touristEventsData.length;
+            const totalParticipants = touristEventsData.reduce((sum, event) => sum + (event.participants || 0), 0);
+            const totalRevenue = touristEventsData.reduce((sum, event) => sum + (event.cost * (event.participants || 0)), 0);
+            
+            document.getElementById('total-facilities').textContent = totalFacilities;
+            document.getElementById('total-events').textContent = totalEvents;
+            document.getElementById('total-participants').textContent = totalParticipants;
+            document.getElementById('total-revenue').textContent = totalRevenue.toLocaleString() + ' د.ل';
+            
+            // تحديث الفعاليات القادمة والمنتهية
+            updateDashboardEvents();
+        }
+
+        // تحديث الفعاليات في لوحة التحكم
+        function updateDashboardEvents() {
+            const upcomingEventsGrid = document.getElementById('upcoming-events-grid');
+            const pastEventsGrid = document.getElementById('past-events-grid');
+            
+            upcomingEventsGrid.innerHTML = '';
+            pastEventsGrid.innerHTML = '';
+            
+            const now = new Date();
+            
+            touristEventsData.forEach(event => {
+                const eventDate = new Date(event.date);
+                const isUpcoming = eventDate >= now && event.status !== 'منتهي' && event.status !== 'ملغى';
+                
+                const eventCard = document.createElement('div');
+                eventCard.className = 'event-card';
+                eventCard.innerHTML = `
+                    <div class="event-image" style="background-image: url('${event.image}')">
+                        <div class="event-overlay">
+                            <div>
+                                <div class="event-title">${event.name}</div>
+                                <div>${event.location}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event-details">
+                        <div class="event-meta">
+                            <span><i class="far fa-calendar"></i> ${formatDate(event.date)}</span>
+                            <span><i class="far fa-clock"></i> ${event.time}</span>
+                        </div>
+                        <div class="event-description">${event.description.substring(0, 100)}...</div>
+                        <div class="event-actions">
+                            <button class="btn-secondary" onclick="viewEventDetails(${event.id})">تفاصيل</button>
+                            <span class="status-badge ${getStatusClass(event.status)}">${event.status}</span>
+                        </div>
+                    </div>
+                `;
+                
+                if (isUpcoming) {
+                    upcomingEventsGrid.appendChild(eventCard);
+                } else {
+                    pastEventsGrid.appendChild(eventCard);
+                }
+            });
+        }
+
+        // الحصول على فئة الحالة
+        function getStatusClass(status) {
+            switch(status) {
+                case 'مخطط': return 'status-pending';
+                case 'جاري': return 'status-active';
+                case 'منتهي': return 'status-inactive';
+                case 'ملغى': return 'status-inactive';
+                default: return 'status-pending';
+            }
+        }
+
+        // تهيئة الألسنة (Tabs)
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    const parent = this.closest('.card');
+                    
+                    // إزالة النشط من جميع الألسنة والمحتويات
+                    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // إضافة النشط للسان والمحتوى المحدد
+                    this.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+
+        // تهيئة النوافذ المنبثقة
+        function initModals() {
+            // نموذج إضافة فعالية جديدة
+            document.getElementById('add-event-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewEvent();
+            });
+            
+            // نموذج إضافة مستخدم جديد
+            document.getElementById('add-user-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewUser();
+            });
+        }
+
+        // إظهار النافذة المنبثقة
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        // إخفاء النافذة المنبثقة
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // إضافة فعالية جديدة
+        function addNewEvent() {
+            const name = document.getElementById('event-name').value;
+            const type = document.getElementById('event-type').value;
+            const date = document.getElementById('event-date').value;
+            const time = document.getElementById('event-time').value;
+            const location = document.getElementById('event-location').value;
+            const organizer = document.getElementById('event-organizer').value;
+            const capacity = parseInt(document.getElementById('event-capacity').value);
+            const cost = parseFloat(document.getElementById('event-cost').value) || 0;
+            const description = document.getElementById('event-description').value;
+            const image = document.getElementById('event-image').files[0];
+            
+            const newEvent = {
+                id: touristEventsData.length > 0 ? Math.max(...touristEventsData.map(e => e.id)) + 1 : 1,
+                name: name,
+                type: type,
+                date: date,
+                time: time,
+                location: location,
+                organizer: organizer,
+                capacity: capacity,
+                cost: cost,
+                description: description,
+                status: 'مخطط',
+                image: image ? URL.createObjectURL(image) : 'https://via.placeholder.com/400x200?text=' + encodeURIComponent(name),
+                participants: 0,
+                createdAt: new Date().toISOString()
+            };
+            
+            touristEventsData.push(newEvent);
+            saveData();
+            
+            // إغلاق النافذة المنبثقة
+            closeModal('add-event-modal');
+            
+            // إعادة تعيين النموذج
+            document.getElementById('add-event-form').reset();
+            
+            // تحديث العرض
+            updateTouristNights();
+            updateDashboard();
+            
+            // إظهار رسالة نجاح
+            showToast('تم إضافة الفعالية بنجاح', 'success');
+            
+            // إضافة إشعار
+            addNotification('فعالية جديدة', `تم إضافة فعالية جديدة: ${name}`, 'info');
+        }
+
+        // إضافة مستخدم جديد
+        function addNewUser() {
+            const name = document.getElementById('user-name').value;
+            const email = document.getElementById('user-email').value;
+            const role = document.getElementById('user-role').value;
+            const password = document.getElementById('user-password').value;
+            
+            const newUser = {
+                id: usersData.length > 0 ? Math.max(...usersData.map(u => u.id)) + 1 : 1,
+                name: name,
+                email: email,
+                role: role,
+                status: 'active',
+                createdAt: new Date().toISOString()
+            };
+            
+            usersData.push(newUser);
+            saveData();
+            
+            // إغلاق النافذة المنبثقة
+            closeModal('add-user-modal');
+            
+            // إعادة تعيين النموذج
+            document.getElementById('add-user-form').reset();
+            
+            // تحديث الجدول
+            updateUsersTable();
+            
+            // إظهار رسالة نجاح
+            showToast('تم إضافة المستخدم بنجاح', 'success');
+        }
+
+        // تهيئة قسم الليالي السياحية
+        function initTouristNightsSection() {
+            // سيتم تحديث العرض عند عرض القسم
+        }
+
+        // تحديث عرض الليالي السياحية
+        function updateTouristNights() {
+            const eventsGrid = document.getElementById('events-grid');
+            eventsGrid.innerHTML = '';
+            
+            // تطبيق الفلاتر
+            const searchTerm = document.getElementById('event-search').value.toLowerCase();
+            const typeFilter = document.getElementById('event-type').value;
+            const statusFilter = document.getElementById('event-status').value;
+            
+            const filteredEvents = touristEventsData.filter(event => {
+                const matchesSearch = event.name.toLowerCase().includes(searchTerm) || 
+                                    event.description.toLowerCase().includes(searchTerm) ||
+                                    event.location.toLowerCase().includes(searchTerm);
+                const matchesType = !typeFilter || event.type === typeFilter;
+                const matchesStatus = !statusFilter || event.status === statusFilter;
+                
+                return matchesSearch && matchesType && matchesStatus;
+            });
+            
+            filteredEvents.forEach(event => {
+                const eventCard = document.createElement('div');
+                eventCard.className = 'event-card';
+                eventCard.innerHTML = `
+                    <div class="event-image" style="background-image: url('${event.image}')">
+                        <div class="event-overlay">
+                            <div>
+                                <div class="event-title">${event.name}</div>
+                                <div>${event.location}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event-details">
+                        <div class="event-meta">
+                            <span><i class="far fa-calendar"></i> ${formatDate(event.date)}</span>
+                            <span><i class="far fa-clock"></i> ${event.time}</span>
+                        </div>
+                        <div class="event-description">${event.description.substring(0, 100)}...</div>
+                        <div class="event-meta">
+                            <span><i class="fas fa-users"></i> ${event.participants}/${event.capacity}</span>
+                            <span><i class="fas fa-money-bill"></i> ${event.cost} د.ل</span>
+                        </div>
+                        <div class="event-actions">
+                            <button class="btn-secondary" onclick="viewEventDetails(${event.id})">تفاصيل</button>
+                            <button class="btn-accent" onclick="editEvent(${event.id})">تعديل</button>
+                            <span class="status-badge ${getStatusClass(event.status)}">${event.status}</span>
+                        </div>
+                    </div>
+                `;
+                eventsGrid.appendChild(eventCard);
+            });
+        }
+
+        // عرض تفاصيل الفعالية
+        function viewEventDetails(eventId) {
+            const event = touristEventsData.find(e => e.id === eventId);
+            if (!event) return;
+            
+            document.getElementById('event-details-title').textContent = event.name;
+            
+            const detailsContent = document.getElementById('event-details-content');
+            detailsContent.innerHTML = `
+                <div class="event-image" style="background-image: url('${event.image}'); height: 250px; border-radius: 8px; margin-bottom: 20px;"></div>
+                <div class="form-group">
+                    <div>
+                        <label>نوع الفعالية:</label>
+                        <p>${event.type}</p>
+                    </div>
+                    <div>
+                        <label>التاريخ:</label>
+                        <p>${formatDate(event.date)}</p>
+                    </div>
+                    <div>
+                        <label>الوقت:</label>
+                        <p>${event.time}</p>
+                    </div>
+                    <div>
+                        <label>الموقع:</label>
+                        <p>${event.location}</p>
+                    </div>
+                    <div>
+                        <label>المنظم:</label>
+                        <p>${event.organizer}</p>
+                    </div>
+                    <div>
+                        <label>السعة:</label>
+                        <p>${event.capacity} شخص</p>
+                    </div>
+                    <div>
+                        <label>التكلفة:</label>
+                        <p>${event.cost} دينار ليبي</p>
+                    </div>
+                    <div>
+                        <label>المشاركون:</label>
+                        <p>${event.participants} شخص</p>
+                    </div>
+                    <div>
+                        <label>الحالة:</label>
+                        <p><span class="status-badge ${getStatusClass(event.status)}">${event.status}</span></p>
+                    </div>
+                </div>
+                <div>
+                    <label>الوصف:</label>
+                    <p>${event.description}</p>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn-secondary" onclick="editEvent(${event.id})">تعديل</button>
+                    <button class="btn-accent" onclick="updateEventStatus(${event.id}, 'جاري')">بدء الفعالية</button>
+                    <button class="btn-warning" onclick="updateEventStatus(${event.id}, 'ملغى')">إلغاء</button>
+                </div>
+            `;
+            
+            showModal('event-details-modal');
+        }
+
+        // تعديل الفعالية
+        function editEvent(eventId) {
+            // في تطبيق حقيقي، سيتم فتح نموذج تعديل
+            showToast('فتح نموذج تعديل الفعالية', 'info');
+        }
+
+        // تحديث حالة الفعالية
+        function updateEventStatus(eventId, newStatus) {
+            const event = touristEventsData.find(e => e.id === eventId);
+            if (event) {
+                event.status = newStatus;
+                saveData();
+                updateTouristNights();
+                updateDashboard();
+                closeModal('event-details-modal');
+                showToast(`تم تحديث حالة الفعالية إلى ${newStatus}`, 'success');
+            }
+        }
+
+        // تغيير صفحة الفعاليات
+        function changeEventPage(page) {
+            showToast(`تحميل صفحة ${page}`, 'info');
+        }
+
+        // تهيئة قسم التقارير
+        function initReportsSection() {
+            // سيتم تحديث الرسوم البيانية عند عرض القسم
+        }
+
+        // تحديث التقارير
+        function updateReports() {
+            updateRevenueChart();
+            updateOccupancyReportChart();
+            updateGuestChart();
+        }
+
+        // تحديث رسم الإيرادات
+        function updateRevenueChart() {
+            const ctx = document.getElementById('revenue-chart').getContext('2d');
+            
+            // بيانات افتراضية للإيرادات
+            const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            const revenueData = [12000, 19000, 15000, 18000, 22000, 25000, 28000, 26000, 24000, 21000, 23000, 27000];
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'الإيرادات (د.ل)',
+                        data: revenueData,
+                        borderColor: '#0288d1',
+                        backgroundColor: 'rgba(2, 136, 209, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // تحديث رسم الإشغال
+        function updateOccupancyReportChart() {
+            const ctx = document.getElementById('occupancy-report-chart').getContext('2d');
+            
+            // بيانات افتراضية للإشغال
+            const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            const occupancyData = [65, 59, 70, 72, 75, 80, 85, 82, 78, 75, 70, 68];
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'نسبة الإشغال %',
+                        data: occupancyData,
+                        backgroundColor: '#4caf50'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // تحديث رسم النزلاء
+        function updateGuestChart() {
+            const ctx = document.getElementById('guest-chart').getContext('2d');
+            
+            // بيانات افتراضية للنزلاء
+            const guestTypes = ['ليبيين', 'عرب', 'أجانب'];
+            const guestData = [1200, 800, 600];
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: guestTypes,
+                    datasets: [{
+                        data: guestData,
+                        backgroundColor: ['#0288d1', '#4caf50', '#ff9800']
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        // تهيئة قسم الإعدادات
+        function initSettingsSection() {
+            // سيتم تحديث الجدول عند عرض القسم
+        }
+
+        // تحديث جدول المستخدمين
+        function updateUsersTable() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            
+            usersData.forEach(user => {
+                const row = document.createElement('tr');
+                
+                let roleText = '';
+                if (user.role === 'admin') {
+                    roleText = 'مدير النظام';
+                } else if (user.role === 'manager') {
+                    roleText = 'مدير';
+                } else if (user.role === 'operator') {
+                    roleText = 'مشغل';
+                } else if (user.role === 'viewer') {
+                    roleText = 'مشاهد';
+                }
+                
+                let statusBadge = '';
+                if (user.status === 'active') {
+                    statusBadge = '<span class="status-badge status-active">نشط</span>';
+                } else {
+                    statusBadge = '<span class="status-badge status-inactive">غير نشط</span>';
+                }
+                
+                row.innerHTML = `
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${roleText}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button class="btn-secondary" onclick="editUser(${user.id})">تعديل</button>
+                        <button class="btn-warning" onclick="toggleUserStatus(${user.id})">${user.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // تبديل حالة المستخدم
+        function toggleUserStatus(userId) {
+            const user = usersData.find(u => u.id === userId);
+            if (user) {
+                user.status = user.status === 'active' ? 'inactive' : 'active';
+                saveData();
+                updateUsersTable();
+                showToast(`تم ${user.status === 'active' ? 'تفعيل' : 'تعطيل'} المستخدم بنجاح`, 'success');
+            }
+        }
+
+        // حفظ الإعدادات
+        function saveSettings() {
+            // في نظام حقيقي، سيتم حفظ الإعدادات في قاعدة البيانات
+            showToast('تم حفظ الإعدادات بنجاح', 'success');
+        }
+
+        // إضافة إشعار
+        function addNotification(title, message, type) {
+            const newNotification = {
+                id: notificationsData.length > 0 ? Math.max(...notificationsData.map(n => n.id)) + 1 : 1,
+                type: type,
+                title: title,
+                message: message,
+                time: 'الآن',
+                read: false
+            };
+            
+            notificationsData.unshift(newNotification);
+            saveData();
+            updateNotifications();
+        }
+
+        // إظهار رسالة Toast
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            toast.classList.add(type);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // تنسيق التاريخ
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-EG');
+        }
+
+        // طي/فتح القائمة الجانبية
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (isSidebarCollapsed) {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+            } else {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+            
+            isSidebarCollapsed = !isSidebarCollapsed;
+        }
+
+        // تصدير التقارير
+        function exportReport(type) {
+            // في نظام حقيقي، سيتم إنشاء وتنزيل التقرير
+            showToast('جاري إنشاء التقرير...', 'info');
+            
+            // محاكاة عملية التصدير
+            setTimeout(() => {
+                showToast('تم تصدير التقرير بنجاح', 'success');
+            }, 1500);
+        }
+
+        // دوال النظام الأصلي التي كانت مفقودة
+        function initAddHotelSection() {
+            // تهيئة الخريطة
+            const map = L.map('map-add-hotel').setView([32.8872, 13.1913], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // إضافة دبوس قابل للسحب
+            let marker = L.marker([32.8872, 13.1913], { draggable: true }).addTo(map)
+                .bindPopup('موقع المرفق').openPopup();
+
+            // تحديث الحقول عند النقر على الخريطة
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                marker.setLatLng([lat, lng]);
+                document.getElementById('latitude').value = lat.toFixed(6);
+                document.getElementById('longitude').value = lng.toFixed(6);
+                marker.bindPopup(`موقع ${document.getElementById('hotel_name').value || 'المرفق الجديد'}`).openPopup();
+                map.setView([lat, lng], 15);
+            });
+
+            // تحديث الحقول عند سحب الدبوس
+            marker.on('dragend', function(e) {
+                const lat = marker.getLatLng().lat;
+                const lng = marker.getLatLng().lng;
+                document.getElementById('latitude').value = lat.toFixed(6);
+                document.getElementById('longitude').value = lng.toFixed(6);
+                map.setView([lat, lng], 15);
+            });
+
+            // معالجة إضافة المرفق
+            document.getElementById('add-hotel-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const type = document.getElementById('type').value;
+                const newHotel = {
+                    id: hotelsData.length + 1,
+                    name: document.getElementById('hotel_name').value,
+                    type: type,
+                    city: document.getElementById('city').value,
+                    municipality: document.getElementById('municipality').value,
+                    owner: document.getElementById('owner').value || '',
+                    manager_name: document.getElementById('manager_name').value || '',
+                    phone: document.getElementById('phone').value || '',
+                    email: document.getElementById('email').value || '',
+                    classification: document.getElementById('classification').value,
+                    affiliation: document.getElementById('affiliation').value || '',
+                    status: document.getElementById('status').value || '',
+                    establishment_date: document.getElementById('establishment_date').value || '',
+                    address: document.getElementById('address').value,
+                    latitude: parseFloat(document.getElementById('latitude').value),
+                    longitude: parseFloat(document.getElementById('longitude').value)
+                };
+
+                if (type === 'فندق') {
+                    newHotel.suites = parseInt(document.getElementById('suites').value) || 0;
+                    newHotel.rooms = parseInt(document.getElementById('rooms').value) || 0;
+                    newHotel.beds = parseInt(document.getElementById('beds').value) || 0;
+                    newHotel.local_workers = parseInt(document.getElementById('local_workers').value) || 0;
+                    newHotel.foreign_workers = parseInt(document.getElementById('foreign_workers').value) || 0;
+                } else if (type === 'قرية سياحية' || type === 'منتجع') {
+                    newHotel.chalets = parseInt(document.getElementById('chalets').value) || 0;
+                    newHotel.rooms = parseInt(document.getElementById('rooms_vr').value) || 0;
+                    newHotel.beds = parseInt(document.getElementById('beds_vr').value) || 0;
+                    newHotel.extras = document.getElementById('extras').value || '';
+                } else if (type === 'شقق فندقية') {
+                    newHotel.apartments = parseInt(document.getElementById('apartments').value) || 0;
+                    newHotel.rooms = parseInt(document.getElementById('rooms_ap').value) || 0;
+                    newHotel.beds = parseInt(document.getElementById('beds_ap').value) || 0;
+                } else if (type === 'نزل') {
+                    newHotel.rooms = parseInt(document.getElementById('rooms_hs').value) || 0;
+                    newHotel.beds = parseInt(document.getElementById('beds_hs').value) || 0;
+                    newHotel.local_workers = parseInt(document.getElementById('local_workers_hs').value) || 0;
+                    newHotel.foreign_workers = parseInt(document.getElementById('foreign_workers_hs').value) || 0;
+                }
+
+                hotelsData.push(newHotel);
+                localStorage.setItem('hotelsData', JSON.stringify(hotelsData));
+                
+                alert(`تم إضافة المرفق "${newHotel.name}" بنجاح!`);
+                this.reset();
+                toggleFields();
+                map.setView([32.8872, 13.1913], 6);
+                marker.setLatLng([32.8872, 13.1913]);
+                
+                // تحديث لوحة التحكم
+                updateDashboard();
+            });
+
+            // تهيئة الحقول عند التحميل
+            toggleFields();
+        }
+
+        function toggleFields() {
+            const type = document.getElementById('type').value;
+            document.getElementById('hotel-fields').classList.add('hidden');
+            document.getElementById('village-resort-fields').classList.add('hidden');
+            document.getElementById('apartments-fields').classList.add('hidden');
+            document.getElementById('hostel-fields').classList.add('hidden');
+
+            if (type === 'فندق') {
+                document.getElementById('hotel-fields').classList.remove('hidden');
+            } else if (type === 'قرية سياحية' || type === 'منتجع') {
+                document.getElementById('village-resort-fields').classList.remove('hidden');
+            } else if (type === 'شقق فندقية') {
+                document.getElementById('apartments-fields').classList.remove('hidden');
+            } else if (type === 'نزل') {
+                document.getElementById('hostel-fields').classList.remove('hidden');
+            }
+        }
+
+        function updateMapFromInput() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                // هذه الوظيفة تحتاج إلى تنفيذ في سياق الخريطة المناسبة
+                // سيتم تنفيذها في initAddHotelSection
+            }
+        }
+
+        function initViewHotelsSection() {
+            // سيتم ملء الجدول عند عرض القسم
+        }
+
+        function populateTable(data) {
+            const tbody = document.getElementById('hotels-table-body');
+            tbody.innerHTML = '';
+            data.forEach(hotel => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${hotel.name}</td>
+                    <td>${hotel.city}</td>
+                    <td>${hotel.owner || '-'}</td>
+                    <td>${hotel.manager_name || '-'}</td>
+                    <td>${hotel.phone || '-'}</td>
+                    <td>${hotel.rooms || 0}</td>
+                    <td>${hotel.beds || 0}</td>
+                    <td>${hotel.classification}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterTable() {
+            const nameFilter = document.getElementById('name-filter').value.toLowerCase();
+            const classificationFilter = document.getElementById('classification-filter').value;
+            const cityFilter = document.getElementById('city-filter').value.toLowerCase();
+
+            const filteredData = hotelsData.filter(hotel => {
+                const matchesName = hotel.name.toLowerCase().includes(nameFilter);
+                const matchesClassification = !classificationFilter || hotel.classification === classificationFilter;
+                const matchesCity = hotel.city.toLowerCase().includes(cityFilter);
+                return matchesName && matchesClassification && matchesCity;
+            });
+
+            populateTable(filteredData);
+            updateChart(filteredData);
+        }
+
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const wsData = [
+                ["اسم المرفق", "المدينة", "المالك", "اسم المدير", "رقم الهاتف", "عدد الغرف", "عدد الأسرة", "التصنيف"]
+            ];
+            const filteredData = getFilteredData();
+            filteredData.forEach(hotel => {
+                wsData.push([
+                    hotel.name,
+                    hotel.city,
+                    hotel.owner || '-',
+                    hotel.manager_name || '-',
+                    hotel.phone || '-',
+                    hotel.rooms || 0,
+                    hotel.beds || 0,
+                    hotel.classification
+                ]);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, "سجل المرافق");
+            XLSX.writeFile(wb, "سجل_المرافق.xlsx");
+        }
+
+        function exportToPDF() {
+            const filteredData = getFilteredData();
+            
+            // إنشاء محتوى PDF
+            let pdfContent = `
+                <div style="text-align: center; font-family: 'Cairo', sans-serif;">
+                    <h1 style="color: #0277bd; margin-bottom: 10px;">وزارة السياحة والصناعات التقليدية</h1>
+                    <p style="font-size: 16px; margin-bottom: 5px;">إدارة المهن والرقابة السياحية</p>
+                    <p style="font-size: 16px; margin-bottom: 20px;">قسم الفنادق</p>
+                    <h2 style="color: #0288d1; margin-bottom: 20px;">سجل المرافق السياحية</h2>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">اسم المرفق</th>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">المدينة</th>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">المالك</th>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">اسم المدير</th>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">رقم الهاتف</th>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">عدد الغرف</th>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">عدد الأسرة</th>
+                                <th style="border: 1px solid #000; padding: 8px; background: #0288d1; color: #fff;">التصنيف</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            filteredData.forEach(hotel => {
+                pdfContent += `
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.name}</td>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.city}</td>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.owner || '-'}</td>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.manager_name || '-'}</td>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.phone || '-'}</td>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.rooms || 0}</td>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.beds || 0}</td>
+                        <td style="border: 1px solid #000; padding: 8px;">${hotel.classification}</td>
+                    </tr>
+                `;
+            });
+
+            pdfContent += `
+                        </tbody>
+                    </table>
+                    <p style="font-size: 12px; margin-top: 20px; text-align: center;">
+                        إجمالي المرافق: ${filteredData.length} | 
+                        إجمالي الغرف: ${filteredData.reduce((sum, hotel) => sum + (hotel.rooms || 0), 0)} | 
+                        إجمالي الأسرة: ${filteredData.reduce((sum, hotel) => sum + (hotel.beds || 0), 0)}
+                    </p>
+                </div>
+            `;
+
+            const element = document.createElement('div');
+            element.innerHTML = pdfContent;
+            
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: 'سجل_المرافق.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function getFilteredData() {
+            const nameFilter = document.getElementById('name-filter').value.toLowerCase();
+            const classificationFilter = document.getElementById('classification-filter').value;
+            const cityFilter = document.getElementById('city-filter').value.toLowerCase();
+
+            return hotelsData.filter(hotel => {
+                const matchesName = hotel.name.toLowerCase().includes(nameFilter);
+                const matchesClassification = !classificationFilter || hotel.classification === classificationFilter;
+                const matchesCity = hotel.city.toLowerCase().includes(cityFilter);
+                return matchesName && matchesClassification && matchesCity;
+            });
+        }
+
+        let chart;
+        function updateChart(data) {
+            const totals = calculateTotals(data);
+            document.getElementById('totals').innerHTML = `
+                إجمالي المرافق: ${totals.hotels} | 
+                إجمالي الغرف: ${totals.rooms} | 
+                إجمالي الأسرة: ${totals.beds} | 
+                إجمالي العاملين المحليين: ${totals.localWorkers} | 
+                إجمالي العاملين الأجانب: ${totals.foreignWorkers}
+            `;
+
+            const ctx = document.getElementById('hotels-chart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['المرافق', 'الغرف', 'الأسرة', 'العاملون المحليون', 'العاملون الأجانب'],
+                    datasets: [{
+                        label: 'إجماليات المرافق',
+                        data: [totals.hotels, totals.rooms, totals.beds, totals.localWorkers, totals.foreignWorkers],
+                        backgroundColor: ['#0288d1', '#4caf50', '#ff9800', '#9c27b0', '#f44336']
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function calculateTotals(data) {
+            return {
+                hotels: data.length,
+                rooms: data.reduce((sum, hotel) => sum + (hotel.rooms || 0), 0),
+                beds: data.reduce((sum, hotel) => sum + (hotel.beds || 0), 0),
+                localWorkers: data.reduce((sum, hotel) => sum + (hotel.local_workers || 0), 0),
+                foreignWorkers: data.reduce((sum, hotel) => sum + (hotel.foreign_workers || 0), 0)
+            };
+        }
+
+        function initRenewLicenseSection() {
+            // تهيئة قائمة الفنادق
+            const hotelSelect = document.getElementById('hotel_select');
+            hotelSelect.innerHTML = '<option value="">اختر مرفق...</option>';
+            hotelsData.forEach(hotel => {
+                const option = document.createElement('option');
+                option.value = hotel.id;
+                option.textContent = hotel.name;
+                hotelSelect.appendChild(option);
+            });
+
+            // تهيئة الخريطة
+            const map = L.map('map-renew-license').setView([32.8872, 13.1913], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            let marker = L.marker([32.8872, 13.1913]).addTo(map).bindPopup('موقع المرفق').openPopup();
+
+            // معالجة تقديم النموذج
+            document.querySelector('#renew-license form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('تم تجديد إذن المزاولة بنجاح!');
+            });
+        }
+
+        function fillHotelData() {
+            const hotelSelect = document.getElementById('hotel_select');
+            const selectedId = parseInt(hotelSelect.value);
+            const hotel = hotelsData.find(h => h.id === selectedId);
+            if (hotel) {
+                document.getElementById('hotel_name').value = hotel.name;
+                document.getElementById('city').value = hotel.city;
+                document.getElementById('description').value = hotel.type;
+                document.getElementById('address').value = hotel.address || '';
+                document.getElementById('latitude').value = hotel.latitude || '';
+                document.getElementById('longitude').value = hotel.longitude || '';
+                document.getElementById('apartments').value = hotel.apartments || 0;
+                document.getElementById('rooms').value = hotel.rooms || 0;
+                document.getElementById('beds').value = hotel.beds || 0;
+                document.getElementById('phone').value = hotel.phone || '';
+                document.getElementById('email').value = hotel.email || '';
+                
+                // تحديث الخريطة
+                if (hotel.latitude && hotel.longitude) {
+                    const newLocation = [hotel.latitude, hotel.longitude];
+                    const map = L.map('map-renew-license');
+                    map.setView(newLocation, 15);
+                    const marker = L.marker(newLocation).addTo(map);
+                    marker.bindPopup(`موقع ${hotel.name}`).openPopup();
+                }
+            } else {
+                clearForm();
+            }
+        }
+
+        function updateMap() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const newLocation = [lat, lng];
+                const map = L.map('map-renew-license');
+                map.setView(newLocation, 15);
+                const marker = L.marker(newLocation).addTo(map);
+                marker.bindPopup(`موقع ${document.getElementById('hotel_name').value}`).openPopup();
+            }
+        }
+
+        function updateHotelData() {
+            const hotelSelect = document.getElementById('hotel_select');
+            const selectedId = parseInt(hotelSelect.value);
+            if (!selectedId) {
+                alert('يرجى اختيار مرفق أولاً.');
+                return;
+            }
+            const hotelIndex = hotelsData.findIndex(h => h.id === selectedId);
+            if (hotelIndex === -1) return;
+
+            hotelsData[hotelIndex] = {
+                ...hotelsData[hotelIndex],
+                name: document.getElementById('hotel_name').value,
+                city: document.getElementById('city').value,
+                type: document.getElementById('description').value,
+                address: document.getElementById('address').value,
+                latitude: parseFloat(document.getElementById('latitude').value) || 0,
+                longitude: parseFloat(document.getElementById('longitude').value) || 0,
+                apartments: parseInt(document.getElementById('apartments').value) || 0,
+                rooms: parseInt(document.getElementById('rooms').value) || 0,
+                beds: parseInt(document.getElementById('beds').value) || 0,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value
+            };
+
+            // تحديث اسم المرفق في القائمة المنسدلة
+            const option = hotelSelect.querySelector(`option[value="${selectedId}"]`);
+            option.textContent = hotelsData[hotelIndex].name;
+
+            // حفظ البيانات
+            localStorage.setItem('hotelsData', JSON.stringify(hotelsData));
+            
+            alert('تم تحديث بيانات المرفق بنجاح!');
+        }
+
+        function clearForm() {
+            document.getElementById('hotel_name').value = '';
+            document.getElementById('city').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('address').value = '';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('apartments').value = '';
+            document.getElementById('rooms').value = '';
+            document.getElementById('beds').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('email').value = '';
+            
+            const map = L.map('map-renew-license');
+            map.setView([32.8872, 13.1913], 6);
+            const marker = L.marker([32.8872, 13.1913]).addTo(map);
+        }
+
+        function addClassification() {
+            const newClassification = document.getElementById('new_classification').value;
+            const classificationDate = document.getElementById('classification_date').value;
+            const inspectionDate = document.getElementById('inspection_date').value;
+            const inspectionReport = document.getElementById('inspection_report').files[0];
+            const reasons = document.getElementById('reasons').value;
+
+            if (!newClassification || !classificationDate || !inspectionDate || !reasons) {
+                alert('يرجى ملء جميع الحقول المطلوبة.');
+                return;
+            }
+
+            const tableBody = document.getElementById('classification-table-body');
+            const newRow = document.createElement('tr');
+            const year = new Date(classificationDate).getFullYear();
+            const reportLink = inspectionReport ? `<a href="#">${inspectionReport.name}</a>` : 'غير مرفق';
+
+            newRow.innerHTML = `
+                <td>${year}</td>
+                <td>${newClassification}</td>
+                <td>${classificationDate}</td>
+                <td>${inspectionDate}</td>
+                <td>${reportLink}</td>
+                <td>${reasons}</td>
+            `;
+            tableBody.appendChild(newRow);
+
+            document.getElementById('new_classification').value = 'غير مصنف';
+            document.getElementById('classification_date').value = '';
+            document.getElementById('inspection_date').value = '';
+            document.getElementById('inspection_report').value = '';
+            document.getElementById('reasons').value = '';
+            alert('تم إضافة التصنيف بنجاح!');
+        }
+
+        function initAnnualReportSection() {
+            document.getElementById('annual-report-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // التحقق من الحقول المطلوبة
+                const requiredFields = document.querySelectorAll('#annual-report-form [required]');
+                let isValid = true;
+
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        isValid = false;
+                        field.style.borderColor = '#d32f2f';
+                    } else {
+                        field.style.borderColor = '#ccc';
+                    }
+                });
+
+                if (!isValid) {
+                    alert('يرجى ملء جميع الحقول المطلوبة.');
+                    return;
+                }
+
+                // جمع البيانات من الجدول
+                const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+                const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                let totalRooms = 0, totalBeds = 0, totalRentedRooms = 0, totalIncome = 0, totalNights = 0;
+                let totalGuestsLibyan = 0, totalGuestsArab = 0, totalGuestsForeign = 0;
+                const rentedRoomsData = [], nightsData = [], incomeData = [];
+
+                months.forEach(month => {
+                    const rooms = parseInt(document.querySelector(`input[name="rooms-${month}"]`).value) || 0;
+                    const beds = parseInt(document.querySelector(`input[name="beds-${month}"]`).value) || 0;
+                    const rentedRooms = parseInt(document.querySelector(`input[name="rented-rooms-${month}"]`).value) || 0;
+                    const income = parseInt(document.querySelector(`input[name="income-${month}"]`).value) || 0;
+                    const nights = parseInt(document.querySelector(`input[name="nights-${month}"]`).value) || 0;
+                    const guestsLibyan = parseInt(document.querySelector(`input[name="guests-libyan-${month}"]`).value) || 0;
+                    const guestsArab = parseInt(document.querySelector(`input[name="guests-arab-${month}"]`).value) || 0;
+                    const guestsForeign = parseInt(document.querySelector(`input[name="guests-foreign-${month}"]`).value) || 0;
+
+                    // التحقق من المنطقية
+                    if (rentedRooms > rooms) {
+                        alert(`خطأ: عدد الغرف المؤجرة في ${monthNames[months.indexOf(month)]} أكبر من الغرف المتاحة!`);
+                        return;
+                    }
+
+                    totalRooms += rooms;
+                    totalBeds += beds;
+                    totalRentedRooms += rentedRooms;
+                    totalIncome += income;
+                    totalNights += nights;
+                    totalGuestsLibyan += guestsLibyan;
+                    totalGuestsArab += guestsArab;
+                    totalGuestsForeign += guestsForeign;
+
+                    rentedRoomsData.push(rentedRooms);
+                    nightsData.push(nights);
+                    incomeData.push(income);
+                });
+
+                // حساب النسب المئوية
+                const occupancyRooms = totalRooms > 0 ? ((totalRentedRooms / totalRooms) * 100).toFixed(2) : 0;
+                const occupancyNights = totalRooms > 0 ? ((totalNights / (totalRooms * 365)) * 100).toFixed(2) : 0;
+
+                // عرض التحليل في الجدول
+                document.getElementById('total-rooms').textContent = totalRooms;
+                document.getElementById('total-beds').textContent = totalBeds;
+                document.getElementById('total-rented-rooms').textContent = totalRentedRooms;
+                document.getElementById('total-income').textContent = totalIncome.toLocaleString() + ' د.ل';
+                document.getElementById('total-nights').textContent = totalNights;
+                document.getElementById('total-guests-libyan').textContent = totalGuestsLibyan;
+                document.getElementById('total-guests-arab').textContent = totalGuestsArab;
+                document.getElementById('total-guests-foreign').textContent = totalGuestsForeign;
+                document.getElementById('occupancy-rooms').textContent = occupancyRooms + '%';
+                document.getElementById('occupancy-nights').textContent = occupancyNights + '%';
+
+                // إعداد الرسوم البيانية
+                // 1. الرسم البياني الخطي (الغرف المؤجرة والليالي)
+                const lineCtx = document.getElementById('lineChart').getContext('2d');
+                new Chart(lineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: monthNames,
+                        datasets: [
+                            {
+                                label: 'الغرف المؤجرة',
+                                data: rentedRoomsData,
+                                borderColor: '#1976d2',
+                                fill: false
+                            },
+                            {
+                                label: 'الليالي المؤجرة',
+                                data: nightsData,
+                                borderColor: '#388e3c',
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'العدد' }
+                            },
+                            x: {
+                                title: { display: true, text: 'الشهر' }
+                            }
+                        }
+                    }
+                });
+
+                // 2. الرسم البياني الدائري (توزيع النزلاء)
+                const pieCtx = document.getElementById('pieChart').getContext('2d');
+                new Chart(pieCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['ليبيين', 'عرب', 'أجانب'],
+                        datasets: [{
+                            data: [totalGuestsLibyan, totalGuestsArab, totalGuestsForeign],
+                            backgroundColor: ['#1976d2', '#388e3c', '#d32f2f']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'توزيع النزلاء' }
+                        }
+                    }
+                });
+
+                // 3. الرسم البياني العمودي (الدخل الشهري)
+                const barCtx = document.getElementById('barChart').getContext('2d');
+                new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthNames,
+                        datasets: [{
+                            label: 'الدخل الشهري (د.ل)',
+                            data: incomeData,
+                            backgroundColor: '#1976d2'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'الدخل (د.ل)' }
+                            },
+                            x: {
+                                title: { display: true, text: 'الشهر' }
+                            }
+                        }
+                    }
+                });
+
+                document.getElementById('analysis-results').style.display = 'block';
+                alert('تم تحليل وحفظ التقرير بنجاح!');
+            });
+
+            // التحقق الفوري أثناء الكتابة
+            document.querySelectorAll('#annual-report-form input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.required && !this.value.trim()) {
+                        this.style.borderColor = '#d32f2f';
+                    } else {
+                        this.style.borderColor = '#ccc';
+                    }
+                });
+            });
+        }
+
+        // دوال مساعدة إضافية
+        function editUser(id) {
+            showToast('فتح تعديل المستخدم', 'info');
+        }
+    </script>
+</body>
+</html>
