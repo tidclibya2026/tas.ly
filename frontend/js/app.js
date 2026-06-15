@@ -1,23 +1,17 @@
-let facilities = [
-    {
-        name: "فندق الريان",
-        type: "فندق",
-        city: "بنغازي",
-        rooms: 80,
-        beds: 160,
-        classification: "ثلاث نجوم",
-        licenseStatus: "Active"
-    },
-    {
-        name: "منتجع الماسة",
-        type: "منتجع",
-        city: "بنغازي",
-        rooms: 50,
-        beds: 100,
-        classification: "أربع نجوم",
-        licenseStatus: "Active"
+let facilities = [];
+
+async function loadFacilitiesData() {
+    try {
+        const response = await fetch('../data/facilities.json');
+        facilities = await response.json();
+
+        updateDashboard();
+        renderFacilitiesTable();
+    } catch (error) {
+        console.error("خطأ في تحميل بيانات المرافق:", error);
+        alert("تعذر تحميل بيانات المرافق");
     }
-];
+}
 
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(section => {
@@ -91,5 +85,4 @@ document.getElementById('facilityForm').addEventListener('submit', function(even
     showSection('facilities');
 });
 
-updateDashboard();
-renderFacilitiesTable();
+loadFacilitiesData();
