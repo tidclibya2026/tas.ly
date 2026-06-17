@@ -80,6 +80,10 @@ function setText(id, value) {
     }
 }
 
+function getFacilityDisplayName(facility) {
+    return `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
+}
+
 // ===============================
 // تحميل وحفظ بيانات المرافق
 // ===============================
@@ -693,7 +697,7 @@ function populateFacilitySelect() {
         const option = document.createElement("option");
 
         option.value = facility.facility_code;
-        option.textContent = `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
+        option.textContent = getFacilityDisplayName(facility);
 
         select.appendChild(option);
     });
@@ -829,7 +833,7 @@ function populateOccupancyFacilitySelect() {
         const option = document.createElement("option");
 
         option.value = facility.facility_code;
-        option.textContent = `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
+        option.textContent = getFacilityDisplayName(facility);
 
         select.appendChild(option);
     });
@@ -1049,31 +1053,53 @@ function getMonthName(month) {
 // ===============================
 
 function populateReportFacilitySelect() {
-    const select = document.getElementById("reportFacility");
+    const dataList = document.getElementById("reportFacilitiesList");
+    const searchInput = document.getElementById("reportFacilitySearch");
+    const hiddenInput = document.getElementById("reportFacility");
 
-    if (!select) {
+    if (!dataList || !searchInput || !hiddenInput) {
         return;
     }
 
-    select.innerHTML = `<option value="">اختر المرفق...</option>`;
+    dataList.innerHTML = "";
 
     if (!Array.isArray(facilities) || facilities.length === 0) {
         const option = document.createElement("option");
-        option.value = "";
-        option.textContent = "لا توجد مرافق محفوظة - أضف مرفقاً أولاً";
-        option.disabled = true;
-        select.appendChild(option);
+        option.value = "لا توجد مرافق محفوظة - أضف مرفقاً أولاً";
+        dataList.appendChild(option);
+        hiddenInput.value = "";
         return;
     }
 
     facilities.forEach(facility => {
         const option = document.createElement("option");
 
-        option.value = facility.facility_code;
-        option.textContent = `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
+        option.value = getFacilityDisplayName(facility);
+        option.setAttribute("data-code", facility.facility_code);
 
-        select.appendChild(option);
+        dataList.appendChild(option);
     });
+}
+
+function updateReportFacilityCodeFromSearch() {
+    const searchInput = document.getElementById("reportFacilitySearch");
+    const hiddenInput = document.getElementById("reportFacility");
+
+    if (!searchInput || !hiddenInput) {
+        return;
+    }
+
+    const searchValue = searchInput.value.trim();
+
+    const selectedFacility = facilities.find(facility => {
+        return getFacilityDisplayName(facility) === searchValue;
+    });
+
+    if (selectedFacility) {
+        hiddenInput.value = selectedFacility.facility_code;
+    } else {
+        hiddenInput.value = "";
+    }
 }
 
 function toggleReportMonth() {
@@ -1097,13 +1123,15 @@ function handleReportSubmit(event) {
 }
 
 function generateReport() {
+    updateReportFacilityCodeFromSearch();
+
     const facilityCode = getTextValue("reportFacility");
     const reportType = getTextValue("reportType");
     const reportYear = getNumberValue("reportYear");
     const reportMonth = getNumberValue("reportMonth");
 
     if (!facilityCode) {
-        alert("يرجى اختيار المرفق");
+        alert("يرجى اختيار المرفق من القائمة المقترحة");
         return;
     }
 
@@ -1442,6 +1470,12 @@ function bindEvents() {
     const reportType = document.getElementById("reportType");
     if (reportType) {
         reportType.addEventListener("change", toggleReportMonth);
+    }
+
+    const reportFacilitySearch = document.getElementById("reportFacilitySearch");
+    if (reportFacilitySearch) {
+        reportFacilitySearch.addEventListener("input", updateReportFacilityCodeFromSearch);
+        reportFacilitySearch.addEventListener("change", updateReportFacilityCodeFromSearch);
     }
 }
 

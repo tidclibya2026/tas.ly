@@ -150,7 +150,7 @@
 
                                 <div>
                                     <label for="facilityType">نوع المرفق</label>
-                                    <select id="facilityType" onchange="toggleFacilityFields()" required>
+                                    <select id="facilityType" required>
                                         <option value="فندق">فندق</option>
                                         <option value="قرية سياحية">قرية سياحية</option>
                                         <option value="منتجع">منتجع</option>
@@ -433,449 +433,460 @@
                 </section>
 
                 <!-- التراخيص -->
-         <section id="licenses" class="section">
-    <div class="section-header">
-        <h2>التراخيص وأذونات المزاولة</h2>
-        <p>إدارة إصدار وتجديد ومتابعة تراخيص منشآت الإيواء السياحي</p>
-    </div>
+                <section id="licenses" class="section">
+                    <div class="section-header">
+                        <h2>التراخيص وأذونات المزاولة</h2>
+                        <p>إدارة إصدار وتجديد ومتابعة تراخيص منشآت الإيواء السياحي</p>
+                    </div>
 
-    <form id="licenseForm">
+                    <form id="licenseForm">
 
-        <div class="form-section">
-            <h3>أولاً: بيانات المرفق والترخيص</h3>
+                        <div class="form-section">
+                            <h3>أولاً: بيانات المرفق والترخيص</h3>
 
-            <div class="form-grid">
-                <div>
-                    <label for="licenseFacility">اسم المرفق</label>
-                    <select id="licenseFacility" required>
-                        <option value="">اختر المرفق...</option>
-                    </select>
-                </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="licenseFacility">اسم المرفق</label>
+                                    <select id="licenseFacility" required>
+                                        <option value="">اختر المرفق...</option>
+                                    </select>
+                                </div>
 
-                <div>
-                    <label for="licenseNumber">رقم الترخيص</label>
-                    <input type="text" id="licenseNumber" placeholder="مثال: LY-LIC-2026-000001" required>
-                </div>
+                                <div>
+                                    <label for="licenseNumber">رقم الترخيص</label>
+                                    <input type="text" id="licenseNumber" placeholder="مثال: LY-LIC-2026-000001" required>
+                                </div>
 
-                <div>
-                    <label for="licenseType">نوع الترخيص</label>
-                    <select id="licenseType" required>
-                        <option value="إذن مزاولة">إذن مزاولة</option>
-                        <option value="تجديد إذن مزاولة">تجديد إذن مزاولة</option>
-                        <option value="ترخيص مؤقت">ترخيص مؤقت</option>
-                        <option value="ترخيص نهائي">ترخيص نهائي</option>
-                    </select>
-                </div>
+                                <div>
+                                    <label for="licenseType">نوع الترخيص</label>
+                                    <select id="licenseType" required>
+                                        <option value="إذن مزاولة">إذن مزاولة</option>
+                                        <option value="تجديد إذن مزاولة">تجديد إذن مزاولة</option>
+                                        <option value="ترخيص مؤقت">ترخيص مؤقت</option>
+                                        <option value="ترخيص نهائي">ترخيص نهائي</option>
+                                    </select>
+                                </div>
 
-                <div>
-                    <label for="licenseStatusInput">حالة الترخيص</label>
-                    <select id="licenseStatusInput" required>
-                        <option value="Active">ساري</option>
-                        <option value="Expired">منتهي</option>
-                        <option value="Pending">قيد الإجراء</option>
-                        <option value="Suspended">موقوف</option>
-                    </select>
-                </div>
+                                <div>
+                                    <label for="licenseStatusInput">حالة الترخيص</label>
+                                    <select id="licenseStatusInput" required>
+                                        <option value="Active">ساري</option>
+                                        <option value="Expired">منتهي</option>
+                                        <option value="Pending">قيد الإجراء</option>
+                                        <option value="Suspended">موقوف</option>
+                                    </select>
+                                </div>
 
-                <div>
-                    <label for="licenseIssueDate">تاريخ الإصدار</label>
-                    <input type="date" id="licenseIssueDate" required>
-                </div>
+                                <div>
+                                    <label for="licenseIssueDate">تاريخ الإصدار</label>
+                                    <input type="date" id="licenseIssueDate" required>
+                                </div>
 
-                <div>
-                    <label for="licenseExpiryDate">تاريخ الانتهاء</label>
-                    <input type="date" id="licenseExpiryDate" required>
-                </div>
-            </div>
-        </div>
+                                <div>
+                                    <label for="licenseExpiryDate">تاريخ الانتهاء</label>
+                                    <input type="date" id="licenseExpiryDate" required>
+                                </div>
+                            </div>
+                        </div>
 
-        <div class="form-section">
-            <h3>ثانياً: بيانات التجديد والملاحظات</h3>
+                        <div class="form-section">
+                            <h3>ثانياً: بيانات التجديد والملاحظات</h3>
 
-            <div class="form-grid">
-                <div>
-                    <label for="renewalCount">عدد مرات التجديد</label>
-                    <input type="number" id="renewalCount" min="0" value="0">
-                </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="renewalCount">عدد مرات التجديد</label>
+                                    <input type="number" id="renewalCount" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="licenseDocument">مرفق الترخيص</label>
-                    <input type="file" id="licenseDocument">
-                </div>
+                                <div>
+                                    <label for="licenseDocument">مرفق الترخيص</label>
+                                    <input type="file" id="licenseDocument">
+                                </div>
 
-                <div style="grid-column: span 2;">
-                    <label for="licenseNotes">ملاحظات</label>
-                    <textarea id="licenseNotes" placeholder="أي ملاحظات حول الترخيص أو التجديد"></textarea>
-                </div>
-            </div>
+                                <div style="grid-column: span 2;">
+                                    <label for="licenseNotes">ملاحظات</label>
+                                    <textarea id="licenseNotes" placeholder="أي ملاحظات حول الترخيص أو التجديد"></textarea>
+                                </div>
+                            </div>
 
-            <p class="file-note">
-                رفع ملف الترخيص للتجربة فقط حالياً. الحفظ الفعلي للملفات سيتم عند ربط النظام بالخادم.
-            </p>
-        </div>
+                            <p class="file-note">
+                                رفع ملف الترخيص للتجربة فقط حالياً. الحفظ الفعلي للملفات سيتم عند ربط النظام بالخادم.
+                            </p>
+                        </div>
 
-        <div class="form-actions">
-            <button type="submit">حفظ الترخيص</button>
-            <button type="reset" class="secondary-button">مسح البيانات</button>
-        </div>
+                        <div class="form-actions">
+                            <button type="submit">حفظ الترخيص</button>
+                            <button type="reset" class="secondary-button">مسح البيانات</button>
+                        </div>
 
-    </form>
+                    </form>
 
-    <div class="form-section licenses-list-section">
-        <h3>سجل التراخيص</h3>
+                    <div class="form-section licenses-list-section">
+                        <h3>سجل التراخيص</h3>
 
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>رقم الترخيص</th>
-                        <th>اسم المرفق</th>
-                        <th>نوع الترخيص</th>
-                        <th>تاريخ الإصدار</th>
-                        <th>تاريخ الانتهاء</th>
-                        <th>الحالة</th>
-                        <th>عدد التجديدات</th>
-                        <th>المرفق</th>
-                    </tr>
-                </thead>
-                <tbody id="licensesTable"></tbody>
-            </table>
-        </div>
-    </div>
-</section>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>رقم الترخيص</th>
+                                        <th>اسم المرفق</th>
+                                        <th>نوع الترخيص</th>
+                                        <th>تاريخ الإصدار</th>
+                                        <th>تاريخ الانتهاء</th>
+                                        <th>الحالة</th>
+                                        <th>عدد التجديدات</th>
+                                        <th>المرفق</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="licensesTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
 
                 <!-- الإشغال الشهري -->
-<section id="occupancy" class="section">
-    <div class="section-header">
-        <h2>الإشغال الشهري والليالي السياحية</h2>
-        <p>إدخال واحتساب مؤشرات الإشغال الشهري لكل مرفق إيواء سياحي وفق منهجية الإحصاءات السياحية</p>
-    </div>
+                <section id="occupancy" class="section">
+                    <div class="section-header">
+                        <h2>الإشغال الشهري والليالي السياحية</h2>
+                        <p>إدخال واحتساب مؤشرات الإشغال الشهري لكل مرفق إيواء سياحي وفق منهجية الإحصاءات السياحية</p>
+                    </div>
 
-    <form id="occupancyForm">
+                    <form id="occupancyForm">
 
-        <!-- بيانات المرفق والفترة -->
-        <div class="form-section">
-            <h3>أولاً: بيانات المرفق والفترة الإحصائية</h3>
+                        <!-- بيانات المرفق والفترة -->
+                        <div class="form-section">
+                            <h3>أولاً: بيانات المرفق والفترة الإحصائية</h3>
 
-            <div class="form-grid">
-                <div>
-                    <label for="occupancyFacility">اسم المرفق</label>
-                    <select id="occupancyFacility" required>
-                        <option value="">اختر المرفق...</option>
-                    </select>
-                </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="occupancyFacility">اسم المرفق</label>
+                                    <select id="occupancyFacility" required>
+                                        <option value="">اختر المرفق...</option>
+                                    </select>
+                                </div>
 
-                <div>
-                    <label for="occupancyYear">السنة</label>
-                    <input type="number" id="occupancyYear" min="2020" max="2100" value="2026" required>
-                </div>
+                                <div>
+                                    <label for="occupancyYear">السنة</label>
+                                    <input type="number" id="occupancyYear" min="2020" max="2100" value="2026" required>
+                                </div>
 
-                <div>
-                    <label for="occupancyMonth">الشهر</label>
-                    <select id="occupancyMonth" required>
-                        <option value="1">يناير</option>
-                        <option value="2">فبراير</option>
-                        <option value="3">مارس</option>
-                        <option value="4">أبريل</option>
-                        <option value="5">مايو</option>
-                        <option value="6">يونيو</option>
-                        <option value="7">يوليو</option>
-                        <option value="8">أغسطس</option>
-                        <option value="9">سبتمبر</option>
-                        <option value="10">أكتوبر</option>
-                        <option value="11">نوفمبر</option>
-                        <option value="12">ديسمبر</option>
-                    </select>
-                </div>
+                                <div>
+                                    <label for="occupancyMonth">الشهر</label>
+                                    <select id="occupancyMonth" required>
+                                        <option value="1">يناير</option>
+                                        <option value="2">فبراير</option>
+                                        <option value="3">مارس</option>
+                                        <option value="4">أبريل</option>
+                                        <option value="5">مايو</option>
+                                        <option value="6">يونيو</option>
+                                        <option value="7">يوليو</option>
+                                        <option value="8">أغسطس</option>
+                                        <option value="9">سبتمبر</option>
+                                        <option value="10">أكتوبر</option>
+                                        <option value="11">نوفمبر</option>
+                                        <option value="12">ديسمبر</option>
+                                    </select>
+                                </div>
 
-                <div>
-                    <label for="monthDays">عدد أيام الشهر</label>
-                    <input type="number" id="monthDays" min="28" max="31" value="31" required>
-                </div>
+                                <div>
+                                    <label for="monthDays">عدد أيام الشهر</label>
+                                    <input type="number" id="monthDays" min="28" max="31" value="31" required>
+                                </div>
 
-                <div>
-                    <label for="occupancyRooms">عدد الغرف</label>
-                    <input type="number" id="occupancyRooms" min="0" value="0" required>
-                </div>
+                                <div>
+                                    <label for="occupancyRooms">عدد الغرف</label>
+                                    <input type="number" id="occupancyRooms" min="0" value="0" required>
+                                </div>
 
-                <div>
-                    <label for="occupancyBeds">عدد الأسرة</label>
-                    <input type="number" id="occupancyBeds" min="0" value="0" required>
-                </div>
-            </div>
-        </div>
+                                <div>
+                                    <label for="occupancyBeds">عدد الأسرة</label>
+                                    <input type="number" id="occupancyBeds" min="0" value="0" required>
+                                </div>
+                            </div>
+                        </div>
 
-        <!-- عدد النزلاء -->
-        <div class="form-section">
-            <h3>ثانياً: عدد النزلاء خلال الشهر</h3>
+                        <!-- عدد النزلاء -->
+                        <div class="form-section">
+                            <h3>ثانياً: عدد النزلاء خلال الشهر</h3>
 
-            <div class="form-grid">
-                <div>
-                    <label for="libyanGuests">نزلاء ليبيون</label>
-                    <input type="number" id="libyanGuests" min="0" value="0">
-                </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="libyanGuests">نزلاء ليبيون</label>
+                                    <input type="number" id="libyanGuests" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="arabGuests">نزلاء عرب</label>
-                    <input type="number" id="arabGuests" min="0" value="0">
-                </div>
+                                <div>
+                                    <label for="arabGuests">نزلاء عرب</label>
+                                    <input type="number" id="arabGuests" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="foreignGuests">نزلاء أجانب</label>
-                    <input type="number" id="foreignGuests" min="0" value="0">
-                </div>
+                                <div>
+                                    <label for="foreignGuests">نزلاء أجانب</label>
+                                    <input type="number" id="foreignGuests" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="totalGuests">إجمالي النزلاء</label>
-                    <input type="number" id="totalGuests" value="0" readonly>
-                </div>
-            </div>
-        </div>
+                                <div>
+                                    <label for="totalGuests">إجمالي النزلاء</label>
+                                    <input type="number" id="totalGuests" value="0" readonly>
+                                </div>
+                            </div>
+                        </div>
 
-        <!-- الليالي السياحية -->
-        <div class="form-section">
-            <h3>ثالثاً: الليالي السياحية / ليالي النزلاء</h3>
+                        <!-- الليالي السياحية -->
+                        <div class="form-section">
+                            <h3>ثالثاً: الليالي السياحية / ليالي النزلاء</h3>
 
-            <div class="form-grid">
-                <div>
-                    <label for="libyanGuestNights">ليالي الليبيين</label>
-                    <input type="number" id="libyanGuestNights" min="0" value="0">
-                </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="libyanGuestNights">ليالي الليبيين</label>
+                                    <input type="number" id="libyanGuestNights" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="arabGuestNights">ليالي العرب</label>
-                    <input type="number" id="arabGuestNights" min="0" value="0">
-                </div>
+                                <div>
+                                    <label for="arabGuestNights">ليالي العرب</label>
+                                    <input type="number" id="arabGuestNights" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="foreignGuestNights">ليالي الأجانب</label>
-                    <input type="number" id="foreignGuestNights" min="0" value="0">
-                </div>
+                                <div>
+                                    <label for="foreignGuestNights">ليالي الأجانب</label>
+                                    <input type="number" id="foreignGuestNights" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="totalGuestNights">إجمالي الليالي السياحية</label>
-                    <input type="number" id="totalGuestNights" value="0" readonly>
-                </div>
-            </div>
-        </div>
+                                <div>
+                                    <label for="totalGuestNights">إجمالي الليالي السياحية</label>
+                                    <input type="number" id="totalGuestNights" value="0" readonly>
+                                </div>
+                            </div>
+                        </div>
 
-        <!-- الليالي المباعة والمؤشرات -->
-        <div class="form-section">
-            <h3>رابعاً: الليالي المباعة ومؤشرات الإشغال</h3>
+                        <!-- الليالي المباعة والمؤشرات -->
+                        <div class="form-section">
+                            <h3>رابعاً: الليالي المباعة ومؤشرات الإشغال</h3>
 
-            <div class="form-grid">
-                <div>
-                    <label for="soldRoomNights">الليالي الغرفية المباعة / المحجوزة</label>
-                    <input type="number" id="soldRoomNights" min="0" value="0">
-                </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="soldRoomNights">الليالي الغرفية المباعة / المحجوزة</label>
+                                    <input type="number" id="soldRoomNights" min="0" value="0">
+                                </div>
 
-                <div>
-                    <label for="availableRoomNights">الليالي الغرفية المتاحة</label>
-                    <input type="number" id="availableRoomNights" value="0" readonly>
-                </div>
+                                <div>
+                                    <label for="availableRoomNights">الليالي الغرفية المتاحة</label>
+                                    <input type="number" id="availableRoomNights" value="0" readonly>
+                                </div>
 
-                <div>
-                    <label for="availableBedNights">الليالي السريرية المتاحة</label>
-                    <input type="number" id="availableBedNights" value="0" readonly>
-                </div>
+                                <div>
+                                    <label for="availableBedNights">الليالي السريرية المتاحة</label>
+                                    <input type="number" id="availableBedNights" value="0" readonly>
+                                </div>
 
-                <div>
-                    <label for="roomOccupancyRate">نسبة إشغال الغرف %</label>
-                    <input type="text" id="roomOccupancyRate" value="0%" readonly>
-                </div>
+                                <div>
+                                    <label for="roomOccupancyRate">نسبة إشغال الغرف %</label>
+                                    <input type="text" id="roomOccupancyRate" value="0%" readonly>
+                                </div>
 
-                <div>
-                    <label for="bedOccupancyRate">نسبة إشغال الأسرة %</label>
-                    <input type="text" id="bedOccupancyRate" value="0%" readonly>
-                </div>
+                                <div>
+                                    <label for="bedOccupancyRate">نسبة إشغال الأسرة %</label>
+                                    <input type="text" id="bedOccupancyRate" value="0%" readonly>
+                                </div>
 
-                <div>
-                    <label for="averageLengthOfStay">متوسط مدة الإقامة</label>
-                    <input type="text" id="averageLengthOfStay" value="0 ليلة" readonly>
-                </div>
-            </div>
+                                <div>
+                                    <label for="averageLengthOfStay">متوسط مدة الإقامة</label>
+                                    <input type="text" id="averageLengthOfStay" value="0 ليلة" readonly>
+                                </div>
+                            </div>
 
-            <p class="file-note">
-                يتم احتساب المؤشرات تلقائياً حسب المعادلات: إشغال الغرف = الليالي الغرفية المباعة ÷ الليالي الغرفية المتاحة × 100، وإشغال الأسرة = إجمالي الليالي السياحية ÷ الليالي السريرية المتاحة × 100.
-            </p>
-        </div>
+                            <p class="file-note">
+                                يتم احتساب المؤشرات تلقائياً حسب المعادلات: إشغال الغرف = الليالي الغرفية المباعة ÷ الليالي الغرفية المتاحة × 100، وإشغال الأسرة = إجمالي الليالي السياحية ÷ الليالي السريرية المتاحة × 100.
+                            </p>
+                        </div>
 
-        <!-- ملاحظات -->
-        <div class="form-section">
-            <h3>خامساً: ملاحظات التقرير الشهري</h3>
+                        <!-- ملاحظات -->
+                        <div class="form-section">
+                            <h3>خامساً: ملاحظات التقرير الشهري</h3>
 
-            <div class="form-grid">
-                <div style="grid-column: span 4;">
-                    <label for="occupancyNotes">ملاحظات</label>
-                    <textarea id="occupancyNotes" placeholder="أي ملاحظات حول الشهر، الإغلاق، الصيانة، المواسم، أو أسباب انخفاض/ارتفاع الإشغال"></textarea>
-                </div>
-            </div>
-        </div>
+                            <div class="form-grid">
+                                <div style="grid-column: span 4;">
+                                    <label for="occupancyNotes">ملاحظات</label>
+                                    <textarea id="occupancyNotes" placeholder="أي ملاحظات حول الشهر، الإغلاق، الصيانة، المواسم، أو أسباب انخفاض/ارتفاع الإشغال"></textarea>
+                                </div>
+                            </div>
+                        </div>
 
-        <div class="form-actions">
-            <button type="submit">حفظ تقرير الإشغال الشهري</button>
-            <button type="button" class="secondary-button" onclick="calculateOccupancyIndicators()">احتساب المؤشرات</button>
-            <button type="reset" class="secondary-button">مسح البيانات</button>
-        </div>
+                        <div class="form-actions">
+                            <button type="submit">حفظ تقرير الإشغال الشهري</button>
+                            <button type="button" class="secondary-button" onclick="calculateOccupancyIndicators()">احتساب المؤشرات</button>
+                            <button type="reset" class="secondary-button">مسح البيانات</button>
+                        </div>
 
-    </form>
+                    </form>
 
-    <!-- سجل الإشغال الشهري -->
-    <div class="form-section">
-        <h3>سجل الإشغال الشهري</h3>
+                    <!-- سجل الإشغال الشهري -->
+                    <div class="form-section">
+                        <h3>سجل الإشغال الشهري</h3>
 
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>المرفق</th>
-                        <th>السنة</th>
-                        <th>الشهر</th>
-                        <th>النزلاء</th>
-                        <th>الليالي السياحية</th>
-                        <th>الليالي الغرفية المباعة</th>
-                        <th>إشغال الغرف</th>
-                        <th>إشغال الأسرة</th>
-                        <th>متوسط الإقامة</th>
-                    </tr>
-                </thead>
-                <tbody id="occupancyTable"></tbody>
-            </table>
-        </div>
-    </div>
-</section>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>المرفق</th>
+                                        <th>السنة</th>
+                                        <th>الشهر</th>
+                                        <th>النزلاء</th>
+                                        <th>الليالي السياحية</th>
+                                        <th>الليالي الغرفية المباعة</th>
+                                        <th>إشغال الغرف</th>
+                                        <th>إشغال الأسرة</th>
+                                        <th>متوسط الإقامة</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="occupancyTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- التقارير -->
-<section id="reports" class="section">
-    <div class="section-header">
-        <h2>التقارير والإحصائيات</h2>
-        <p>إعداد تقارير شهرية وسنوية حسب المرفق اعتماداً على بيانات الإشغال والليالي السياحية</p>
-    </div>
+                <section id="reports" class="section">
+                    <div class="section-header">
+                        <h2>التقارير والإحصائيات</h2>
+                        <p>إعداد تقارير شهرية وسنوية حسب المرفق اعتماداً على بيانات الإشغال والليالي السياحية</p>
+                    </div>
 
-    <form id="reportForm">
-        <div class="form-section">
-            <h3>أولاً: محددات التقرير</h3>
+                    <form id="reportForm">
+                        <div class="form-section">
+                            <h3>أولاً: محددات التقرير</h3>
 
-            <div class="form-grid">
-                <div>
-                    <label for="reportFacility">اسم المرفق</label>
-                    <select id="reportFacility" required>
-                        <option value="">اختر المرفق...</option>
-                    </select>
-                </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="reportFacilitySearch">اسم المرفق</label>
 
-                <div>
-                    <label for="reportType">نوع التقرير</label>
-                    <select id="reportType" required>
-                        <option value="monthly">تقرير شهري</option>
-                        <option value="annual">تقرير سنوي</option>
-                    </select>
-                </div>
+                                    <input 
+                                        type="text" 
+                                        id="reportFacilitySearch" 
+                                        list="reportFacilitiesList"
+                                        placeholder="اكتب أول حرف من اسم المرفق..."
+                                        autocomplete="off"
+                                        required
+                                    >
 
-                <div>
-                    <label for="reportYear">السنة</label>
-                    <input type="number" id="reportYear" min="2020" max="2100" value="2026" required>
-                </div>
+                                    <datalist id="reportFacilitiesList"></datalist>
 
-                <div id="reportMonthContainer">
-                    <label for="reportMonth">الشهر</label>
-                    <select id="reportMonth">
-                        <option value="1">يناير</option>
-                        <option value="2">فبراير</option>
-                        <option value="3">مارس</option>
-                        <option value="4">أبريل</option>
-                        <option value="5">مايو</option>
-                        <option value="6">يونيو</option>
-                        <option value="7">يوليو</option>
-                        <option value="8">أغسطس</option>
-                        <option value="9">سبتمبر</option>
-                        <option value="10">أكتوبر</option>
-                        <option value="11">نوفمبر</option>
-                        <option value="12">ديسمبر</option>
-                    </select>
-                </div>
-            </div>
+                                    <input type="hidden" id="reportFacility">
+                                </div>
 
-            <div class="form-actions">
-                <button type="submit">عرض التقرير</button>
-                <button type="button" class="secondary-button" onclick="exportReportToExcel()">تصدير Excel</button>
-                <button type="button" class="secondary-button" onclick="printReport()">طباعة التقرير</button>
-            </div>
-        </div>
-    </form>
+                                <div>
+                                    <label for="reportType">نوع التقرير</label>
+                                    <select id="reportType" required>
+                                        <option value="monthly">تقرير شهري</option>
+                                        <option value="annual">تقرير سنوي</option>
+                                    </select>
+                                </div>
 
-    <div id="reportOutput" class="form-section">
-        <h3>نتائج التقرير</h3>
+                                <div>
+                                    <label for="reportYear">السنة</label>
+                                    <input type="number" id="reportYear" min="2020" max="2100" value="2026" required>
+                                </div>
 
-        <div class="cards">
-            <div class="card">
-                <h3>إجمالي النزلاء</h3>
-                <p id="reportTotalGuests">0</p>
-            </div>
+                                <div id="reportMonthContainer">
+                                    <label for="reportMonth">الشهر</label>
+                                    <select id="reportMonth">
+                                        <option value="1">يناير</option>
+                                        <option value="2">فبراير</option>
+                                        <option value="3">مارس</option>
+                                        <option value="4">أبريل</option>
+                                        <option value="5">مايو</option>
+                                        <option value="6">يونيو</option>
+                                        <option value="7">يوليو</option>
+                                        <option value="8">أغسطس</option>
+                                        <option value="9">سبتمبر</option>
+                                        <option value="10">أكتوبر</option>
+                                        <option value="11">نوفمبر</option>
+                                        <option value="12">ديسمبر</option>
+                                    </select>
+                                </div>
+                            </div>
 
-            <div class="card">
-                <h3>النزلاء الليبيون</h3>
-                <p id="reportLibyanGuests">0</p>
-            </div>
+                            <div class="form-actions">
+                                <button type="submit">عرض التقرير</button>
+                                <button type="button" class="secondary-button" onclick="exportReportToExcel()">تصدير Excel</button>
+                                <button type="button" class="secondary-button" onclick="printReport()">طباعة التقرير</button>
+                            </div>
+                        </div>
+                    </form>
 
-            <div class="card">
-                <h3>النزلاء العرب</h3>
-                <p id="reportArabGuests">0</p>
-            </div>
+                    <div id="reportOutput" class="form-section">
+                        <h3>نتائج التقرير</h3>
 
-            <div class="card">
-                <h3>النزلاء الأجانب</h3>
-                <p id="reportForeignGuests">0</p>
-            </div>
+                        <div class="cards">
+                            <div class="card">
+                                <h3>إجمالي النزلاء</h3>
+                                <p id="reportTotalGuests">0</p>
+                            </div>
 
-            <div class="card">
-                <h3>الليالي السياحية</h3>
-                <p id="reportGuestNights">0</p>
-            </div>
+                            <div class="card">
+                                <h3>النزلاء الليبيون</h3>
+                                <p id="reportLibyanGuests">0</p>
+                            </div>
 
-            <div class="card">
-                <h3>الليالي الغرفية المباعة</h3>
-                <p id="reportSoldRoomNights">0</p>
-            </div>
+                            <div class="card">
+                                <h3>النزلاء العرب</h3>
+                                <p id="reportArabGuests">0</p>
+                            </div>
 
-            <div class="card">
-                <h3>متوسط إشغال الغرف</h3>
-                <p id="reportRoomOccupancy">0%</p>
-            </div>
+                            <div class="card">
+                                <h3>النزلاء الأجانب</h3>
+                                <p id="reportForeignGuests">0</p>
+                            </div>
 
-            <div class="card">
-                <h3>متوسط إشغال الأسرة</h3>
-                <p id="reportBedOccupancy">0%</p>
-            </div>
+                            <div class="card">
+                                <h3>الليالي السياحية</h3>
+                                <p id="reportGuestNights">0</p>
+                            </div>
 
-            <div class="card">
-                <h3>متوسط مدة الإقامة</h3>
-                <p id="reportAverageStay">0</p>
-            </div>
-        </div>
+                            <div class="card">
+                                <h3>الليالي الغرفية المباعة</h3>
+                                <p id="reportSoldRoomNights">0</p>
+                            </div>
 
-        <div class="table-wrapper" style="margin-top: 25px;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>المرفق</th>
-                        <th>السنة</th>
-                        <th>الشهر</th>
-                        <th>ليبيون</th>
-                        <th>عرب</th>
-                        <th>أجانب</th>
-                        <th>إجمالي النزلاء</th>
-                        <th>الليالي السياحية</th>
-                        <th>الليالي الغرفية المباعة</th>
-                        <th>إشغال الغرف</th>
-                        <th>إشغال الأسرة</th>
-                        <th>متوسط الإقامة</th>
-                    </tr>
-                </thead>
-                <tbody id="reportTable"></tbody>
-            </table>
-        </div>
-    </div>
-</section>
+                            <div class="card">
+                                <h3>متوسط إشغال الغرف</h3>
+                                <p id="reportRoomOccupancy">0%</p>
+                            </div>
+
+                            <div class="card">
+                                <h3>متوسط إشغال الأسرة</h3>
+                                <p id="reportBedOccupancy">0%</p>
+                            </div>
+
+                            <div class="card">
+                                <h3>متوسط مدة الإقامة</h3>
+                                <p id="reportAverageStay">0 ليلة</p>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper" style="margin-top: 25px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>المرفق</th>
+                                        <th>السنة</th>
+                                        <th>الشهر</th>
+                                        <th>ليبيون</th>
+                                        <th>عرب</th>
+                                        <th>أجانب</th>
+                                        <th>إجمالي النزلاء</th>
+                                        <th>الليالي السياحية</th>
+                                        <th>الليالي الغرفية المباعة</th>
+                                        <th>إشغال الغرف</th>
+                                        <th>إشغال الأسرة</th>
+                                        <th>متوسط الإقامة</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
 
             </main>
         </div>
