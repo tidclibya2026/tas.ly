@@ -5,13 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة الإيواء السياحي الليبية TAS.LY</title>
 
-    <!-- الخط -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-
-    <!-- Leaflet Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-    <!-- ملف التنسيق -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -138,7 +133,6 @@
 
                     <form id="facilityForm">
 
-                        <!-- البيانات الأساسية -->
                         <div class="form-section">
                             <h3>أولاً: البيانات الأساسية</h3>
 
@@ -181,7 +175,6 @@
                             </div>
                         </div>
 
-                        <!-- بيانات الإدارة والاتصال -->
                         <div class="form-section">
                             <h3>ثانياً: بيانات الإدارة والاتصال</h3>
 
@@ -218,7 +211,6 @@
                             </div>
                         </div>
 
-                        <!-- التصنيف والحالة -->
                         <div class="form-section">
                             <h3>ثالثاً: التصنيف والحالة</h3>
 
@@ -266,7 +258,6 @@
                             </div>
                         </div>
 
-                        <!-- تفاصيل الفندق -->
                         <div id="hotelFields" class="form-section facility-type-fields">
                             <h3>رابعاً: الطاقة الاستيعابية للفندق</h3>
 
@@ -298,7 +289,6 @@
                             </div>
                         </div>
 
-                        <!-- تفاصيل القرية أو المنتجع -->
                         <div id="villageResortFields" class="form-section facility-type-fields hidden">
                             <h3>رابعاً: الطاقة الاستيعابية للقرية / المنتجع</h3>
 
@@ -325,7 +315,6 @@
                             </div>
                         </div>
 
-                        <!-- تفاصيل الشقق الفندقية -->
                         <div id="apartmentsFields" class="form-section facility-type-fields hidden">
                             <h3>رابعاً: الطاقة الاستيعابية للشقق الفندقية</h3>
 
@@ -347,7 +336,6 @@
                             </div>
                         </div>
 
-                        <!-- تفاصيل النزل -->
                         <div id="hostelFields" class="form-section facility-type-fields hidden">
                             <h3>رابعاً: الطاقة الاستيعابية للنزل</h3>
 
@@ -374,7 +362,6 @@
                             </div>
                         </div>
 
-                        <!-- الموقع الجغرافي -->
                         <div class="form-section">
                             <h3>خامساً: الموقع الجغرافي</h3>
 
@@ -397,7 +384,6 @@
                             </p>
                         </div>
 
-                        <!-- المستندات -->
                         <div class="form-section">
                             <h3>سادساً: المستندات</h3>
 
@@ -423,7 +409,6 @@
                             </p>
                         </div>
 
-                        <!-- أزرار الحفظ -->
                         <div class="form-actions">
                             <button type="submit">حفظ المرفق وتوليد الكود الوطني</button>
                             <button type="reset" class="secondary-button">مسح النموذج</button>
@@ -440,7 +425,6 @@
                     </div>
 
                     <form id="licenseForm">
-
                         <div class="form-section">
                             <h3>أولاً: بيانات المرفق والترخيص</h3>
 
@@ -508,20 +492,15 @@
                                     <textarea id="licenseNotes" placeholder="أي ملاحظات حول الترخيص أو التجديد"></textarea>
                                 </div>
                             </div>
-
-                            <p class="file-note">
-                                رفع ملف الترخيص للتجربة فقط حالياً. الحفظ الفعلي للملفات سيتم عند ربط النظام بالخادم.
-                            </p>
                         </div>
 
                         <div class="form-actions">
                             <button type="submit">حفظ الترخيص</button>
                             <button type="reset" class="secondary-button">مسح البيانات</button>
                         </div>
-
                     </form>
 
-                    <div class="form-section licenses-list-section">
+                    <div class="form-section">
                         <h3>سجل التراخيص</h3>
 
                         <div class="table-wrapper">
@@ -553,7 +532,6 @@
 
                     <form id="occupancyForm">
 
-                        <!-- بيانات المرفق والفترة -->
                         <div class="form-section">
                             <h3>أولاً: بيانات المرفق والفترة الإحصائية</h3>
 
@@ -605,7 +583,6 @@
                             </div>
                         </div>
 
-                        <!-- عدد النزلاء -->
                         <div class="form-section">
                             <h3>ثانياً: عدد النزلاء خلال الشهر</h3>
 
@@ -632,7 +609,6 @@
                             </div>
                         </div>
 
-                        <!-- الليالي السياحية -->
                         <div class="form-section">
                             <h3>ثالثاً: الليالي السياحية / ليالي النزلاء</h3>
 
@@ -659,7 +635,6 @@
                             </div>
                         </div>
 
-                        <!-- الليالي المباعة والمؤشرات -->
                         <div class="form-section">
                             <h3>رابعاً: الليالي المباعة ومؤشرات الإشغال</h3>
 
@@ -694,13 +669,8 @@
                                     <input type="text" id="averageLengthOfStay" value="0 ليلة" readonly>
                                 </div>
                             </div>
-
-                            <p class="file-note">
-                                يتم احتساب المؤشرات تلقائياً حسب المعادلات: إشغال الغرف = الليالي الغرفية المباعة ÷ الليالي الغرفية المتاحة × 100، وإشغال الأسرة = إجمالي الليالي السياحية ÷ الليالي السريرية المتاحة × 100.
-                            </p>
                         </div>
 
-                        <!-- ملاحظات -->
                         <div class="form-section">
                             <h3>خامساً: ملاحظات التقرير الشهري</h3>
 
@@ -717,10 +687,8 @@
                             <button type="button" class="secondary-button" onclick="calculateOccupancyIndicators()">احتساب المؤشرات</button>
                             <button type="reset" class="secondary-button">مسح البيانات</button>
                         </div>
-
                     </form>
 
-                    <!-- سجل الإشغال الشهري -->
                     <div class="form-section">
                         <h3>سجل الإشغال الشهري</h3>
 
@@ -753,25 +721,24 @@
                     </div>
 
                     <form id="reportForm">
-                        <div class="form-section">
+                        <div class="form-section report-filter-card">
                             <h3>أولاً: محددات التقرير</h3>
 
                             <div class="form-grid">
-                                <div>
+                                <div class="autocomplete-box">
                                     <label for="reportFacilitySearch">اسم المرفق</label>
 
                                     <input 
                                         type="text" 
-                                        id="reportFacilitySearch" 
-                                        list="reportFacilitiesList"
-                                        placeholder="اكتب أول حرف من اسم المرفق..."
+                                        id="reportFacilitySearch"
+                                        placeholder="اكتب اسم المرفق أو أول حرف..."
                                         autocomplete="off"
                                         required
                                     >
 
-                                    <datalist id="reportFacilitiesList"></datalist>
-
                                     <input type="hidden" id="reportFacility">
+
+                                    <div id="reportFacilityResults" class="search-results hidden"></div>
                                 </div>
 
                                 <div>
@@ -814,10 +781,10 @@
                         </div>
                     </form>
 
-                    <div id="reportOutput" class="form-section">
+                    <div id="reportOutput" class="form-section report-output-card">
                         <h3>نتائج التقرير</h3>
 
-                        <div class="cards">
+                        <div class="cards report-cards">
                             <div class="card">
                                 <h3>إجمالي النزلاء</h3>
                                 <p id="reportTotalGuests">0</p>
@@ -892,10 +859,7 @@
         </div>
     </div>
 
-    <!-- Leaflet Map -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- ملف التشغيل -->
     <script src="js/app.js"></script>
 </body>
 </html>
