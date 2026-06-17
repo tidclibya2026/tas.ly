@@ -84,6 +84,28 @@ function getFacilityDisplayName(facility) {
     return `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
 }
 
+function normalizeArabicText(text) {
+    return String(text || "")
+        .toLowerCase()
+        .replace(/[أإآا]/g, "ا")
+        .replace(/[ى]/g, "ي")
+        .replace(/[ة]/g, "ه")
+        .replace(/[ؤ]/g, "و")
+        .replace(/[ئ]/g, "ي")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function getFacilitySearchText(facility) {
+    return normalizeArabicText([
+        facility.name,
+        facility.type,
+        facility.city,
+        facility.municipality,
+        facility.facility_code
+    ].join(" "));
+}
+
 // ===============================
 // تحميل وحفظ بيانات المرافق
 // ===============================
@@ -1049,18 +1071,6 @@ function resetReportSearch() {
     }
 }
 
-function normalizeArabicText(text) {
-    return String(text || "")
-        .toLowerCase()
-        .replace(/[أإآا]/g, "ا")
-        .replace(/[ى]/g, "ي")
-        .replace(/[ة]/g, "ه")
-        .replace(/[ؤ]/g, "و")
-        .replace(/[ئ]/g, "ي")
-        .replace(/\s+/g, " ")
-        .trim();
-}
-
 function filterReportFacilities() {
     const searchInput = document.getElementById("reportFacilitySearch");
     const hiddenInput = document.getElementById("reportFacility");
@@ -1088,15 +1098,7 @@ function filterReportFacilities() {
     }
 
     const matchedFacilities = facilities.filter(facility => {
-        const searchableText = normalizeArabicText([
-            facility.name,
-            facility.type,
-            facility.city,
-            facility.municipality,
-            facility.facility_code
-        ].join(" "));
-
-        return searchableText.includes(searchText);
+        return getFacilitySearchText(facility).includes(searchText);
     });
 
     if (matchedFacilities.length === 0) {
@@ -1137,6 +1139,33 @@ function selectReportFacility(facility) {
     }
 }
 
+function findFacilityFromReportSearchText() {
+    const searchTextRaw = getTextValue("reportFacilitySearch");
+    const searchText = normalizeArabicText(searchTextRaw);
+
+    if (!searchText) {
+        return null;
+    }
+
+    const exactMatch = facilities.find(facility => {
+        return normalizeArabicText(getFacilityDisplayName(facility)) === searchText;
+    });
+
+    if (exactMatch) {
+        return exactMatch;
+    }
+
+    const matchedFacilities = facilities.filter(facility => {
+        return getFacilitySearchText(facility).includes(searchText);
+    });
+
+    if (matchedFacilities.length === 1) {
+        return matchedFacilities[0];
+    }
+
+    return null;
+}
+
 function toggleReportMonth() {
     const reportType = getTextValue("reportType");
     const monthContainer = document.getElementById("reportMonthContainer");
@@ -1158,15 +1187,26 @@ function handleReportSubmit(event) {
 }
 
 function generateReport() {
-    const facilityCode = getTextValue("reportFacility");
+    let facilityCode = getTextValue("reportFacility");
+
+    if (!facilityCode) {
+        const autoFacility = findFacilityFromReportSearchText();
+
+        if (autoFacility) {
+            selectReportFacility(autoFacility);
+            facilityCode = autoFacility.facility_code;
+        }
+    }
+
+    if (!facilityCode) {
+        filterReportFacilities();
+        alert("يرجى اختيار المرفق من القائمة المقترحة");
+        return;
+    }
+
     const reportType = getTextValue("reportType");
     const reportYear = getNumberValue("reportYear");
     const reportMonth = getNumberValue("reportMonth");
-
-    if (!facilityCode) {
-        alert("يرجى اختيار المرفق من نتائج البحث");
-        return;
-    }
 
     let filteredReports = occupancyReports.filter(report => {
         return report.facility_code === facilityCode && Number(report.year) === reportYear;
@@ -1506,6 +1546,7 @@ function bindEvents() {
     if (reportFacilitySearch) {
         reportFacilitySearch.addEventListener("input", filterReportFacilities);
         reportFacilitySearch.addEventListener("focus", filterReportFacilities);
+
         reportFacilitySearch.addEventListener("keydown", function(event) {
             if (event.key === "Escape") {
                 const resultsBox = document.getElementById("reportFacilityResults");
