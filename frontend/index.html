@@ -745,16 +745,137 @@
     </div>
 </section>
                 <!-- التقارير -->
-                <section id="reports" class="section">
-                    <div class="section-header">
-                        <h2>التقارير والإحصائيات</h2>
-                        <p>إصدار التقارير الإحصائية بصيغ PDF وExcel.</p>
-                    </div>
+<section id="reports" class="section">
+    <div class="section-header">
+        <h2>التقارير والإحصائيات</h2>
+        <p>إعداد تقارير شهرية وسنوية حسب المرفق اعتماداً على بيانات الإشغال والليالي السياحية</p>
+    </div>
 
-                    <div class="placeholder-box">
-                        سيتم تطوير شاشة التقارير بعد تثبيت نموذج البيانات النهائي.
-                    </div>
-                </section>
+    <form id="reportForm">
+        <div class="form-section">
+            <h3>أولاً: محددات التقرير</h3>
+
+            <div class="form-grid">
+                <div>
+                    <label for="reportFacility">اسم المرفق</label>
+                    <select id="reportFacility" required>
+                        <option value="">اختر المرفق...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="reportType">نوع التقرير</label>
+                    <select id="reportType" required>
+                        <option value="monthly">تقرير شهري</option>
+                        <option value="annual">تقرير سنوي</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="reportYear">السنة</label>
+                    <input type="number" id="reportYear" min="2020" max="2100" value="2026" required>
+                </div>
+
+                <div id="reportMonthContainer">
+                    <label for="reportMonth">الشهر</label>
+                    <select id="reportMonth">
+                        <option value="1">يناير</option>
+                        <option value="2">فبراير</option>
+                        <option value="3">مارس</option>
+                        <option value="4">أبريل</option>
+                        <option value="5">مايو</option>
+                        <option value="6">يونيو</option>
+                        <option value="7">يوليو</option>
+                        <option value="8">أغسطس</option>
+                        <option value="9">سبتمبر</option>
+                        <option value="10">أكتوبر</option>
+                        <option value="11">نوفمبر</option>
+                        <option value="12">ديسمبر</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">عرض التقرير</button>
+                <button type="button" class="secondary-button" onclick="exportReportToExcel()">تصدير Excel</button>
+                <button type="button" class="secondary-button" onclick="printReport()">طباعة التقرير</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="reportOutput" class="form-section">
+        <h3>نتائج التقرير</h3>
+
+        <div class="cards">
+            <div class="card">
+                <h3>إجمالي النزلاء</h3>
+                <p id="reportTotalGuests">0</p>
+            </div>
+
+            <div class="card">
+                <h3>النزلاء الليبيون</h3>
+                <p id="reportLibyanGuests">0</p>
+            </div>
+
+            <div class="card">
+                <h3>النزلاء العرب</h3>
+                <p id="reportArabGuests">0</p>
+            </div>
+
+            <div class="card">
+                <h3>النزلاء الأجانب</h3>
+                <p id="reportForeignGuests">0</p>
+            </div>
+
+            <div class="card">
+                <h3>الليالي السياحية</h3>
+                <p id="reportGuestNights">0</p>
+            </div>
+
+            <div class="card">
+                <h3>الليالي الغرفية المباعة</h3>
+                <p id="reportSoldRoomNights">0</p>
+            </div>
+
+            <div class="card">
+                <h3>متوسط إشغال الغرف</h3>
+                <p id="reportRoomOccupancy">0%</p>
+            </div>
+
+            <div class="card">
+                <h3>متوسط إشغال الأسرة</h3>
+                <p id="reportBedOccupancy">0%</p>
+            </div>
+
+            <div class="card">
+                <h3>متوسط مدة الإقامة</h3>
+                <p id="reportAverageStay">0</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper" style="margin-top: 25px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>المرفق</th>
+                        <th>السنة</th>
+                        <th>الشهر</th>
+                        <th>ليبيون</th>
+                        <th>عرب</th>
+                        <th>أجانب</th>
+                        <th>إجمالي النزلاء</th>
+                        <th>الليالي السياحية</th>
+                        <th>الليالي الغرفية المباعة</th>
+                        <th>إشغال الغرف</th>
+                        <th>إشغال الأسرة</th>
+                        <th>متوسط الإقامة</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTable"></tbody>
+            </table>
+        </div>
+    </div>
+</section>
 
             </main>
         </div>

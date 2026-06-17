@@ -15,6 +15,7 @@ const demoUser = {
 let facilities = [];
 let licenses = [];
 let occupancyReports = [];
+let currentReportRows = [];
 
 let map = null;
 let marker = null;
@@ -52,6 +53,34 @@ function logout() {
 }
 
 // ===============================
+// أدوات عامة
+// ===============================
+
+function getNumberValue(id) {
+    const element = document.getElementById(id);
+    return element ? Number(element.value || 0) : 0;
+}
+
+function getTextValue(id) {
+    const element = document.getElementById(id);
+    return element ? String(element.value || "").trim() : "";
+}
+
+function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.value = value;
+    }
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+// ===============================
 // تحميل وحفظ بيانات المرافق
 // ===============================
 
@@ -67,6 +96,7 @@ async function loadFacilitiesData() {
                 renderFacilitiesTable();
                 populateFacilitySelect();
                 populateOccupancyFacilitySelect();
+                populateReportFacilitySelect();
                 return;
             }
 
@@ -100,6 +130,7 @@ async function loadFacilitiesData() {
         renderFacilitiesTable();
         populateFacilitySelect();
         populateOccupancyFacilitySelect();
+        populateReportFacilitySelect();
 
     } catch (error) {
         console.error("خطأ في تحميل بيانات المرافق:", error);
@@ -110,6 +141,7 @@ async function loadFacilitiesData() {
         renderFacilitiesTable();
         populateFacilitySelect();
         populateOccupancyFacilitySelect();
+        populateReportFacilitySelect();
     }
 }
 
@@ -256,6 +288,12 @@ function showSection(sectionId) {
         populateOccupancyFacilitySelect();
         updateMonthDays();
         renderOccupancyTable();
+    }
+
+    if (sectionId === "reports") {
+        populateReportFacilitySelect();
+        toggleReportMonth();
+        renderReport([]);
     }
 }
 
@@ -479,16 +517,6 @@ function resetMap() {
 // قراءة الطاقة الاستيعابية حسب النوع
 // ===============================
 
-function getNumberValue(id) {
-    const element = document.getElementById(id);
-    return element ? Number(element.value || 0) : 0;
-}
-
-function getTextValue(id) {
-    const element = document.getElementById(id);
-    return element ? String(element.value || "").trim() : "";
-}
-
 function getCapacityByType(type) {
     const capacity = {
         suites: 0,
@@ -606,6 +634,7 @@ function handleFacilitySubmit(event) {
     renderFacilitiesTable();
     populateFacilitySelect();
     populateOccupancyFacilitySelect();
+    populateReportFacilitySelect();
 
     alert(`تم حفظ المرفق بنجاح\nالكود الوطني: ${newFacility.facility_code}`);
 
@@ -841,13 +870,6 @@ function updateMonthDays() {
     calculateOccupancyIndicators();
 }
 
-function setValue(id, value) {
-    const element = document.getElementById(id);
-    if (element) {
-        element.value = value;
-    }
-}
-
 function calculateOccupancyIndicators() {
     const monthDays = getNumberValue("monthDays");
     const rooms = getNumberValue("occupancyRooms");
@@ -1023,6 +1045,302 @@ function getMonthName(month) {
 }
 
 // ===============================
+// شاشة التقارير
+// ===============================
+
+function populateReportFacilitySelect() {
+    const select = document.getElementById("reportFacility");
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `<option value="">اختر المرفق...</option>`;
+
+    if (!Array.isArray(facilities) || facilities.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "لا توجد مرافق محفوظة - أضف مرفقاً أولاً";
+        option.disabled = true;
+        select.appendChild(option);
+        return;
+    }
+
+    facilities.forEach(facility => {
+        const option = document.createElement("option");
+
+        option.value = facility.facility_code;
+        option.textContent = `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
+
+        select.appendChild(option);
+    });
+}
+
+function toggleReportMonth() {
+    const reportType = getTextValue("reportType");
+    const monthContainer = document.getElementById("reportMonthContainer");
+
+    if (!monthContainer) {
+        return;
+    }
+
+    if (reportType === "annual") {
+        monthContainer.classList.add("hidden");
+    } else {
+        monthContainer.classList.remove("hidden");
+    }
+}
+
+function handleReportSubmit(event) {
+    event.preventDefault();
+    generateReport();
+}
+
+function generateReport() {
+    const facilityCode = getTextValue("reportFacility");
+    const reportType = getTextValue("reportType");
+    const reportYear = getNumberValue("reportYear");
+    const reportMonth = getNumberValue("reportMonth");
+
+    if (!facilityCode) {
+        alert("يرجى اختيار المرفق");
+        return;
+    }
+
+    let filteredReports = occupancyReports.filter(report => {
+        return report.facility_code === facilityCode && Number(report.year) === reportYear;
+    });
+
+    if (reportType === "monthly") {
+        filteredReports = filteredReports.filter(report => Number(report.month) === reportMonth);
+    }
+
+    currentReportRows = filteredReports;
+
+    renderReport(filteredReports);
+}
+
+function renderReport(rows) {
+    const tableBody = document.getElementById("reportTable");
+
+    if (!tableBody) {
+        return;
+    }
+
+    tableBody.innerHTML = "";
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        setReportSummary(0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td colspan="12">لا توجد بيانات مطابقة لمحددات التقرير</td>
+        `;
+        tableBody.appendChild(row);
+        return;
+    }
+
+    const totalLibyanGuests = rows.reduce((sum, item) => sum + Number(item.libyan_guests || 0), 0);
+    const totalArabGuests = rows.reduce((sum, item) => sum + Number(item.arab_guests || 0), 0);
+    const totalForeignGuests = rows.reduce((sum, item) => sum + Number(item.foreign_guests || 0), 0);
+    const totalGuests = rows.reduce((sum, item) => sum + Number(item.total_guests || 0), 0);
+    const totalGuestNights = rows.reduce((sum, item) => sum + Number(item.total_guest_nights || 0), 0);
+    const totalSoldRoomNights = rows.reduce((sum, item) => sum + Number(item.sold_room_nights || 0), 0);
+
+    const totalAvailableRoomNights = rows.reduce((sum, item) => sum + Number(item.available_room_nights || 0), 0);
+    const totalAvailableBedNights = rows.reduce((sum, item) => sum + Number(item.available_bed_nights || 0), 0);
+
+    const averageRoomOccupancy = totalAvailableRoomNights > 0
+        ? (totalSoldRoomNights / totalAvailableRoomNights) * 100
+        : 0;
+
+    const averageBedOccupancy = totalAvailableBedNights > 0
+        ? (totalGuestNights / totalAvailableBedNights) * 100
+        : 0;
+
+    const averageStay = totalGuests > 0
+        ? totalGuestNights / totalGuests
+        : 0;
+
+    setReportSummary(
+        totalGuests,
+        totalLibyanGuests,
+        totalArabGuests,
+        totalForeignGuests,
+        totalGuestNights,
+        totalSoldRoomNights,
+        averageRoomOccupancy,
+        averageBedOccupancy,
+        averageStay
+    );
+
+    rows.forEach(report => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${report.facility_name || "-"}</td>
+            <td>${report.year || "-"}</td>
+            <td>${getMonthName(report.month)}</td>
+            <td>${report.libyan_guests || 0}</td>
+            <td>${report.arab_guests || 0}</td>
+            <td>${report.foreign_guests || 0}</td>
+            <td>${report.total_guests || 0}</td>
+            <td>${report.total_guest_nights || 0}</td>
+            <td>${report.sold_room_nights || 0}</td>
+            <td>${report.room_occupancy_rate || "0%"}</td>
+            <td>${report.bed_occupancy_rate || "0%"}</td>
+            <td>${report.average_length_of_stay || "0 ليلة"}</td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+}
+
+function setReportSummary(
+    totalGuests,
+    libyanGuests,
+    arabGuests,
+    foreignGuests,
+    guestNights,
+    soldRoomNights,
+    roomOccupancy,
+    bedOccupancy,
+    averageStay
+) {
+    setText("reportTotalGuests", totalGuests);
+    setText("reportLibyanGuests", libyanGuests);
+    setText("reportArabGuests", arabGuests);
+    setText("reportForeignGuests", foreignGuests);
+    setText("reportGuestNights", guestNights);
+    setText("reportSoldRoomNights", soldRoomNights);
+    setText("reportRoomOccupancy", `${roomOccupancy.toFixed(2)}%`);
+    setText("reportBedOccupancy", `${bedOccupancy.toFixed(2)}%`);
+    setText("reportAverageStay", `${averageStay.toFixed(2)} ليلة`);
+}
+
+function exportReportToExcel() {
+    if (!currentReportRows || currentReportRows.length === 0) {
+        alert("لا توجد بيانات لتصديرها");
+        return;
+    }
+
+    let csvContent = "\uFEFF";
+    csvContent += "المرفق,السنة,الشهر,ليبيون,عرب,أجانب,إجمالي النزلاء,الليالي السياحية,الليالي الغرفية المباعة,إشغال الغرف,إشغال الأسرة,متوسط الإقامة\n";
+
+    currentReportRows.forEach(report => {
+        csvContent += [
+            report.facility_name || "",
+            report.year || "",
+            getMonthName(report.month),
+            report.libyan_guests || 0,
+            report.arab_guests || 0,
+            report.foreign_guests || 0,
+            report.total_guests || 0,
+            report.total_guest_nights || 0,
+            report.sold_room_nights || 0,
+            report.room_occupancy_rate || "0%",
+            report.bed_occupancy_rate || "0%",
+            report.average_length_of_stay || "0 ليلة"
+        ].join(",") + "\n";
+    });
+
+    const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "tourism_occupancy_report.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function printReport() {
+    const reportOutput = document.getElementById("reportOutput");
+
+    if (!reportOutput) {
+        return;
+    }
+
+    const printWindow = window.open("", "_blank");
+
+    printWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="UTF-8">
+            <title>تقرير الإشغال السياحي</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    direction: rtl;
+                    padding: 30px;
+                    color: #222;
+                }
+
+                h1, h2, h3 {
+                    color: #0277bd;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                }
+
+                th, td {
+                    border: 1px solid #999;
+                    padding: 8px;
+                    text-align: center;
+                    font-size: 13px;
+                }
+
+                th {
+                    background: #0277bd;
+                    color: white;
+                }
+
+                .cards {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 12px;
+                    margin-bottom: 20px;
+                }
+
+                .card {
+                    border: 1px solid #ccc;
+                    padding: 12px;
+                    text-align: center;
+                    border-radius: 8px;
+                }
+
+                .card h3 {
+                    margin: 0 0 8px;
+                    font-size: 14px;
+                }
+
+                .card p {
+                    margin: 0;
+                    font-size: 20px;
+                    font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>منظومة الإيواء السياحي الليبية</h1>
+            <h2>تقرير الإشغال والليالي السياحية</h2>
+            ${reportOutput.innerHTML}
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// ===============================
 // ربط الأحداث
 // ===============================
 
@@ -1043,6 +1361,7 @@ function bindEvents() {
                 renderFacilitiesTable();
                 populateFacilitySelect();
                 populateOccupancyFacilitySelect();
+                populateReportFacilitySelect();
                 renderLicensesTable();
                 renderOccupancyTable();
             } else {
@@ -1114,6 +1433,16 @@ function bindEvents() {
             field.addEventListener("input", calculateOccupancyIndicators);
         }
     });
+
+    const reportForm = document.getElementById("reportForm");
+    if (reportForm) {
+        reportForm.addEventListener("submit", handleReportSubmit);
+    }
+
+    const reportType = document.getElementById("reportType");
+    if (reportType) {
+        reportType.addEventListener("change", toggleReportMonth);
+    }
 }
 
 // ===============================
