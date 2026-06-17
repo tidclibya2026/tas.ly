@@ -243,7 +243,7 @@ body {
 }
 
 /* =========================
-   بطاقات لوحة التحكم
+   بطاقات لوحة التحكم والتقارير
 ========================= */
 
 .cards {
@@ -275,16 +275,22 @@ body {
 }
 
 /* =========================
-   تحسين شاشة إضافة المرفق
+   النماذج والبطاقات
 ========================= */
 
-#addFacility.section {
+#addFacility.section,
+#reports.section,
+#occupancy.section,
+#licenses.section {
     background: #f7fbfd;
     box-shadow: none;
     border: 1px solid #dceaf1;
 }
 
-#addFacility .section-header {
+#addFacility .section-header,
+#reports .section-header,
+#occupancy .section-header,
+#licenses .section-header {
     background: #ffffff;
     border: 1px solid #dceaf1;
     border-radius: 16px;
@@ -293,11 +299,6 @@ body {
     box-shadow: 0 5px 14px rgba(0, 0, 0, 0.04);
 }
 
-#facilityForm {
-    width: 100%;
-}
-
-/* بطاقة كل قسم */
 .form-section {
     background: #ffffff;
     border: 1px solid #dceaf1;
@@ -317,23 +318,15 @@ body {
     border-bottom: 1px dashed #c9dce6;
 }
 
-/* تنظيم الحقول */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(190px, 1fr));
-    gap: 18px 18px;
+    gap: 18px;
     align-items: end;
 }
 
 .form-grid > div {
     min-width: 0;
-}
-
-/* جعل بعض الحقول المهمة أوسع */
-#facilityAddress,
-#facilityWebsite,
-#villageResortExtras {
-    width: 100%;
 }
 
 label {
@@ -385,14 +378,13 @@ input[type="file"] {
     padding: 11px;
 }
 
-/* تحسين حقول النوع الديناميكية */
 .facility-type-fields {
     background: #ffffff;
     border-right-color: #00acc1;
 }
 
 /* =========================
-   أزرار النموذج
+   أزرار النظام
 ========================= */
 
 .form-actions {
@@ -469,6 +461,7 @@ button:hover {
     overflow-x: auto;
     border-radius: 12px;
     border: 1px solid #dceaf1;
+    background: #ffffff;
 }
 
 table {
@@ -501,6 +494,81 @@ tr:hover {
 }
 
 /* =========================
+   البحث الذكي في شاشة التقارير
+========================= */
+
+.autocomplete-box {
+    position: relative;
+}
+
+.search-results {
+    position: absolute;
+    top: 78px;
+    right: 0;
+    left: 0;
+    background: #ffffff;
+    border: 1px solid #cfd8dc;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    max-height: 260px;
+    overflow-y: auto;
+    z-index: 9999;
+}
+
+.search-result-item {
+    padding: 12px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #eef3f6;
+    font-size: 14px;
+    color: #263238;
+    line-height: 1.8;
+    transition: 0.15s ease;
+}
+
+.search-result-item:hover {
+    background: #e3f2fd;
+    color: #015f96;
+}
+
+.search-result-item strong {
+    color: #0277bd;
+}
+
+.search-no-results {
+    padding: 12px 14px;
+    color: #78909c;
+    font-size: 14px;
+}
+
+.report-filter-card {
+    border-right-color: #0277bd;
+}
+
+.report-output-card {
+    border-right-color: #00acc1;
+}
+
+.report-cards {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+#reportFacilitySearch {
+    padding-right: 14px;
+    background: #ffffff;
+}
+
+#reportOutput .card {
+    min-height: 130px;
+}
+
+#reportOutput .card h3 {
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================
    مربعات مؤقتة
 ========================= */
 
@@ -527,7 +595,37 @@ tr:hover {
 }
 
 /* =========================
-   تحسين العرض على الشاشات المتوسطة
+   الطباعة
+========================= */
+
+@media print {
+    body {
+        background: #ffffff;
+    }
+
+    .sidebar,
+    .top-header,
+    .form-actions {
+        display: none !important;
+    }
+
+    .layout {
+        display: block;
+    }
+
+    .content {
+        padding: 0;
+    }
+
+    .section {
+        box-shadow: none;
+        border: none;
+        max-width: 100%;
+    }
+}
+
+/* =========================
+   الشاشات المتوسطة
 ========================= */
 
 @media (max-width: 1300px) {
@@ -543,7 +641,7 @@ tr:hover {
 }
 
 /* =========================
-   تجاوب الشاشات الصغيرة
+   الشاشات الصغيرة
 ========================= */
 
 @media (max-width: 992px) {
@@ -620,6 +718,10 @@ tr:hover {
         width: 80px;
         height: 80px;
         font-size: 21px;
+    }
+
+    .search-results {
+        top: 76px;
     }
 }
 
