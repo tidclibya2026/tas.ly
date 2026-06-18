@@ -16,6 +16,7 @@ let facilities = [];
 let licenses = [];
 let occupancyReports = [];
 let currentReportRows = [];
+let facilitiesLoadError = "";
 
 let map = null;
 let marker = null;
@@ -132,22 +133,20 @@ async function loadFacilitiesData() {
     }
 
     try {
-        let response = await fetch("data/facilities.json");
+        const facilitiesDataPath = "../data/facilities.json";
+        const response = await fetch(facilitiesDataPath);
 
         if (!response.ok) {
-            response = await fetch("../data/facilities.json");
-        }
-
-        if (!response.ok) {
-            throw new Error("لم يتم العثور على ملف بيانات المرافق");
+            throw new Error(`تعذر تحميل ملف البيانات ${facilitiesDataPath} - HTTP ${response.status}`);
         }
 
         facilities = await response.json();
 
         if (!Array.isArray(facilities)) {
-            facilities = [];
+            throw new Error("ملف بيانات المرافق لا يحتوي على قائمة صالحة");
         }
 
+        facilitiesLoadError = "";
         saveFacilitiesToLocalStorage();
 
         refreshAllFacilityDropdowns();
@@ -155,6 +154,7 @@ async function loadFacilitiesData() {
         renderFacilitiesTable();
 
     } catch (error) {
+        facilitiesLoadError = error.message || "تعذر تحميل ملف بيانات المرافق";
         console.error("خطأ في تحميل بيانات المرافق:", error);
 
         facilities = [];
@@ -380,7 +380,7 @@ function renderFacilitiesTable() {
 
     if (!Array.isArray(facilities) || facilities.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td colspan="9">لا توجد بيانات مرافق حالياً</td>`;
+        row.innerHTML = `<td colspan="9">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
         tableBody.appendChild(row);
         return;
     }

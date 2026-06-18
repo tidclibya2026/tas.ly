@@ -223,4 +223,3 @@ INSERT INTO municipalities (name_ar, code) VALUES
 ('زوارة', 'ZWR'),
 ('شحات', 'SHA'),
 ('سبها', 'SEB');
-INSERT INTO facility_types ...
