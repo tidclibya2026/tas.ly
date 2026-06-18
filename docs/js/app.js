@@ -16,6 +16,7 @@ let facilities = [];
 let licenses = [];
 let occupancyReports = [];
 let currentReportRows = [];
+let currentEditingFacilityCode = "";
 let facilitiesLoadError = "";
 
 let map = null;
@@ -79,6 +80,45 @@ function setText(id, value) {
     if (element) {
         element.textContent = value;
     }
+}
+
+function setSelectValue(id, value) {
+    const element = document.getElementById(id);
+
+    if (!element) {
+        return;
+    }
+
+    const normalizedValue = String(value || "");
+    const existingOption = Array.from(element.options).find(option => option.value === normalizedValue);
+
+    if (!existingOption && normalizedValue) {
+        const option = document.createElement("option");
+        option.value = normalizedValue;
+        option.textContent = normalizedValue;
+        element.appendChild(option);
+    }
+
+    element.value = normalizedValue;
+}
+
+function escapeHtml(value) {
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function escapeCsvValue(value) {
+    const text = String(value ?? "");
+
+    if (/[",\n]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+    }
+
+    return text;
 }
 
 function getFacilityDisplayName(facility) {
@@ -311,6 +351,7 @@ function loadOccupancyData() {
     }
 
     renderOccupancyTable();
+    updateStatisticsSection();
 }
 
 function saveOccupancyToLocalStorage() {
@@ -411,6 +452,10 @@ function showSection(sectionId) {
         resetReportSearch();
         renderReport([]);
     }
+
+    if (sectionId === "statistics") {
+        updateStatisticsSection();
+    }
 }
 
 // ===============================
@@ -452,6 +497,8 @@ function updateDashboard() {
     activeLicensesElement.textContent = licenses.length > 0
         ? activeLicenses
         : activeLicensesFromFacilities;
+
+    updateStatisticsSection();
 }
 
 // ===============================
@@ -469,7 +516,7 @@ function renderFacilitiesTable() {
 
     if (!Array.isArray(facilities) || facilities.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td colspan="16">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
+        row.innerHTML = `<td colspan="17">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
         tableBody.appendChild(row);
         return;
     }
@@ -494,6 +541,9 @@ function renderFacilitiesTable() {
             <td>${item.foreign_workers || 0}</td>
             <td>${item.classification || "غير مصنف"}</td>
             <td>${item.status || "-"}</td>
+            <td>
+                <button type="button" class="table-action-button" onclick="startFacilityEdit('${item.facility_code || ""}')">تعديل</button>
+            </td>
         `;
 
         tableBody.appendChild(row);
@@ -516,6 +566,148 @@ function getFacilityUnitsDescription(facility) {
     }
 
     return units.length > 0 ? units.join(" / ") : "-";
+}
+
+
+function clearFacilityCapacityFields() {
+    [
+        "suitesCount",
+        "roomsCount",
+        "bedsCount",
+        "localWorkers",
+        "foreignWorkers",
+        "chaletsCount",
+        "vrRoomsCount",
+        "vrBedsCount",
+        "villageResortExtras",
+        "apartmentsCount",
+        "apRoomsCount",
+        "apBedsCount",
+        "hsRoomsCount",
+        "hsBedsCount",
+        "hsLocalWorkers",
+        "hsForeignWorkers"
+    ].forEach(id => setValue(id, ""));
+}
+
+function setFacilityFormMode(mode) {
+    const isEditMode = mode === "edit";
+
+    setText("facilityFormTitle", isEditMode ? "تعديل بيانات مرفق إيواء سياحي" : "إضافة مرفق إيواء سياحي");
+    setText(
+        "facilityFormDescription",
+        isEditMode
+            ? "تحديث بيانات المرفق مع الحفاظ على الكود الوطني الحالي"
+            : "تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، أو نزل ضمن السجل الوطني"
+    );
+    setText("facilitySubmitButton", isEditMode ? "حفظ التعديل" : "حفظ المرفق وتوليد الكود الوطني");
+
+    const cancelButton = document.getElementById("cancelFacilityEditButton");
+    if (cancelButton) {
+        cancelButton.classList.toggle("hidden", !isEditMode);
+    }
+}
+
+function resetFacilityFormState() {
+    currentEditingFacilityCode = "";
+    setValue("editingFacilityCode", "");
+    setFacilityFormMode("add");
+}
+
+function fillFacilityCapacityFields(facility) {
+    clearFacilityCapacityFields();
+
+    if (facility.type === "فندق") {
+        setValue("suitesCount", Number(facility.suites || 0));
+        setValue("roomsCount", Number(facility.rooms || 0));
+        setValue("bedsCount", Number(facility.beds || 0));
+        setValue("localWorkers", Number(facility.local_workers || 0));
+        setValue("foreignWorkers", Number(facility.foreign_workers || 0));
+    }
+
+    if (facility.type === "قرية سياحية" || facility.type === "منتجع") {
+        setValue("chaletsCount", Number(facility.chalets || 0));
+        setValue("vrRoomsCount", Number(facility.rooms || 0));
+        setValue("vrBedsCount", Number(facility.beds || 0));
+        setValue("villageResortExtras", facility.extras || "");
+    }
+
+    if (facility.type === "شقق فندقية") {
+        setValue("apartmentsCount", Number(facility.apartments || 0));
+        setValue("apRoomsCount", Number(facility.rooms || 0));
+        setValue("apBedsCount", Number(facility.beds || 0));
+    }
+
+    if (facility.type === "نزل") {
+        setValue("hsRoomsCount", Number(facility.rooms || 0));
+        setValue("hsBedsCount", Number(facility.beds || 0));
+        setValue("hsLocalWorkers", Number(facility.local_workers || 0));
+        setValue("hsForeignWorkers", Number(facility.foreign_workers || 0));
+    }
+}
+
+function fillFacilityForm(facility) {
+    setValue("editingFacilityCode", facility.facility_code || "");
+    setValue("facilityName", facility.name || "");
+    setSelectValue("facilityType", facility.type || "فندق");
+    setValue("facilityMunicipality", facility.municipality || "");
+    setValue("facilityCity", facility.city || "");
+    setValue("establishmentDate", facility.establishment_date || "");
+    setValue("facilityAddress", facility.address || "");
+    setValue("ownerName", facility.owner_name || "");
+    setValue("operatorName", facility.operator_name || "");
+    setValue("managerName", facility.manager_name || "");
+    setValue("facilityPhone", facility.phone || "");
+    setValue("facilityEmail", facility.email || "");
+    setValue("facilityWebsite", facility.website || "");
+    setSelectValue("classification", facility.classification || "غير مصنف");
+    setSelectValue("facilityAffiliation", facility.affiliation || "");
+    setSelectValue("facilityStatus", facility.status || "يعمل");
+    setSelectValue("licenseStatus", facility.licenseStatus || "Active");
+    setValue("latitude", facility.latitude || "");
+    setValue("longitude", facility.longitude || "");
+
+    toggleFacilityFields();
+    fillFacilityCapacityFields(facility);
+}
+
+function startFacilityEdit(facilityCode) {
+    const facility = getFacilityByCode(facilityCode);
+
+    if (!facility) {
+        alert("تعذر العثور على المرفق المطلوب تعديله");
+        return;
+    }
+
+    currentEditingFacilityCode = facility.facility_code;
+    setFacilityFormMode("edit");
+    showSection("addFacility");
+    fillFacilityForm(facility);
+
+    setTimeout(() => {
+        initMap();
+
+        const lat = parseFloat(facility.latitude);
+        const lng = parseFloat(facility.longitude);
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+            updateMarker(lat, lng, 14);
+        }
+
+        if (map) {
+            map.invalidateSize();
+        }
+    }, 350);
+}
+
+function cancelFacilityEdit() {
+    const form = document.getElementById("facilityForm");
+    if (form) form.reset();
+
+    resetFacilityFormState();
+    toggleFacilityFields();
+    resetMap();
+    showSection("facilities");
 }
 
 // ===============================
@@ -704,14 +896,19 @@ function handleFacilitySubmit(event) {
         return;
     }
 
+    const editingCode = getTextValue("editingFacilityCode") || currentEditingFacilityCode;
+    const existingIndex = facilities.findIndex(item => item.facility_code === editingCode);
+    const existingFacility = existingIndex >= 0 ? facilities[existingIndex] : null;
     const latitudeValue = getTextValue("latitude");
     const longitudeValue = getTextValue("longitude");
-
     const capacity = getCapacityByType(facilityType);
+    const selectedDocuments = getMultipleFileNames("facilityDocuments");
+    const existingDocuments = existingFacility && existingFacility.documents ? existingFacility.documents : {};
 
-    const newFacility = {
-        id: facilities.length + 1,
-        facility_code: generateFacilityCode(facilityType, facilityCity),
+    const facilityData = {
+        ...(existingFacility || {}),
+        id: existingFacility ? existingFacility.id : facilities.length + 1,
+        facility_code: existingFacility ? existingFacility.facility_code : generateFacilityCode(facilityType, facilityCity),
 
         name: facilityName,
         type: facilityType,
@@ -745,26 +942,37 @@ function handleFacilitySubmit(event) {
         extras: capacity.extras,
 
         documents: {
-            passport_file: getFileName("passportFile"),
-            national_id_file: getFileName("nationalIdFile"),
-            facility_documents: getMultipleFileNames("facilityDocuments")
+            passport_file: getFileName("passportFile") || existingDocuments.passport_file || "",
+            national_id_file: getFileName("nationalIdFile") || existingDocuments.national_id_file || "",
+            facility_documents: selectedDocuments.length > 0 ? selectedDocuments : (existingDocuments.facility_documents || [])
         },
 
-        created_at: new Date().toISOString()
+        created_at: existingFacility ? existingFacility.created_at : new Date().toISOString(),
+        updated_at: new Date().toISOString()
     };
 
-    facilities.push(newFacility);
+    if (existingFacility) {
+        facilities[existingIndex] = facilityData;
+    } else {
+        facilities.push(facilityData);
+    }
+
     saveFacilitiesToLocalStorage();
 
     updateDashboard();
     renderFacilitiesTable();
     refreshAllFacilityDropdowns();
+    updateStatisticsSection();
 
-    alert(`تم حفظ المرفق بنجاح\nالكود الوطني: ${newFacility.facility_code}`);
+    alert(existingFacility
+        ? "تم تحديث بيانات المرفق بنجاح"
+        : `تم حفظ المرفق بنجاح
+الكود الوطني: ${facilityData.facility_code}`);
 
     const form = document.getElementById("facilityForm");
     if (form) form.reset();
 
+    resetFacilityFormState();
     toggleFacilityFields();
     resetMap();
 
@@ -1094,6 +1302,7 @@ function handleOccupancySubmit(event) {
     saveOccupancyToLocalStorage();
 
     renderOccupancyTable();
+    updateStatisticsSection();
 
     alert("تم حفظ تقرير الإشغال الشهري بنجاح");
 
@@ -1472,6 +1681,230 @@ function exportReportToExcel() {
     URL.revokeObjectURL(url);
 }
 
+
+function getFacilitiesReportRows() {
+    return facilities.map((facility, index) => {
+        return [
+            index + 1,
+            facility.facility_code || "-",
+            facility.name || "-",
+            facility.type || "-",
+            facility.city || "-",
+            facility.municipality || "-",
+            facility.address || "-",
+            facility.phone || "-",
+            facility.affiliation || "-",
+            facility.rooms || 0,
+            facility.beds || 0,
+            facility.classification || "غير مصنف",
+            facility.status || "-"
+        ];
+    });
+}
+
+function exportFacilitiesReportToExcel() {
+    if (!Array.isArray(facilities) || facilities.length === 0) {
+        alert("لا توجد بيانات مرافق لتصديرها");
+        return;
+    }
+
+    const headers = [
+        "ت",
+        "الكود الوطني",
+        "اسم المرفق",
+        "النوع",
+        "المدينة",
+        "البلدية",
+        "العنوان",
+        "الهاتف",
+        "التبعية",
+        "الغرف",
+        "الأسرة",
+        "التصنيف",
+        "الحالة"
+    ];
+
+    let csvContent = "\uFEFF";
+    csvContent += headers.map(escapeCsvValue).join(",") + "\n";
+
+    getFacilitiesReportRows().forEach(row => {
+        csvContent += row.map(escapeCsvValue).join(",") + "\n";
+    });
+
+    const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "tourism_facilities_register.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function issueFacilitiesReport() {
+    if (!Array.isArray(facilities) || facilities.length === 0) {
+        alert("لا توجد بيانات مرافق لإصدار التقرير");
+        return;
+    }
+
+    const totalRooms = facilities.reduce((sum, item) => sum + Number(item.rooms || 0), 0);
+    const totalBeds = facilities.reduce((sum, item) => sum + Number(item.beds || 0), 0);
+    const reportRows = getFacilitiesReportRows();
+    const reportDate = new Date().toLocaleDateString("ar-LY");
+
+    const rowsHtml = reportRows.map(row => {
+        return `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`;
+    }).join("");
+
+    const printWindow = window.open("", "_blank");
+
+    if (!printWindow) {
+        alert("تعذر فتح نافذة التقرير. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.");
+        return;
+    }
+
+    printWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="UTF-8">
+            <title>تقرير سجل المرافق السياحية</title>
+            <style>
+                body { font-family: Arial, sans-serif; direction: rtl; padding: 28px; color: #222; }
+                h1, h2 { color: #0277bd; margin: 0 0 10px; }
+                .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+                .summary div { border: 1px solid #cfd8dc; padding: 12px; text-align: center; border-radius: 8px; }
+                .summary strong { display: block; color: #015f96; font-size: 22px; margin-top: 4px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+                th, td { border: 1px solid #999; padding: 7px; text-align: center; font-size: 12px; }
+                th { background: #0277bd; color: white; }
+                @media print { body { padding: 10px; } .summary { grid-template-columns: repeat(4, 1fr); } }
+            </style>
+        </head>
+        <body>
+            <h1>منظومة الإيواء السياحي الليبية</h1>
+            <h2>تقرير سجل المرافق السياحية</h2>
+            <p>تاريخ الإصدار: ${escapeHtml(reportDate)}</p>
+
+            <div class="summary">
+                <div>إجمالي المرافق<strong>${facilities.length}</strong></div>
+                <div>إجمالي الغرف<strong>${totalRooms}</strong></div>
+                <div>إجمالي الأسرة<strong>${totalBeds}</strong></div>
+                <div>المدن المسجلة<strong>${new Set(facilities.map(item => item.city || "-")).size}</strong></div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ت</th>
+                        <th>الكود الوطني</th>
+                        <th>اسم المرفق</th>
+                        <th>النوع</th>
+                        <th>المدينة</th>
+                        <th>البلدية</th>
+                        <th>العنوان</th>
+                        <th>الهاتف</th>
+                        <th>التبعية</th>
+                        <th>الغرف</th>
+                        <th>الأسرة</th>
+                        <th>التصنيف</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function countBy(items, getKey) {
+    return items.reduce((counts, item) => {
+        const key = getKey(item) || "غير محدد";
+        counts[key] = (counts[key] || 0) + 1;
+        return counts;
+    }, {});
+}
+
+function sortStats(counts) {
+    return Object.entries(counts).sort((a, b) => {
+        if (b[1] !== a[1]) {
+            return b[1] - a[1];
+        }
+
+        return a[0].localeCompare(b[0], "ar");
+    });
+}
+
+function renderStatsList(elementId, stats, total, limit = 10) {
+    const container = document.getElementById(elementId);
+
+    if (!container) {
+        return;
+    }
+
+    if (!stats.length) {
+        container.innerHTML = `<div class="stats-empty">لا توجد بيانات إحصائية حالياً</div>`;
+        return;
+    }
+
+    container.innerHTML = stats.slice(0, limit).map(([label, count]) => {
+        const percent = total > 0 ? (count / total) * 100 : 0;
+
+        return `
+            <div class="stats-item">
+                <div class="stats-item-header">
+                    <strong>${escapeHtml(label)}</strong>
+                    <span>${count} - ${percent.toFixed(1)}%</span>
+                </div>
+                <div class="stats-bar"><span style="width: ${Math.min(percent, 100)}%"></span></div>
+            </div>
+        `;
+    }).join("");
+}
+
+function updateStatisticsSection() {
+    const totalFacilities = Array.isArray(facilities) ? facilities.length : 0;
+    const totalRooms = facilities.reduce((sum, item) => sum + Number(item.rooms || 0), 0);
+    const totalBeds = facilities.reduce((sum, item) => sum + Number(item.beds || 0), 0);
+    const totalAvailableRoomNights = occupancyReports.reduce((sum, item) => sum + Number(item.available_room_nights || 0), 0);
+    const totalAvailableBedNights = occupancyReports.reduce((sum, item) => sum + Number(item.available_bed_nights || 0), 0);
+    const totalSoldRoomNights = occupancyReports.reduce((sum, item) => sum + Number(item.sold_room_nights || 0), 0);
+    const totalGuestNights = occupancyReports.reduce((sum, item) => sum + Number(item.total_guest_nights || 0), 0);
+    const totalGuests = occupancyReports.reduce((sum, item) => sum + Number(item.total_guests || 0), 0);
+    const roomOccupancy = totalAvailableRoomNights > 0 ? (totalSoldRoomNights / totalAvailableRoomNights) * 100 : 0;
+    const bedOccupancy = totalAvailableBedNights > 0 ? (totalGuestNights / totalAvailableBedNights) * 100 : 0;
+    const cityStats = sortStats(countBy(facilities, item => item.city));
+
+    setText("statsTotalFacilities", totalFacilities);
+    setText("statsTotalRooms", totalRooms);
+    setText("statsTotalBeds", totalBeds);
+    setText("statsAverageBeds", totalFacilities > 0 ? (totalBeds / totalFacilities).toFixed(1) : "0");
+    setText("statsOccupancyReports", occupancyReports.length);
+    setText("statsRoomOccupancy", `${roomOccupancy.toFixed(1)}%`);
+    setText("statsBedOccupancy", `${bedOccupancy.toFixed(1)}%`);
+    setText("statsTopCity", cityStats.length ? cityStats[0][0] : "-");
+
+    renderStatsList("facilityTypeStats", sortStats(countBy(facilities, item => item.type)), totalFacilities);
+    renderStatsList("cityStats", cityStats, totalFacilities, 12);
+    renderStatsList("classificationStats", sortStats(countBy(facilities, item => item.classification)), totalFacilities);
+
+    const occupancyStats = [
+        ["إجمالي النزلاء", totalGuests],
+        ["إجمالي الليالي السياحية", totalGuestNights],
+        ["الليالي الغرفية المباعة", totalSoldRoomNights],
+        ["الليالي الغرفية المتاحة", totalAvailableRoomNights],
+        ["الليالي السريرية المتاحة", totalAvailableBedNights]
+    ];
+    renderStatsList("occupancyStats", occupancyStats, Math.max(totalAvailableRoomNights, totalAvailableBedNights, totalGuests, 1), 8);
+}
+
 function printReport() {
     const reportOutput = document.getElementById("reportOutput");
 
@@ -1576,6 +2009,7 @@ function bindEvents() {
                 refreshAllFacilityDropdowns();
                 renderLicensesTable();
                 renderOccupancyTable();
+                updateStatisticsSection();
             } else {
                 alert("بيانات الدخول غير صحيحة");
             }
@@ -1585,6 +2019,12 @@ function bindEvents() {
     const facilityForm = document.getElementById("facilityForm");
     if (facilityForm) {
         facilityForm.addEventListener("submit", handleFacilitySubmit);
+        facilityForm.addEventListener("reset", function() {
+            setTimeout(() => {
+                toggleFacilityFields();
+                resetMap();
+            }, 0);
+        });
     }
 
     const facilityType = document.getElementById("facilityType");

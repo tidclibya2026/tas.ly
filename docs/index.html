@@ -66,6 +66,7 @@
                 <a href="#" onclick="showSection('licenses')">التراخيص</a>
                 <a href="#" onclick="showSection('occupancy')">الإشغال الشهري</a>
                 <a href="#" onclick="showSection('reports')">التقارير</a>
+                <a href="#" onclick="showSection('statistics')">الإحصائيات</a>
                 <a href="#" onclick="logout()" class="logout-link">تسجيل الخروج</a>
             </aside>
 
@@ -109,6 +110,11 @@
                         <p>قائمة الفنادق والقرى والمنتجعات والشقق الفندقية والنزل</p>
                     </div>
 
+                    <div class="record-actions">
+                        <button type="button" onclick="issueFacilitiesReport()">إصدار تقرير سجل المرافق</button>
+                        <button type="button" class="secondary-button" onclick="exportFacilitiesReportToExcel()">تصدير سجل المرافق</button>
+                    </div>
+
                     <div class="table-wrapper">
                         <table>
                             <thead>
@@ -129,6 +135,7 @@
                                     <th>عمالة أجنبية</th>
                                     <th>التصنيف</th>
                                     <th>الحالة</th>
+                                    <th>الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody id="facilitiesTable"></tbody>
@@ -139,11 +146,12 @@
                 <!-- إضافة مرفق -->
                 <section id="addFacility" class="section">
                     <div class="section-header">
-                        <h2>إضافة مرفق إيواء سياحي</h2>
-                        <p>تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، أو نزل ضمن السجل الوطني</p>
+                        <h2 id="facilityFormTitle">إضافة مرفق إيواء سياحي</h2>
+                        <p id="facilityFormDescription">تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، أو نزل ضمن السجل الوطني</p>
                     </div>
 
                     <form id="facilityForm">
+                        <input type="hidden" id="editingFacilityCode">
 
                         <!-- البيانات الأساسية -->
                         <div class="form-section">
@@ -431,7 +439,8 @@
                         </div>
 
                         <div class="form-actions">
-                            <button type="submit">حفظ المرفق وتوليد الكود الوطني</button>
+                            <button type="submit" id="facilitySubmitButton">حفظ المرفق وتوليد الكود الوطني</button>
+                            <button type="button" id="cancelFacilityEditButton" class="secondary-button hidden" onclick="cancelFacilityEdit()">إلغاء التعديل</button>
                             <button type="reset" class="secondary-button">مسح النموذج</button>
                         </div>
 
@@ -800,7 +809,7 @@
                             </div>
 
                             <div class="form-actions">
-                                <button type="submit">عرض التقرير</button>
+                                <button type="submit">إصدار التقرير</button>
                                 <button type="button" class="secondary-button" onclick="exportReportToExcel()">تصدير Excel</button>
                                 <button type="button" class="secondary-button" onclick="printReport()">طباعة التقرير</button>
                             </div>
@@ -877,6 +886,79 @@
                                 </thead>
                                 <tbody id="reportTable"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- الإحصائيات -->
+                <section id="statistics" class="section">
+                    <div class="section-header">
+                        <h2>الإحصائيات</h2>
+                        <p>مؤشرات مجمعة عن المرافق والطاقة الاستيعابية والإشغال المسجل</p>
+                    </div>
+
+                    <div class="cards statistics-cards">
+                        <div class="card">
+                            <h3>إجمالي المرافق</h3>
+                            <p id="statsTotalFacilities">0</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>إجمالي الغرف</h3>
+                            <p id="statsTotalRooms">0</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>إجمالي الأسرة</h3>
+                            <p id="statsTotalBeds">0</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>متوسط الأسرة للمرفق</h3>
+                            <p id="statsAverageBeds">0</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>تقارير الإشغال</h3>
+                            <p id="statsOccupancyReports">0</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>إشغال الغرف</h3>
+                            <p id="statsRoomOccupancy">0%</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>إشغال الأسرة</h3>
+                            <p id="statsBedOccupancy">0%</p>
+                        </div>
+
+                        <div class="card">
+                            <h3>أعلى مدينة</h3>
+                            <p id="statsTopCity">-</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="form-section">
+                            <h3>توزيع المرافق حسب النوع</h3>
+                            <div id="facilityTypeStats" class="stats-list"></div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>توزيع المرافق حسب المدينة</h3>
+                            <div id="cityStats" class="stats-list"></div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>توزيع المرافق حسب التصنيف</h3>
+                            <div id="classificationStats" class="stats-list"></div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>ملخص الإشغال المسجل</h3>
+                            <div id="occupancyStats" class="stats-list"></div>
                         </div>
                     </div>
                 </section>
