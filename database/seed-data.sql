@@ -268,20 +268,21 @@ SELECT
     f.id,
     v.license_number,
     'إذن مزاولة',
-    CURRENT_DATE,
-    CURRENT_DATE + INTERVAL '1 year',
+    v.issue_date,
+    v.expiry_date,
     v.license_status,
     0
 FROM (
     VALUES
-        ('LY-ACC-HOT-BEN-000001', 'LY-LIC-2026-000002', 'Active'),
-        ('LY-ACC-RES-BEN-000002', 'LY-LIC-2026-000003', 'Active'),
-        ('LY-ACC-APT-BEN-000003', 'LY-LIC-2026-000004', 'Active')
-) AS v(facility_code, license_number, license_status)
+        ('LY-ACC-HOT-BEN-000001', 'LY-LIC-2026-000002', DATE '2026-01-01', DATE '2026-12-31', 'Active'),
+        ('LY-ACC-RES-BEN-000002', 'LY-LIC-2026-000003', DATE '2026-01-01', DATE '2026-12-31', 'Active'),
+        ('LY-ACC-APT-BEN-000003', 'LY-LIC-2026-000004', DATE '2026-01-01', DATE '2026-12-31', 'Active')
+) AS v(facility_code, license_number, issue_date, expiry_date, license_status)
 JOIN facilities f ON f.facility_code = v.facility_code
 ON CONFLICT (license_number) DO UPDATE SET
     facility_id = EXCLUDED.facility_id,
     license_type = EXCLUDED.license_type,
+    issue_date = EXCLUDED.issue_date,
     expiry_date = EXCLUDED.expiry_date,
     license_status = EXCLUDED.license_status,
     renewal_count = EXCLUDED.renewal_count;

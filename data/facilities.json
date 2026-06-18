@@ -18,7 +18,12 @@
     "affiliation": "خاص",
     "classification": "ثلاث نجوم",
     "status": "يعمل",
-    "licenseStatus": "Active"
+    "licenseStatus": "Active",
+    "license_number": "LY-LIC-2026-000002",
+    "license_type": "إذن مزاولة",
+    "license_issue_date": "2026-01-01",
+    "license_expiry_date": "2026-12-31",
+    "renewal_count": 0
   },
   {
     "id": 2,
@@ -39,7 +44,12 @@
     "affiliation": "خاص",
     "classification": "أربع نجوم",
     "status": "يعمل",
-    "licenseStatus": "Active"
+    "licenseStatus": "Active",
+    "license_number": "LY-LIC-2026-000003",
+    "license_type": "إذن مزاولة",
+    "license_issue_date": "2026-01-01",
+    "license_expiry_date": "2026-12-31",
+    "renewal_count": 0
   },
   {
     "id": 3,
@@ -60,6 +70,11 @@
     "affiliation": "خاص",
     "classification": "نجمتان",
     "status": "يعمل",
-    "licenseStatus": "Active"
+    "licenseStatus": "Active",
+    "license_number": "LY-LIC-2026-000004",
+    "license_type": "إذن مزاولة",
+    "license_issue_date": "2026-01-01",
+    "license_expiry_date": "2026-12-31",
+    "renewal_count": 0
   }
 ]

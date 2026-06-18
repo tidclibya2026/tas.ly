@@ -113,19 +113,17 @@ function getFacilitySearchText(facility) {
 
 async function loadFacilitiesData() {
     const savedFacilities = localStorage.getItem("tas_facilities");
+    let savedFacilitiesLoaded = false;
 
     if (savedFacilities) {
         try {
             facilities = JSON.parse(savedFacilities);
 
             if (Array.isArray(facilities) && facilities.length > 0) {
-                refreshAllFacilityDropdowns();
-                updateDashboard();
-                renderFacilitiesTable();
-                return;
+                savedFacilitiesLoaded = true;
+            } else {
+                localStorage.removeItem("tas_facilities");
             }
-
-            localStorage.removeItem("tas_facilities");
         } catch (error) {
             console.error("خطأ في قراءة بيانات المرافق المحفوظة:", error);
             localStorage.removeItem("tas_facilities");
@@ -133,27 +131,54 @@ async function loadFacilitiesData() {
     }
 
     try {
-        const facilitiesDataPath = "../data/facilities.json";
-        const response = await fetch(facilitiesDataPath);
+        const isFrontendPath = window.location.pathname.includes("/frontend/");
+        const facilitiesDataPaths = isFrontendPath
+            ? ["../data/facilities.json", "data/facilities.json"]
+            : ["data/facilities.json", "../data/facilities.json"];
+        let response = null;
+        let facilitiesDataPath = "";
 
-        if (!response.ok) {
-            throw new Error(`تعذر تحميل ملف البيانات ${facilitiesDataPath} - HTTP ${response.status}`);
+        for (const path of facilitiesDataPaths) {
+            response = await fetch(path);
+
+            if (response.ok) {
+                facilitiesDataPath = path;
+                break;
+            }
         }
 
-        facilities = await response.json();
+        if (!response || !response.ok) {
+            throw new Error(`تعذر تحميل ملف البيانات من المسارات: ${facilitiesDataPaths.join(", ")}`);
+        }
 
-        if (!Array.isArray(facilities)) {
+        const loadedFacilities = await response.json();
+
+        if (!Array.isArray(loadedFacilities)) {
             throw new Error("ملف بيانات المرافق لا يحتوي على قائمة صالحة");
         }
+
+        facilities = savedFacilitiesLoaded
+            ? mergeFacilitiesData(facilities, loadedFacilities)
+            : loadedFacilities;
 
         facilitiesLoadError = "";
         saveFacilitiesToLocalStorage();
 
         refreshAllFacilityDropdowns();
+        seedLicensesFromFacilitiesIfNeeded();
         updateDashboard();
         renderFacilitiesTable();
 
     } catch (error) {
+        if (savedFacilitiesLoaded) {
+            facilitiesLoadError = "";
+            refreshAllFacilityDropdowns();
+            seedLicensesFromFacilitiesIfNeeded();
+            updateDashboard();
+            renderFacilitiesTable();
+            return;
+        }
+
         facilitiesLoadError = error.message || "تعذر تحميل ملف بيانات المرافق";
         console.error("خطأ في تحميل بيانات المرافق:", error);
 
@@ -167,6 +192,30 @@ async function loadFacilitiesData() {
 
 function saveFacilitiesToLocalStorage() {
     localStorage.setItem("tas_facilities", JSON.stringify(facilities));
+}
+
+function mergeFacilitiesData(savedItems, sourceItems) {
+    const savedByCode = new Map();
+
+    savedItems.forEach(item => {
+        if (item && item.facility_code) {
+            savedByCode.set(item.facility_code, item);
+        }
+    });
+
+    const merged = sourceItems.map(item => {
+        const savedItem = savedByCode.get(item.facility_code);
+        return savedItem ? { ...item, ...savedItem } : item;
+    });
+
+    const sourceCodes = new Set(sourceItems.map(item => item.facility_code));
+    savedItems.forEach(item => {
+        if (item && item.facility_code && !sourceCodes.has(item.facility_code)) {
+            merged.push(item);
+        }
+    });
+
+    return merged;
 }
 
 function refreshAllFacilityDropdowns() {
@@ -194,12 +243,52 @@ function loadLicensesData() {
         licenses = [];
     }
 
+    seedLicensesFromFacilitiesIfNeeded();
     renderLicensesTable();
     updateDashboard();
 }
 
 function saveLicensesToLocalStorage() {
     localStorage.setItem("tas_licenses", JSON.stringify(licenses));
+}
+
+function buildLicensesFromFacilities() {
+    return facilities
+        .filter(facility => facility.licenseStatus || facility.license_number)
+        .map((facility, index) => {
+            return {
+                id: index + 1,
+                facility_code: facility.facility_code,
+                facility_name: facility.name,
+                license_number: facility.license_number || `LY-LIC-2026-${String(index + 2).padStart(6, "0")}`,
+                license_type: facility.license_type || "إذن مزاولة",
+                license_status: facility.licenseStatus || "Active",
+                issue_date: facility.license_issue_date || "2026-01-01",
+                expiry_date: facility.license_expiry_date || "2026-12-31",
+                renewal_count: Number(facility.renewal_count || 0),
+                license_document: facility.license_document || "-"
+            };
+        });
+}
+
+function seedLicensesFromFacilitiesIfNeeded() {
+    if (!Array.isArray(facilities) || facilities.length === 0) {
+        return;
+    }
+
+    if (Array.isArray(licenses) && licenses.length > 0) {
+        return;
+    }
+
+    const seededLicenses = buildLicensesFromFacilities();
+
+    if (seededLicenses.length === 0) {
+        return;
+    }
+
+    licenses = seededLicenses;
+    saveLicensesToLocalStorage();
+    renderLicensesTable();
 }
 
 // ===============================
@@ -380,7 +469,7 @@ function renderFacilitiesTable() {
 
     if (!Array.isArray(facilities) || facilities.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td colspan="9">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
+        row.innerHTML = `<td colspan="16">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
         tableBody.appendChild(row);
         return;
     }
@@ -394,14 +483,39 @@ function renderFacilitiesTable() {
             <td>${item.type || "-"}</td>
             <td>${item.municipality || "-"}</td>
             <td>${item.city || "-"}</td>
+            <td>${item.owner_name || "-"}</td>
+            <td>${item.manager_name || "-"}</td>
+            <td>${item.phone || "-"}</td>
+            <td>${item.affiliation || "-"}</td>
             <td>${item.rooms || 0}</td>
             <td>${item.beds || 0}</td>
+            <td>${getFacilityUnitsDescription(item)}</td>
+            <td>${item.local_workers || 0}</td>
+            <td>${item.foreign_workers || 0}</td>
             <td>${item.classification || "غير مصنف"}</td>
             <td>${item.status || "-"}</td>
         `;
 
         tableBody.appendChild(row);
     });
+}
+
+function getFacilityUnitsDescription(facility) {
+    const units = [];
+
+    if (Number(facility.suites || 0) > 0) {
+        units.push(`${facility.suites} أجنحة`);
+    }
+
+    if (Number(facility.chalets || 0) > 0) {
+        units.push(`${facility.chalets} شاليهات`);
+    }
+
+    if (Number(facility.apartments || 0) > 0) {
+        units.push(`${facility.apartments} شقق`);
+    }
+
+    return units.length > 0 ? units.join(" / ") : "-";
 }
 
 // ===============================
