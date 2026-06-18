@@ -155,7 +155,11 @@ INSERT INTO facilities (
     municipality_id,
     city_id,
     address,
+    owner_name,
+    manager_name,
+    phone,
     classification,
+    affiliation,
     operational_status,
     data_status
 )
@@ -165,16 +169,20 @@ SELECT
     ft.id,
     m.id,
     c.id,
-    v.city_name_ar,
+    v.address,
+    v.owner_name,
+    v.manager_name,
+    v.phone,
     v.classification,
+    v.affiliation,
     v.operational_status,
     'approved'
 FROM (
     VALUES
-        ('LY-ACC-HOT-BEN-000001', 'فندق الريان', 'HOT', 'BEN', 'بنغازي', 'ثلاث نجوم', 'يعمل'),
-        ('LY-ACC-RES-BEN-000002', 'منتجع الماسة', 'RES', 'BEN', 'بنغازي', 'أربع نجوم', 'يعمل'),
-        ('LY-ACC-APT-BEN-000003', 'شقق العون', 'APT', 'BEN', 'بنغازي', 'نجمتان', 'يعمل')
-) AS v(facility_code, name_ar, facility_type_code, municipality_code, city_name_ar, classification, operational_status)
+        ('LY-ACC-HOT-BEN-000001', 'فندق الريان', 'HOT', 'BEN', 'بنغازي', 'بنغازي', 'محمد علي', 'أحمد سالم', '094-0834000', 'ثلاث نجوم', 'خاص', 'يعمل'),
+        ('LY-ACC-RES-BEN-000002', 'منتجع الماسة', 'RES', 'BEN', 'بنغازي', 'بنغازي', 'علي حسن', 'خالد عمر', '092-4737500', 'أربع نجوم', 'خاص', 'يعمل'),
+        ('LY-ACC-APT-BEN-000003', 'شقق العون', 'APT', 'BEN', 'بنغازي', 'بنغازي', 'بدر سالم', 'يوسف بدر', '094-5565545', 'نجمتان', 'خاص', 'يعمل')
+) AS v(facility_code, name_ar, facility_type_code, municipality_code, city_name_ar, address, owner_name, manager_name, phone, classification, affiliation, operational_status)
 JOIN facility_types ft ON ft.code = v.facility_type_code
 JOIN municipalities m ON m.code = v.municipality_code
 JOIN cities c ON c.municipality_id = m.id AND c.name_ar = v.city_name_ar
@@ -184,12 +192,34 @@ ON CONFLICT (facility_code) DO UPDATE SET
     municipality_id = EXCLUDED.municipality_id,
     city_id = EXCLUDED.city_id,
     address = EXCLUDED.address,
+    owner_name = EXCLUDED.owner_name,
+    manager_name = EXCLUDED.manager_name,
+    phone = EXCLUDED.phone,
     classification = EXCLUDED.classification,
+    affiliation = EXCLUDED.affiliation,
     operational_status = EXCLUDED.operational_status,
     data_status = EXCLUDED.data_status,
     updated_at = CURRENT_TIMESTAMP;
 
 -- الطاقة الاستيعابية للمرافق الأولية
+UPDATE facility_capacity fc
+SET
+    suites_count = v.suites_count,
+    rooms_count = v.rooms_count,
+    beds_count = v.beds_count,
+    chalets_count = v.chalets_count,
+    apartments_count = v.apartments_count,
+    local_workers = v.local_workers,
+    foreign_workers = v.foreign_workers
+FROM (
+    VALUES
+        ('LY-ACC-HOT-BEN-000001', 0, 80, 160, 0, 0, 20, 5),
+        ('LY-ACC-RES-BEN-000002', 0, 50, 100, 20, 0, 30, 10),
+        ('LY-ACC-APT-BEN-000003', 0, 30, 60, 0, 15, 15, 3)
+) AS v(facility_code, suites_count, rooms_count, beds_count, chalets_count, apartments_count, local_workers, foreign_workers)
+JOIN facilities f ON f.facility_code = v.facility_code
+WHERE fc.facility_id = f.id;
+
 INSERT INTO facility_capacity (
     facility_id,
     suites_count,
@@ -203,20 +233,20 @@ INSERT INTO facility_capacity (
 )
 SELECT
     f.id,
-    0,
+    v.suites_count,
     v.rooms_count,
     v.beds_count,
-    0,
-    0,
-    0,
-    0,
+    v.chalets_count,
+    v.apartments_count,
+    v.local_workers,
+    v.foreign_workers,
     CURRENT_DATE
 FROM (
     VALUES
-        ('LY-ACC-HOT-BEN-000001', 80, 160),
-        ('LY-ACC-RES-BEN-000002', 50, 100),
-        ('LY-ACC-APT-BEN-000003', 30, 60)
-) AS v(facility_code, rooms_count, beds_count)
+        ('LY-ACC-HOT-BEN-000001', 0, 80, 160, 0, 0, 20, 5),
+        ('LY-ACC-RES-BEN-000002', 0, 50, 100, 20, 0, 30, 10),
+        ('LY-ACC-APT-BEN-000003', 0, 30, 60, 0, 15, 15, 3)
+) AS v(facility_code, suites_count, rooms_count, beds_count, chalets_count, apartments_count, local_workers, foreign_workers)
 JOIN facilities f ON f.facility_code = v.facility_code
 WHERE NOT EXISTS (
     SELECT 1
