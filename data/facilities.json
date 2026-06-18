@@ -9,6 +9,7 @@
     "rooms": 80,
     "beds": 160,
     "classification": "ثلاث نجوم",
+    "status": "يعمل",
     "licenseStatus": "Active"
   },
   {
@@ -21,6 +22,7 @@
     "rooms": 50,
     "beds": 100,
     "classification": "أربع نجوم",
+    "status": "يعمل",
     "licenseStatus": "Active"
   },
   {
@@ -33,6 +35,7 @@
     "rooms": 30,
     "beds": 60,
     "classification": "نجمتان",
+    "status": "يعمل",
     "licenseStatus": "Active"
   }
 ]
