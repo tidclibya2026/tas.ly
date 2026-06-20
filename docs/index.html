@@ -113,6 +113,7 @@
                     <div class="record-actions">
                         <button type="button" onclick="issueFacilitiesReport()">إصدار تقرير سجل المرافق</button>
                         <button type="button" class="secondary-button" onclick="exportFacilitiesReportToExcel()">تصدير سجل المرافق</button>
+                        <button type="button" class="secondary-button" onclick="importOfficialFacilities()">استيراد البيانات الرسمية</button>
                     </div>
 
                     <div class="table-wrapper">
@@ -124,17 +125,13 @@
                                     <th>النوع</th>
                                     <th>البلدية</th>
                                     <th>المدينة</th>
-                                    <th>المالك</th>
-                                    <th>المدير</th>
-                                    <th>الهاتف</th>
-                                    <th>التبعية</th>
-                                    <th>الغرف</th>
-                                    <th>الأسرة</th>
-                                    <th>الوحدات</th>
-                                    <th>عمالة محلية</th>
-                                    <th>عمالة أجنبية</th>
                                     <th>التصنيف</th>
-                                    <th>الحالة</th>
+                                    <th>درجة التصنيف</th>
+                                    <th>حالة المرفق</th>
+                                    <th>حالة الترخيص</th>
+                                    <th>عدد الغرف</th>
+                                    <th>عدد الأسرة</th>
+                                    <th>إجمالي العاملين</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
@@ -176,12 +173,14 @@
 
                                 <div>
                                     <label for="facilityMunicipality">البلدية</label>
-                                    <input type="text" id="facilityMunicipality" required>
+                                    <input type="text" id="facilityMunicipality" list="facilityMunicipalityOptions" required>
+                                    <datalist id="facilityMunicipalityOptions"></datalist>
                                 </div>
 
-                                <div>
+                                <div class="autocomplete-box">
                                     <label for="facilityCity">المدينة</label>
-                                    <input type="text" id="facilityCity" required>
+                                    <input type="text" id="facilityCity" autocomplete="off" required>
+                                    <div id="facilityCityResults" class="search-results hidden"></div>
                                 </div>
 
                                 <div>
@@ -263,9 +262,10 @@
                                 <div>
                                     <label for="facilityStatus">حالة المرفق</label>
                                     <select id="facilityStatus">
-                                        <option value="يعمل">يعمل</option>
-                                        <option value="مقفل">مقفل</option>
+                                        <option value="نشط">نشط</option>
+                                        <option value="غير نشط">غير نشط</option>
                                         <option value="صيانة">صيانة</option>
+                                        <option value="مقفل">مقفل</option>
                                         <option value="قوة قاهرة">قوة قاهرة</option>
                                     </select>
                                 </div>
@@ -281,7 +281,7 @@
                             </div>
                         </div>
 
-                        <!-- طاقة الفندق -->
+                        <!-- الطاقة الاستيعابية للفندق -->
                         <div id="hotelFields" class="form-section facility-type-fields">
                             <h3>رابعاً: الطاقة الاستيعابية للفندق</h3>
 
@@ -297,25 +297,20 @@
                                 </div>
 
                                 <div>
+                                    <label for="averageBedsPerRoom">متوسط الأسرة لكل غرفة</label>
+                                    <input type="number" id="averageBedsPerRoom" min="0" step="0.01" value="0">
+                                </div>
+
+                                <div>
                                     <label for="bedsCount">عدد الأسرة</label>
                                     <input type="number" id="bedsCount" min="0" value="0">
-                                </div>
-
-                                <div>
-                                    <label for="localWorkers">عدد العاملين المحليين</label>
-                                    <input type="number" id="localWorkers" min="0" value="0">
-                                </div>
-
-                                <div>
-                                    <label for="foreignWorkers">عدد العاملين الأجانب</label>
-                                    <input type="number" id="foreignWorkers" min="0" value="0">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- طاقة القرية / المنتجع -->
+                        <!-- الطاقة الاستيعابية للقرية / المنتجع -->
                         <div id="villageResortFields" class="form-section facility-type-fields hidden">
-                            <h3>رابعاً: الطاقة الاستيعابية للقرية / المنتجع</h3>
+                            <h3>رابعاً: الطاقة الاستيعابية للقرية السياحية / المنتجع</h3>
 
                             <div class="form-grid">
                                 <div>
@@ -329,18 +324,23 @@
                                 </div>
 
                                 <div>
+                                    <label for="vrAverageBedsPerRoom">متوسط الأسرة لكل غرفة</label>
+                                    <input type="number" id="vrAverageBedsPerRoom" min="0" step="0.01" value="0">
+                                </div>
+
+                                <div>
                                     <label for="vrBedsCount">عدد الأسرة</label>
                                     <input type="number" id="vrBedsCount" min="0" value="0">
                                 </div>
 
-                                <div>
-                                    <label for="villageResortExtras">الإضافات الأخرى</label>
+                                <div style="grid-column: span 4;">
+                                    <label for="villageResortExtras">إضافات أخرى</label>
                                     <textarea id="villageResortExtras" placeholder="مثال: مسبح، مطعم، قاعة مناسبات، شاطئ خاص"></textarea>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- طاقة الشقق الفندقية -->
+                        <!-- الطاقة الاستيعابية للشقق الفندقية -->
                         <div id="apartmentsFields" class="form-section facility-type-fields hidden">
                             <h3>رابعاً: الطاقة الاستيعابية للشقق الفندقية</h3>
 
@@ -356,13 +356,18 @@
                                 </div>
 
                                 <div>
+                                    <label for="apAverageBedsPerRoom">متوسط الأسرة لكل غرفة</label>
+                                    <input type="number" id="apAverageBedsPerRoom" min="0" step="0.01" value="0">
+                                </div>
+
+                                <div>
                                     <label for="apBedsCount">عدد الأسرة</label>
                                     <input type="number" id="apBedsCount" min="0" value="0">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- طاقة النزل -->
+                        <!-- الطاقة الاستيعابية للنزل -->
                         <div id="hostelFields" class="form-section facility-type-fields hidden">
                             <h3>رابعاً: الطاقة الاستيعابية للنزل</h3>
 
@@ -373,25 +378,107 @@
                                 </div>
 
                                 <div>
+                                    <label for="hsAverageBedsPerRoom">متوسط الأسرة لكل غرفة</label>
+                                    <input type="number" id="hsAverageBedsPerRoom" min="0" step="0.01" value="0">
+                                </div>
+
+                                <div>
                                     <label for="hsBedsCount">عدد الأسرة</label>
                                     <input type="number" id="hsBedsCount" min="0" value="0">
                                 </div>
+                            </div>
+                        </div>
 
+                        <!-- العمالة الدائمة -->
+                        <div class="form-section">
+                            <h3>خامساً: العمالة الدائمة</h3>
+
+                            <div class="form-grid">
                                 <div>
-                                    <label for="hsLocalWorkers">عدد العاملين المحليين</label>
-                                    <input type="number" id="hsLocalWorkers" min="0" value="0">
+                                    <label for="nationalMaleWorkers">العمالة الوطنية ذكور</label>
+                                    <input type="number" id="nationalMaleWorkers" min="0" value="0">
                                 </div>
 
                                 <div>
-                                    <label for="hsForeignWorkers">عدد العاملين الأجانب</label>
-                                    <input type="number" id="hsForeignWorkers" min="0" value="0">
+                                    <label for="nationalFemaleWorkers">العمالة الوطنية إناث</label>
+                                    <input type="number" id="nationalFemaleWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="foreignMaleWorkers">العمالة الأجنبية ذكور</label>
+                                    <input type="number" id="foreignMaleWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="foreignFemaleWorkers">العمالة الأجنبية إناث</label>
+                                    <input type="number" id="foreignFemaleWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="totalWorkers">إجمالي العاملين</label>
+                                    <input type="number" id="totalWorkers" min="0" value="0" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- العمالة الموسمية -->
+                        <div class="form-section seasonal-workers-section">
+                            <h3>سادساً: العمالة الموسمية في الموسم السياحي</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="hasSeasonalWorkers">هل توجد عمالة موسمية؟</label>
+                                    <select id="hasSeasonalWorkers">
+                                        <option value="no">لا</option>
+                                        <option value="yes">نعم</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="seasonalNationalMaleWorkers">العمالة الموسمية الوطنية ذكور</label>
+                                    <input type="number" id="seasonalNationalMaleWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="seasonalNationalFemaleWorkers">العمالة الموسمية الوطنية إناث</label>
+                                    <input type="number" id="seasonalNationalFemaleWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="seasonalForeignMaleWorkers">العمالة الموسمية الأجنبية ذكور</label>
+                                    <input type="number" id="seasonalForeignMaleWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="seasonalForeignFemaleWorkers">العمالة الموسمية الأجنبية إناث</label>
+                                    <input type="number" id="seasonalForeignFemaleWorkers" min="0" value="0">
+                                </div>
+
+                                <div>
+                                    <label for="seasonalTotalWorkers">إجمالي العمالة الموسمية</label>
+                                    <input type="number" id="seasonalTotalWorkers" min="0" value="0" readonly>
+                                </div>
+
+                                <div>
+                                    <label for="seasonStartDate">بداية الموسم السياحي</label>
+                                    <input type="date" id="seasonStartDate">
+                                </div>
+
+                                <div>
+                                    <label for="seasonEndDate">نهاية الموسم السياحي</label>
+                                    <input type="date" id="seasonEndDate">
+                                </div>
+
+                                <div style="grid-column: span 4;">
+                                    <label for="seasonalWorkersNotes">ملاحظات العمالة الموسمية</label>
+                                    <textarea id="seasonalWorkersNotes" placeholder="أي ملاحظات حول العمالة الموسمية أو فترة الموسم"></textarea>
                                 </div>
                             </div>
                         </div>
 
                         <!-- الموقع الجغرافي -->
                         <div class="form-section">
-                            <h3>خامساً: الموقع الجغرافي</h3>
+                            <h3>سابعاً: الموقع الجغرافي</h3>
 
                             <div class="form-grid">
                                 <div>
@@ -414,7 +501,7 @@
 
                         <!-- المستندات -->
                         <div class="form-section">
-                            <h3>سادساً: المستندات</h3>
+                            <h3>ثامناً: المستندات</h3>
 
                             <div class="form-grid">
                                 <div>

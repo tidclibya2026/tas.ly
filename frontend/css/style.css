@@ -380,6 +380,19 @@ input[type="file"] {
     padding: 11px;
 }
 
+input[readonly] {
+    background: #f4f8fb;
+    color: #455a64;
+    font-weight: 700;
+}
+
+input:disabled,
+textarea:disabled {
+    background: #eef3f6;
+    color: #90a4ae;
+    cursor: not-allowed;
+}
+
 .facility-type-fields {
     background: #ffffff;
     border-right-color: #00acc1;
@@ -483,7 +496,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    min-width: 1000px;
+    min-width: 1180px;
 }
 
 th,

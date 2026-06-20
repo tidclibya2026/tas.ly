@@ -18,6 +18,9 @@ let occupancyReports = [];
 let currentReportRows = [];
 let currentEditingFacilityCode = "";
 let facilitiesLoadError = "";
+let libyaCities = [];
+let libyaMunicipalities = [];
+let officialFacilitiesCache = [];
 
 let map = null;
 let marker = null;
@@ -60,7 +63,18 @@ function logout() {
 
 function getNumberValue(id) {
     const element = document.getElementById(id);
-    return element ? Number(element.value || 0) : 0;
+
+    if (!element) {
+        return 0;
+    }
+
+    const value = Number(element.value || 0);
+
+    if (!Number.isFinite(value) || value < 0) {
+        return 0;
+    }
+
+    return value;
 }
 
 function getTextValue(id) {
@@ -121,6 +135,93 @@ function escapeCsvValue(value) {
     return text;
 }
 
+
+function normalizeFacilityStatus(status) {
+    const value = String(status || "").trim();
+
+    if (!value || value === "يعمل") {
+        return "نشط";
+    }
+
+    return value;
+}
+
+function getFacilityClassificationStatus(facility) {
+    const savedStatus = String(facility.classification_status || "").trim();
+
+    if (savedStatus) {
+        return savedStatus;
+    }
+
+    const classification = String(facility.classification || "").trim();
+
+    if (!classification || classification === "-" || classification === "غير مصنف") {
+        return "غير مصنف";
+    }
+
+    return "مصنف";
+}
+
+function getTotalWorkers(facility) {
+    const genderTotal = Number(facility.national_male_workers || facility.local_male_workers || 0) +
+        Number(facility.national_female_workers || facility.local_female_workers || 0) +
+        Number(facility.foreign_male_workers || 0) +
+        Number(facility.foreign_female_workers || 0);
+
+    if (genderTotal > 0) {
+        return genderTotal;
+    }
+
+    return Number(facility.total_workers || 0) ||
+        Number(facility.local_workers || 0) + Number(facility.foreign_workers || 0);
+}
+
+function getFacilityLicenseStatus(facility) {
+    if (facility.licenseStatus) {
+        return facility.licenseStatus;
+    }
+
+    const license = licenses.find(item => item.facility_code === facility.facility_code);
+    return license ? license.license_status : "";
+}
+
+function getCurrentFacilityName(facilityCode, fallbackName = "") {
+    const facility = getFacilityByCode(facilityCode);
+    return facility ? facility.name : (fallbackName || "-");
+}
+
+function getReportFacilityName(report) {
+    return getCurrentFacilityName(report.facility_code, report.facility_name);
+}
+
+function formatPercent(value) {
+    return `${(Number.isFinite(value) ? value : 0).toFixed(2)}%`;
+}
+
+function formatStay(value) {
+    return `${(Number.isFinite(value) ? value : 0).toFixed(2)} ليلة`;
+}
+
+function addOneYear(dateValue) {
+    if (!dateValue) {
+        return "";
+    }
+
+    const [year, month, day] = dateValue.split("-").map(Number);
+
+    if (!year || !month || !day) {
+        return "";
+    }
+
+    const date = new Date(Date.UTC(year + 1, month - 1, day));
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return date.toISOString().slice(0, 10);
+}
+
 function getFacilityDisplayName(facility) {
     return `${facility.name || "مرفق بدون اسم"} - ${facility.type || ""} - ${facility.city || ""}`;
 }
@@ -147,6 +248,163 @@ function getFacilitySearchText(facility) {
     ].join(" "));
 }
 
+function getDataFilePaths(fileName) {
+    const pathname = typeof window !== "undefined" && window.location && window.location.pathname
+        ? window.location.pathname
+        : "";
+    const isFrontendPath = pathname.includes("/frontend/");
+
+    return isFrontendPath
+        ? [`../data/${fileName}`, `data/${fileName}`]
+        : [`data/${fileName}`, `../data/${fileName}`];
+}
+
+async function fetchFirstJson(fileName) {
+    const paths = getDataFilePaths(fileName);
+    let lastError = null;
+
+    for (const path of paths) {
+        try {
+            const response = await fetch(path);
+
+            if (response.ok) {
+                return {
+                    data: await response.json(),
+                    path
+                };
+            }
+
+            lastError = new Error(`HTTP ${response.status} عند تحميل ${path}`);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw new Error(`تعذر تحميل ${fileName} من المسارات: ${paths.join(", ")}${lastError ? ` - ${lastError.message}` : ""}`);
+}
+
+function extractOfficialFacilities(data) {
+    if (Array.isArray(data)) {
+        return data;
+    }
+
+    if (data && Array.isArray(data.facilities)) {
+        return data.facilities;
+    }
+
+    return [];
+}
+
+function getReferenceNames(data, collectionKey) {
+    const items = Array.isArray(data)
+        ? data
+        : (data && Array.isArray(data[collectionKey]) ? data[collectionKey] : []);
+    const names = items
+        .map(item => {
+            if (typeof item === "string") {
+                return item;
+            }
+
+            return item.name_ar || item.name || item.city || "";
+        })
+        .map(name => String(name || "").trim())
+        .filter(Boolean);
+
+    return [...new Set(names)].sort((first, second) => first.localeCompare(second, "ar"));
+}
+
+function getNumberField(item, fields) {
+    for (const field of fields) {
+        const value = Number(item[field]);
+
+        if (Number.isFinite(value) && value > 0) {
+            return value;
+        }
+    }
+
+    return 0;
+}
+
+function isSeasonalWorkersYes(value) {
+    return value === true ||
+        value === "yes" ||
+        value === "نعم" ||
+        value === "يوجد";
+}
+
+function normalizeSeasonalWorkers(facility) {
+    const seasonal = facility.seasonal_workers || {};
+    const nationalMale = getNumberField(seasonal, ["national_male_workers", "local_male", "local_male_workers"]);
+    const nationalFemale = getNumberField(seasonal, ["national_female_workers", "local_female", "local_female_workers"]);
+    const foreignMale = getNumberField(seasonal, ["foreign_male_workers", "foreign_male"]);
+    const foreignFemale = getNumberField(seasonal, ["foreign_female_workers", "foreign_female"]);
+    const total = Number(seasonal.total_workers || 0) || nationalMale + nationalFemale + foreignMale + foreignFemale;
+
+    return {
+        ...seasonal,
+        has_seasonal_workers: isSeasonalWorkersYes(seasonal.has_seasonal_workers),
+        national_male_workers: nationalMale,
+        national_female_workers: nationalFemale,
+        foreign_male_workers: foreignMale,
+        foreign_female_workers: foreignFemale,
+        total_workers: total,
+        season_start: seasonal.season_start || "",
+        season_end: seasonal.season_end || "",
+        notes: seasonal.notes || ""
+    };
+}
+
+function normalizeFacilityRecord(facility) {
+    const rooms = getNumberField(facility, ["rooms", "total_units", "chalets", "apartments"]);
+    const beds = getNumberField(facility, ["beds"]);
+    const nationalMale = getNumberField(facility, ["national_male_workers", "local_male_workers"]);
+    const nationalFemale = getNumberField(facility, ["national_female_workers", "local_female_workers"]);
+    const foreignMale = getNumberField(facility, ["foreign_male_workers"]);
+    const foreignFemale = getNumberField(facility, ["foreign_female_workers"]);
+    const localWorkers = Number(facility.local_workers || 0) || nationalMale + nationalFemale;
+    const foreignWorkers = Number(facility.foreign_workers || 0) || foreignMale + foreignFemale;
+    const totalWorkers = Number(facility.total_workers || 0) || localWorkers + foreignWorkers;
+    const averageBedsPerRoom = Number(facility.average_beds_per_room || facility.beds_per_unit || 0) ||
+        (rooms > 0 && beds > 0 ? Number((beds / rooms).toFixed(2)) : 0);
+
+    return {
+        ...facility,
+        facility_code: facility.facility_code || "",
+        status: normalizeFacilityStatus(facility.status),
+        licenseStatus: facility.licenseStatus || facility.license_status || "Pending",
+        classification_status: facility.classification_status || getFacilityClassificationStatus(facility),
+        rooms,
+        beds,
+        average_beds_per_room: averageBedsPerRoom,
+        local_workers: localWorkers,
+        foreign_workers: foreignWorkers,
+        national_male_workers: nationalMale,
+        national_female_workers: nationalFemale,
+        foreign_male_workers: foreignMale,
+        foreign_female_workers: foreignFemale,
+        total_workers: totalWorkers,
+        seasonal_workers: normalizeSeasonalWorkers(facility)
+    };
+}
+
+function normalizeFacilitiesCollection(items) {
+    return Array.isArray(items)
+        ? items.map(normalizeFacilityRecord)
+        : [];
+}
+
+async function loadOfficialFacilitySource() {
+    const result = await fetchFirstJson("official_accommodation_facilities_tas.json");
+    const officialItems = extractOfficialFacilities(result.data);
+
+    if (!Array.isArray(officialItems) || officialItems.length === 0) {
+        throw new Error("ملف المرافق الرسمي لا يحتوي على بيانات صالحة");
+    }
+
+    officialFacilitiesCache = normalizeFacilitiesCollection(officialItems);
+    return officialFacilitiesCache;
+}
+
 // ===============================
 // تحميل وحفظ بيانات المرافق
 // ===============================
@@ -171,43 +429,35 @@ async function loadFacilitiesData() {
     }
 
     try {
-        const isFrontendPath = window.location.pathname.includes("/frontend/");
-        const facilitiesDataPaths = isFrontendPath
-            ? ["../data/facilities.json", "data/facilities.json"]
-            : ["data/facilities.json", "../data/facilities.json"];
-        let response = null;
-        let facilitiesDataPath = "";
+        if (savedFacilitiesLoaded) {
+            facilities = normalizeFacilitiesCollection(facilities);
+        } else {
+            let loadedFacilities = [];
 
-        for (const path of facilitiesDataPaths) {
-            response = await fetch(path);
+            try {
+                loadedFacilities = await loadOfficialFacilitySource();
+            } catch (officialError) {
+                console.warn("تعذر تحميل ملف المرافق الرسمي، سيتم استخدام ملف facilities.json:", officialError);
+                const fallbackResult = await fetchFirstJson("facilities.json");
 
-            if (response.ok) {
-                facilitiesDataPath = path;
-                break;
+                if (!Array.isArray(fallbackResult.data)) {
+                    throw new Error("ملف بيانات المرافق لا يحتوي على قائمة صالحة");
+                }
+
+                loadedFacilities = normalizeFacilitiesCollection(fallbackResult.data);
             }
+
+            facilities = loadedFacilities;
+            saveFacilitiesToLocalStorage();
         }
-
-        if (!response || !response.ok) {
-            throw new Error(`تعذر تحميل ملف البيانات من المسارات: ${facilitiesDataPaths.join(", ")}`);
-        }
-
-        const loadedFacilities = await response.json();
-
-        if (!Array.isArray(loadedFacilities)) {
-            throw new Error("ملف بيانات المرافق لا يحتوي على قائمة صالحة");
-        }
-
-        facilities = savedFacilitiesLoaded
-            ? mergeFacilitiesData(facilities, loadedFacilities)
-            : loadedFacilities;
 
         facilitiesLoadError = "";
-        saveFacilitiesToLocalStorage();
 
         refreshAllFacilityDropdowns();
         seedLicensesFromFacilitiesIfNeeded();
         updateDashboard();
         renderFacilitiesTable();
+        updateStatisticsSection();
 
     } catch (error) {
         if (savedFacilitiesLoaded) {
@@ -216,6 +466,7 @@ async function loadFacilitiesData() {
             seedLicensesFromFacilitiesIfNeeded();
             updateDashboard();
             renderFacilitiesTable();
+            updateStatisticsSection();
             return;
         }
 
@@ -227,6 +478,37 @@ async function loadFacilitiesData() {
         refreshAllFacilityDropdowns();
         updateDashboard();
         renderFacilitiesTable();
+        updateStatisticsSection();
+    }
+}
+
+async function importOfficialFacilities() {
+    const confirmed = confirm(
+        "سيتم استبدال سجل المرافق الحالي في هذا المتصفح بالبيانات الرسمية الكاملة (458 مرفقاً). هل تريد المتابعة؟"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        facilities = await loadOfficialFacilitySource();
+        facilitiesLoadError = "";
+        saveFacilitiesToLocalStorage();
+
+        refreshAllFacilityDropdowns();
+        seedLicensesFromFacilitiesIfNeeded();
+        updateDashboard();
+        renderFacilitiesTable();
+        renderLicensesTable();
+        renderOccupancyTable();
+        updateStatisticsSection();
+
+        alert(`تم استيراد البيانات الرسمية بنجاح
+إجمالي المرافق: ${facilities.length}`);
+    } catch (error) {
+        console.error("تعذر استيراد البيانات الرسمية:", error);
+        alert(`تعذر استيراد البيانات الرسمية: ${error.message || "خطأ غير معروف"}`);
     }
 }
 
@@ -262,6 +544,97 @@ function refreshAllFacilityDropdowns() {
     populateFacilitySelect();
     populateOccupancyFacilitySelect();
     populateReportFacilitySelect();
+}
+
+async function loadLibyaReferenceData() {
+    try {
+        const citiesResult = await fetchFirstJson("libya_cities.json");
+        libyaCities = getReferenceNames(citiesResult.data, "cities");
+    } catch (error) {
+        console.warn("تعذر تحميل ملف المدن الليبية:", error);
+        libyaCities = [];
+    }
+
+    try {
+        const municipalitiesResult = await fetchFirstJson("libya_municipalities.json");
+        libyaMunicipalities = getReferenceNames(municipalitiesResult.data, "municipalities");
+        populateMunicipalityOptions();
+    } catch (error) {
+        console.warn("تعذر تحميل ملف البلديات الليبية:", error);
+        libyaMunicipalities = [];
+    }
+}
+
+function populateMunicipalityOptions() {
+    const options = document.getElementById("facilityMunicipalityOptions");
+
+    if (!options) {
+        return;
+    }
+
+    options.innerHTML = "";
+
+    libyaMunicipalities.forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        options.appendChild(option);
+    });
+}
+
+function filterFacilityCities() {
+    const cityInput = document.getElementById("facilityCity");
+    const resultsBox = document.getElementById("facilityCityResults");
+
+    if (!cityInput || !resultsBox) {
+        return;
+    }
+
+    const searchText = normalizeArabicText(cityInput.value);
+    resultsBox.innerHTML = "";
+
+    if (!searchText) {
+        resultsBox.classList.add("hidden");
+        return;
+    }
+
+    if (!Array.isArray(libyaCities) || libyaCities.length === 0) {
+        resultsBox.innerHTML = `<div class="search-no-results">تعذر تحميل قائمة المدن</div>`;
+        resultsBox.classList.remove("hidden");
+        return;
+    }
+
+    const matchedCities = libyaCities
+        .filter(name => normalizeArabicText(name).includes(searchText))
+        .slice(0, 12);
+
+    if (matchedCities.length === 0) {
+        resultsBox.innerHTML = `<div class="search-no-results">لا توجد مدينة مطابقة</div>`;
+        resultsBox.classList.remove("hidden");
+        return;
+    }
+
+    matchedCities.forEach(name => {
+        const item = document.createElement("div");
+        item.className = "search-result-item";
+        item.textContent = name;
+        item.addEventListener("mousedown", function(event) {
+            event.preventDefault();
+            selectFacilityCity(name);
+        });
+        resultsBox.appendChild(item);
+    });
+
+    resultsBox.classList.remove("hidden");
+}
+
+function selectFacilityCity(cityName) {
+    setValue("facilityCity", cityName);
+
+    const resultsBox = document.getElementById("facilityCityResults");
+    if (resultsBox) {
+        resultsBox.innerHTML = "";
+        resultsBox.classList.add("hidden");
+    }
 }
 
 // ===============================
@@ -505,6 +878,7 @@ function updateDashboard() {
 // سجل المرافق
 // ===============================
 
+
 function renderFacilitiesTable() {
     const tableBody = document.getElementById("facilitiesTable");
 
@@ -516,13 +890,14 @@ function renderFacilitiesTable() {
 
     if (!Array.isArray(facilities) || facilities.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td colspan="17">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
+        row.innerHTML = `<td colspan="13">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
         tableBody.appendChild(row);
         return;
     }
 
     facilities.forEach(item => {
         const row = document.createElement("tr");
+        const licenseStatus = getLicenseStatusArabic(getFacilityLicenseStatus(item));
 
         row.innerHTML = `
             <td>${item.facility_code || "-"}</td>
@@ -530,17 +905,13 @@ function renderFacilitiesTable() {
             <td>${item.type || "-"}</td>
             <td>${item.municipality || "-"}</td>
             <td>${item.city || "-"}</td>
-            <td>${item.owner_name || "-"}</td>
-            <td>${item.manager_name || "-"}</td>
-            <td>${item.phone || "-"}</td>
-            <td>${item.affiliation || "-"}</td>
+            <td>${getFacilityClassificationStatus(item)}</td>
+            <td>${item.classification || "غير مصنف"}</td>
+            <td>${normalizeFacilityStatus(item.status)}</td>
+            <td>${licenseStatus}</td>
             <td>${item.rooms || 0}</td>
             <td>${item.beds || 0}</td>
-            <td>${getFacilityUnitsDescription(item)}</td>
-            <td>${item.local_workers || 0}</td>
-            <td>${item.foreign_workers || 0}</td>
-            <td>${item.classification || "غير مصنف"}</td>
-            <td>${item.status || "-"}</td>
+            <td>${getTotalWorkers(item)}</td>
             <td>
                 <button type="button" class="table-action-button" onclick="startFacilityEdit('${item.facility_code || ""}')">تعديل</button>
             </td>
@@ -573,20 +944,33 @@ function clearFacilityCapacityFields() {
     [
         "suitesCount",
         "roomsCount",
+        "averageBedsPerRoom",
         "bedsCount",
-        "localWorkers",
-        "foreignWorkers",
         "chaletsCount",
         "vrRoomsCount",
+        "vrAverageBedsPerRoom",
         "vrBedsCount",
         "villageResortExtras",
         "apartmentsCount",
         "apRoomsCount",
+        "apAverageBedsPerRoom",
         "apBedsCount",
         "hsRoomsCount",
+        "hsAverageBedsPerRoom",
         "hsBedsCount",
-        "hsLocalWorkers",
-        "hsForeignWorkers"
+        "nationalMaleWorkers",
+        "nationalFemaleWorkers",
+        "foreignMaleWorkers",
+        "foreignFemaleWorkers",
+        "totalWorkers",
+        "seasonalNationalMaleWorkers",
+        "seasonalNationalFemaleWorkers",
+        "seasonalForeignMaleWorkers",
+        "seasonalForeignFemaleWorkers",
+        "seasonalTotalWorkers",
+        "seasonStartDate",
+        "seasonEndDate",
+        "seasonalWorkersNotes"
     ].forEach(id => setValue(id, ""));
 }
 
@@ -614,20 +998,23 @@ function resetFacilityFormState() {
     setFacilityFormMode("add");
 }
 
+
 function fillFacilityCapacityFields(facility) {
     clearFacilityCapacityFields();
+
+    const averageBeds = Number(facility.average_beds_per_room || 0);
 
     if (facility.type === "فندق") {
         setValue("suitesCount", Number(facility.suites || 0));
         setValue("roomsCount", Number(facility.rooms || 0));
+        setValue("averageBedsPerRoom", averageBeds);
         setValue("bedsCount", Number(facility.beds || 0));
-        setValue("localWorkers", Number(facility.local_workers || 0));
-        setValue("foreignWorkers", Number(facility.foreign_workers || 0));
     }
 
     if (facility.type === "قرية سياحية" || facility.type === "منتجع") {
         setValue("chaletsCount", Number(facility.chalets || 0));
         setValue("vrRoomsCount", Number(facility.rooms || 0));
+        setValue("vrAverageBedsPerRoom", averageBeds);
         setValue("vrBedsCount", Number(facility.beds || 0));
         setValue("villageResortExtras", facility.extras || "");
     }
@@ -635,15 +1022,34 @@ function fillFacilityCapacityFields(facility) {
     if (facility.type === "شقق فندقية") {
         setValue("apartmentsCount", Number(facility.apartments || 0));
         setValue("apRoomsCount", Number(facility.rooms || 0));
+        setValue("apAverageBedsPerRoom", averageBeds);
         setValue("apBedsCount", Number(facility.beds || 0));
     }
 
     if (facility.type === "نزل") {
         setValue("hsRoomsCount", Number(facility.rooms || 0));
+        setValue("hsAverageBedsPerRoom", averageBeds);
         setValue("hsBedsCount", Number(facility.beds || 0));
-        setValue("hsLocalWorkers", Number(facility.local_workers || 0));
-        setValue("hsForeignWorkers", Number(facility.foreign_workers || 0));
     }
+
+    setValue("nationalMaleWorkers", Number(facility.national_male_workers || facility.local_workers || 0));
+    setValue("nationalFemaleWorkers", Number(facility.national_female_workers || 0));
+    setValue("foreignMaleWorkers", Number(facility.foreign_male_workers || facility.foreign_workers || 0));
+    setValue("foreignFemaleWorkers", Number(facility.foreign_female_workers || 0));
+    setValue("totalWorkers", getTotalWorkers(facility));
+
+    const seasonalWorkers = facility.seasonal_workers || {};
+    setSelectValue("hasSeasonalWorkers", isSeasonalWorkersYes(seasonalWorkers.has_seasonal_workers) ? "yes" : "no");
+    setValue("seasonalNationalMaleWorkers", Number(seasonalWorkers.national_male_workers || 0));
+    setValue("seasonalNationalFemaleWorkers", Number(seasonalWorkers.national_female_workers || 0));
+    setValue("seasonalForeignMaleWorkers", Number(seasonalWorkers.foreign_male_workers || 0));
+    setValue("seasonalForeignFemaleWorkers", Number(seasonalWorkers.foreign_female_workers || 0));
+    setValue("seasonalTotalWorkers", Number(seasonalWorkers.total_workers || 0));
+    setValue("seasonStartDate", seasonalWorkers.season_start || "");
+    setValue("seasonEndDate", seasonalWorkers.season_end || "");
+    setValue("seasonalWorkersNotes", seasonalWorkers.notes || "");
+
+    updateAllFacilityCalculatedFields();
 }
 
 function fillFacilityForm(facility) {
@@ -662,7 +1068,7 @@ function fillFacilityForm(facility) {
     setValue("facilityWebsite", facility.website || "");
     setSelectValue("classification", facility.classification || "غير مصنف");
     setSelectValue("facilityAffiliation", facility.affiliation || "");
-    setSelectValue("facilityStatus", facility.status || "يعمل");
+    setSelectValue("facilityStatus", normalizeFacilityStatus(facility.status));
     setSelectValue("licenseStatus", facility.licenseStatus || "Active");
     setValue("latitude", facility.latitude || "");
     setValue("longitude", facility.longitude || "");
@@ -835,29 +1241,116 @@ function resetMap() {
 // الطاقة الاستيعابية حسب النوع
 // ===============================
 
+
+function calculateBedsFromAverage(roomInputId, averageInputId, bedsInputId) {
+    const rooms = getNumberValue(roomInputId);
+    const averageBeds = getNumberValue(averageInputId);
+    const calculatedBeds = Math.round(rooms * averageBeds);
+
+    if (rooms > 0 && averageBeds > 0) {
+        setValue(bedsInputId, calculatedBeds);
+    }
+}
+
+function calculatePermanentWorkersTotal() {
+    const total = getNumberValue("nationalMaleWorkers") +
+        getNumberValue("nationalFemaleWorkers") +
+        getNumberValue("foreignMaleWorkers") +
+        getNumberValue("foreignFemaleWorkers");
+
+    setValue("totalWorkers", total);
+}
+
+function calculateSeasonalWorkersTotal() {
+    const hasSeasonalWorkers = getTextValue("hasSeasonalWorkers") === "yes";
+
+    if (!hasSeasonalWorkers) {
+        setValue("seasonalNationalMaleWorkers", 0);
+        setValue("seasonalNationalFemaleWorkers", 0);
+        setValue("seasonalForeignMaleWorkers", 0);
+        setValue("seasonalForeignFemaleWorkers", 0);
+        setValue("seasonalTotalWorkers", 0);
+        return;
+    }
+
+    const total = getNumberValue("seasonalNationalMaleWorkers") +
+        getNumberValue("seasonalNationalFemaleWorkers") +
+        getNumberValue("seasonalForeignMaleWorkers") +
+        getNumberValue("seasonalForeignFemaleWorkers");
+
+    setValue("seasonalTotalWorkers", total);
+}
+
+function toggleSeasonalWorkersFields() {
+    const hasSeasonalWorkers = getTextValue("hasSeasonalWorkers") === "yes";
+    [
+        "seasonalNationalMaleWorkers",
+        "seasonalNationalFemaleWorkers",
+        "seasonalForeignMaleWorkers",
+        "seasonalForeignFemaleWorkers",
+        "seasonStartDate",
+        "seasonEndDate",
+        "seasonalWorkersNotes"
+    ].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.disabled = !hasSeasonalWorkers;
+        }
+    });
+
+    calculateSeasonalWorkersTotal();
+}
+
+function updateAllFacilityCalculatedFields() {
+    calculatePermanentWorkersTotal();
+    calculateSeasonalWorkersTotal();
+}
+
 function getCapacityByType(type) {
+    const nationalMaleWorkers = getNumberValue("nationalMaleWorkers");
+    const nationalFemaleWorkers = getNumberValue("nationalFemaleWorkers");
+    const foreignMaleWorkers = getNumberValue("foreignMaleWorkers");
+    const foreignFemaleWorkers = getNumberValue("foreignFemaleWorkers");
+    const seasonalWorkers = {
+        has_seasonal_workers: getTextValue("hasSeasonalWorkers") === "yes",
+        national_male_workers: getNumberValue("seasonalNationalMaleWorkers"),
+        national_female_workers: getNumberValue("seasonalNationalFemaleWorkers"),
+        foreign_male_workers: getNumberValue("seasonalForeignMaleWorkers"),
+        foreign_female_workers: getNumberValue("seasonalForeignFemaleWorkers"),
+        total_workers: getNumberValue("seasonalTotalWorkers"),
+        season_start: getTextValue("seasonStartDate"),
+        season_end: getTextValue("seasonEndDate"),
+        notes: getTextValue("seasonalWorkersNotes")
+    };
     const capacity = {
         suites: 0,
         rooms: 0,
         beds: 0,
         chalets: 0,
         apartments: 0,
-        local_workers: 0,
-        foreign_workers: 0,
+        average_beds_per_room: 0,
+        local_workers: nationalMaleWorkers + nationalFemaleWorkers,
+        foreign_workers: foreignMaleWorkers + foreignFemaleWorkers,
+        national_male_workers: nationalMaleWorkers,
+        national_female_workers: nationalFemaleWorkers,
+        foreign_male_workers: foreignMaleWorkers,
+        foreign_female_workers: foreignFemaleWorkers,
+        total_workers: nationalMaleWorkers + nationalFemaleWorkers + foreignMaleWorkers + foreignFemaleWorkers,
+        seasonal_workers: seasonalWorkers,
         extras: ""
     };
 
     if (type === "فندق") {
         capacity.suites = getNumberValue("suitesCount");
         capacity.rooms = getNumberValue("roomsCount");
+        capacity.average_beds_per_room = getNumberValue("averageBedsPerRoom");
         capacity.beds = getNumberValue("bedsCount");
-        capacity.local_workers = getNumberValue("localWorkers");
-        capacity.foreign_workers = getNumberValue("foreignWorkers");
     }
 
     if (type === "قرية سياحية" || type === "منتجع") {
         capacity.chalets = getNumberValue("chaletsCount");
         capacity.rooms = getNumberValue("vrRoomsCount");
+        capacity.average_beds_per_room = getNumberValue("vrAverageBedsPerRoom");
         capacity.beds = getNumberValue("vrBedsCount");
         capacity.extras = getTextValue("villageResortExtras");
     }
@@ -865,14 +1358,14 @@ function getCapacityByType(type) {
     if (type === "شقق فندقية") {
         capacity.apartments = getNumberValue("apartmentsCount");
         capacity.rooms = getNumberValue("apRoomsCount");
+        capacity.average_beds_per_room = getNumberValue("apAverageBedsPerRoom");
         capacity.beds = getNumberValue("apBedsCount");
     }
 
     if (type === "نزل") {
         capacity.rooms = getNumberValue("hsRoomsCount");
+        capacity.average_beds_per_room = getNumberValue("hsAverageBedsPerRoom");
         capacity.beds = getNumberValue("hsBedsCount");
-        capacity.local_workers = getNumberValue("hsLocalWorkers");
-        capacity.foreign_workers = getNumberValue("hsForeignWorkers");
     }
 
     return capacity;
@@ -892,9 +1385,11 @@ function handleFacilitySubmit(event) {
     const facilityAddress = getTextValue("facilityAddress");
 
     if (!facilityName || !facilityMunicipality || !facilityCity || !facilityAddress) {
-        alert("يرجى إدخال اسم المرفق والبلدية والمدينة والعنوان");
+        alert("يرجى إدخال اسم المرفق والبلدية والمدينة والعنوان قبل الحفظ");
         return;
     }
+
+    updateAllFacilityCalculatedFields();
 
     const editingCode = getTextValue("editingFacilityCode") || currentEditingFacilityCode;
     const existingIndex = facilities.findIndex(item => item.facility_code === editingCode);
@@ -925,7 +1420,7 @@ function handleFacilitySubmit(event) {
 
         classification: getTextValue("classification"),
         affiliation: getTextValue("facilityAffiliation"),
-        status: getTextValue("facilityStatus"),
+        status: normalizeFacilityStatus(getTextValue("facilityStatus")),
         licenseStatus: getTextValue("licenseStatus"),
         establishment_date: getTextValue("establishmentDate"),
 
@@ -937,8 +1432,15 @@ function handleFacilitySubmit(event) {
         beds: capacity.beds,
         chalets: capacity.chalets,
         apartments: capacity.apartments,
+        average_beds_per_room: capacity.average_beds_per_room,
         local_workers: capacity.local_workers,
         foreign_workers: capacity.foreign_workers,
+        national_male_workers: capacity.national_male_workers,
+        national_female_workers: capacity.national_female_workers,
+        foreign_male_workers: capacity.foreign_male_workers,
+        foreign_female_workers: capacity.foreign_female_workers,
+        total_workers: capacity.total_workers,
+        seasonal_workers: capacity.seasonal_workers,
         extras: capacity.extras,
 
         documents: {
@@ -965,8 +1467,8 @@ function handleFacilitySubmit(event) {
     updateStatisticsSection();
 
     alert(existingFacility
-        ? "تم تحديث بيانات المرفق بنجاح"
-        : `تم حفظ المرفق بنجاح
+        ? "تم تحديث بيانات المرفق وربطها بالكود الوطني بنجاح"
+        : `تم حفظ المرفق وربطه بالسجل العام بنجاح
 الكود الوطني: ${facilityData.facility_code}`);
 
     const form = document.getElementById("facilityForm");
@@ -974,6 +1476,7 @@ function handleFacilitySubmit(event) {
 
     resetFacilityFormState();
     toggleFacilityFields();
+    toggleSeasonalWorkersFields();
     resetMap();
 
     showSection("facilities");
@@ -1035,14 +1538,24 @@ function getFacilityByCode(facilityCode) {
     return facilities.find(facility => facility.facility_code === facilityCode);
 }
 
+
+function updateLicenseExpiryDate() {
+    const issueDate = getTextValue("licenseIssueDate");
+    const expiryDate = addOneYear(issueDate);
+
+    if (expiryDate) {
+        setValue("licenseExpiryDate", expiryDate);
+    }
+}
+
 function handleLicenseSubmit(event) {
     event.preventDefault();
 
     const facilityCode = getTextValue("licenseFacility");
     const facility = getFacilityByCode(facilityCode);
 
-    if (!facility) {
-        alert("يرجى اختيار مرفق صحيح");
+    if (!facilityCode || !facility) {
+        alert("لا يمكن إنشاء ترخيص بدون اختيار مرفق من السجل العام");
         return;
     }
 
@@ -1059,8 +1572,9 @@ function handleLicenseSubmit(event) {
         return;
     }
 
-    const newLicense = {
-        id: licenses.length + 1,
+    const existingIndex = licenses.findIndex(item => item.license_number === licenseNumber);
+    const licenseData = {
+        id: existingIndex >= 0 ? licenses[existingIndex].id : licenses.length + 1,
         facility_code: facility.facility_code,
         facility_name: facility.name,
         license_number: licenseNumber,
@@ -1071,20 +1585,32 @@ function handleLicenseSubmit(event) {
         renewal_count: renewalCount,
         license_document: getFileName("licenseDocument"),
         notes: licenseNotes,
-        created_at: new Date().toISOString()
+        created_at: existingIndex >= 0 ? licenses[existingIndex].created_at : new Date().toISOString(),
+        updated_at: new Date().toISOString()
     };
 
-    licenses.push(newLicense);
+    if (existingIndex >= 0) {
+        licenses[existingIndex] = licenseData;
+    } else {
+        licenses.push(licenseData);
+    }
+
     saveLicensesToLocalStorage();
 
     facility.licenseStatus = licenseStatus;
+    facility.license_number = licenseNumber;
+    facility.license_type = licenseType;
+    facility.license_issue_date = issueDate;
+    facility.license_expiry_date = expiryDate;
+    facility.renewal_count = renewalCount;
     saveFacilitiesToLocalStorage();
 
     renderLicensesTable();
     renderFacilitiesTable();
     updateDashboard();
 
-    alert(`تم حفظ الترخيص بنجاح\nرقم الترخيص: ${newLicense.license_number}`);
+    alert(`تم حفظ الترخيص وربطه بالمرفق بنجاح
+الكود الوطني: ${facility.facility_code}`);
 
     const form = document.getElementById("licenseForm");
     if (form) form.reset();
@@ -1210,29 +1736,19 @@ function calculateOccupancyIndicators() {
 
     const totalGuests = libyanGuests + arabGuests + foreignGuests;
     const totalGuestNights = libyanGuestNights + arabGuestNights + foreignGuestNights;
-
     const availableRoomNights = rooms * monthDays;
     const availableBedNights = beds * monthDays;
-
-    const roomOccupancyRate = availableRoomNights > 0
-        ? (soldRoomNights / availableRoomNights) * 100
-        : 0;
-
-    const bedOccupancyRate = availableBedNights > 0
-        ? (totalGuestNights / availableBedNights) * 100
-        : 0;
-
-    const averageLengthOfStay = totalGuests > 0
-        ? totalGuestNights / totalGuests
-        : 0;
+    const roomOccupancyRate = availableRoomNights > 0 ? (soldRoomNights / availableRoomNights) * 100 : 0;
+    const bedOccupancyRate = availableBedNights > 0 ? (totalGuestNights / availableBedNights) * 100 : 0;
+    const averageLengthOfStay = totalGuests > 0 ? totalGuestNights / totalGuests : 0;
 
     setValue("totalGuests", totalGuests);
     setValue("totalGuestNights", totalGuestNights);
     setValue("availableRoomNights", availableRoomNights);
     setValue("availableBedNights", availableBedNights);
-    setValue("roomOccupancyRate", `${roomOccupancyRate.toFixed(2)}%`);
-    setValue("bedOccupancyRate", `${bedOccupancyRate.toFixed(2)}%`);
-    setValue("averageLengthOfStay", `${averageLengthOfStay.toFixed(2)} ليلة`);
+    setValue("roomOccupancyRate", formatPercent(roomOccupancyRate));
+    setValue("bedOccupancyRate", formatPercent(bedOccupancyRate));
+    setValue("averageLengthOfStay", formatStay(averageLengthOfStay));
 }
 
 function handleOccupancySubmit(event) {
@@ -1332,7 +1848,7 @@ function renderOccupancyTable() {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${report.facility_name || "-"}</td>
+            <td>${getReportFacilityName(report)}</td>
             <td>${report.year}</td>
             <td>${getMonthName(report.month)}</td>
             <td>${report.total_guests}</td>
@@ -1601,7 +2117,7 @@ function renderReport(rows) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${report.facility_name || "-"}</td>
+            <td>${getReportFacilityName(report)}</td>
             <td>${report.year || "-"}</td>
             <td>${getMonthName(report.month)}</td>
             <td>${report.libyan_guests || 0}</td>
@@ -1652,7 +2168,7 @@ function exportReportToExcel() {
 
     currentReportRows.forEach(report => {
         csvContent += [
-            report.facility_name || "",
+            getReportFacilityName(report),
             report.year || "",
             getMonthName(report.month),
             report.libyan_guests || 0,
@@ -1689,15 +2205,15 @@ function getFacilitiesReportRows() {
             facility.facility_code || "-",
             facility.name || "-",
             facility.type || "-",
-            facility.city || "-",
             facility.municipality || "-",
-            facility.address || "-",
-            facility.phone || "-",
-            facility.affiliation || "-",
+            facility.city || "-",
+            getFacilityClassificationStatus(facility),
+            facility.classification || "غير مصنف",
+            normalizeFacilityStatus(facility.status),
+            getLicenseStatusArabic(getFacilityLicenseStatus(facility)),
             facility.rooms || 0,
             facility.beds || 0,
-            facility.classification || "غير مصنف",
-            facility.status || "-"
+            getTotalWorkers(facility)
         ];
     });
 }
@@ -1713,15 +2229,14 @@ function exportFacilitiesReportToExcel() {
         "الكود الوطني",
         "اسم المرفق",
         "النوع",
-        "المدينة",
         "البلدية",
-        "العنوان",
-        "الهاتف",
-        "التبعية",
-        "الغرف",
-        "الأسرة",
         "التصنيف",
-        "الحالة"
+        "درجة التصنيف",
+        "حالة المرفق",
+        "حالة الترخيص",
+        "عدد الغرف",
+        "عدد الأسرة",
+        "إجمالي العاملين"
     ];
 
     let csvContent = "\uFEFF";
@@ -1803,15 +2318,14 @@ function issueFacilitiesReport() {
                         <th>الكود الوطني</th>
                         <th>اسم المرفق</th>
                         <th>النوع</th>
-                        <th>المدينة</th>
                         <th>البلدية</th>
-                        <th>العنوان</th>
-                        <th>الهاتف</th>
-                        <th>التبعية</th>
-                        <th>الغرف</th>
-                        <th>الأسرة</th>
                         <th>التصنيف</th>
-                        <th>الحالة</th>
+                        <th>درجة التصنيف</th>
+                        <th>حالة المرفق</th>
+                        <th>حالة الترخيص</th>
+                        <th>عدد الغرف</th>
+                        <th>عدد الأسرة</th>
+                        <th>إجمالي العاملين</th>
                     </tr>
                 </thead>
                 <tbody>${rowsHtml}</tbody>
@@ -1987,6 +2501,60 @@ function printReport() {
     printWindow.print();
 }
 
+
+function bindFacilityCalculationEvents() {
+    [
+        ["roomsCount", "averageBedsPerRoom", "bedsCount"],
+        ["vrRoomsCount", "vrAverageBedsPerRoom", "vrBedsCount"],
+        ["apRoomsCount", "apAverageBedsPerRoom", "apBedsCount"],
+        ["hsRoomsCount", "hsAverageBedsPerRoom", "hsBedsCount"]
+    ].forEach(([roomsId, averageId, bedsId]) => {
+        [roomsId, averageId].forEach(id => {
+            const field = document.getElementById(id);
+            if (field) {
+                field.addEventListener("input", () => calculateBedsFromAverage(roomsId, averageId, bedsId));
+            }
+        });
+    });
+
+    [
+        "nationalMaleWorkers",
+        "nationalFemaleWorkers",
+        "foreignMaleWorkers",
+        "foreignFemaleWorkers"
+    ].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) {
+            field.addEventListener("input", calculatePermanentWorkersTotal);
+        }
+    });
+
+    [
+        "seasonalNationalMaleWorkers",
+        "seasonalNationalFemaleWorkers",
+        "seasonalForeignMaleWorkers",
+        "seasonalForeignFemaleWorkers"
+    ].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) {
+            field.addEventListener("input", calculateSeasonalWorkersTotal);
+        }
+    });
+
+    const hasSeasonalWorkers = document.getElementById("hasSeasonalWorkers");
+    if (hasSeasonalWorkers) {
+        hasSeasonalWorkers.addEventListener("change", toggleSeasonalWorkersFields);
+    }
+
+    document.querySelectorAll('input[type="number"][min="0"]').forEach(field => {
+        field.addEventListener("input", function() {
+            if (Number(field.value) < 0) {
+                field.value = 0;
+            }
+        });
+    });
+}
+
 // ===============================
 // ربط الأحداث
 // ===============================
@@ -2022,6 +2590,8 @@ function bindEvents() {
         facilityForm.addEventListener("reset", function() {
             setTimeout(() => {
                 toggleFacilityFields();
+                updateAllFacilityCalculatedFields();
+                toggleSeasonalWorkersFields();
                 resetMap();
             }, 0);
         });
@@ -2030,6 +2600,20 @@ function bindEvents() {
     const facilityType = document.getElementById("facilityType");
     if (facilityType) {
         facilityType.addEventListener("change", toggleFacilityFields);
+    }
+
+    const facilityCity = document.getElementById("facilityCity");
+    if (facilityCity) {
+        facilityCity.addEventListener("input", filterFacilityCities);
+        facilityCity.addEventListener("focus", filterFacilityCities);
+        facilityCity.addEventListener("keydown", function(event) {
+            if (event.key === "Escape") {
+                const resultsBox = document.getElementById("facilityCityResults");
+                if (resultsBox) {
+                    resultsBox.classList.add("hidden");
+                }
+            }
+        });
     }
 
     const latitude = document.getElementById("latitude");
@@ -2046,6 +2630,14 @@ function bindEvents() {
     if (licenseForm) {
         licenseForm.addEventListener("submit", handleLicenseSubmit);
     }
+
+    const licenseIssueDate = document.getElementById("licenseIssueDate");
+    if (licenseIssueDate) {
+        licenseIssueDate.addEventListener("change", updateLicenseExpiryDate);
+        licenseIssueDate.addEventListener("input", updateLicenseExpiryDate);
+    }
+
+    bindFacilityCalculationEvents();
 
     const occupancyForm = document.getElementById("occupancyForm");
     if (occupancyForm) {
@@ -2114,13 +2706,17 @@ function bindEvents() {
     document.addEventListener("click", function(event) {
         const searchInput = document.getElementById("reportFacilitySearch");
         const resultsBox = document.getElementById("reportFacilityResults");
+        const cityInput = document.getElementById("facilityCity");
+        const cityResultsBox = document.getElementById("facilityCityResults");
 
-        if (!searchInput || !resultsBox) {
-            return;
+        if (searchInput && resultsBox &&
+            !searchInput.contains(event.target) && !resultsBox.contains(event.target)) {
+            resultsBox.classList.add("hidden");
         }
 
-        if (!searchInput.contains(event.target) && !resultsBox.contains(event.target)) {
-            resultsBox.classList.add("hidden");
+        if (cityInput && cityResultsBox &&
+            !cityInput.contains(event.target) && !cityResultsBox.contains(event.target)) {
+            cityResultsBox.classList.add("hidden");
         }
     });
 }
@@ -2131,8 +2727,11 @@ function bindEvents() {
 
 bindEvents();
 toggleFacilityFields();
+toggleSeasonalWorkersFields();
+updateAllFacilityCalculatedFields();
 checkLoginStatus();
 
+loadLibyaReferenceData();
 loadFacilitiesData();
 loadLicensesData();
 loadOccupancyData();

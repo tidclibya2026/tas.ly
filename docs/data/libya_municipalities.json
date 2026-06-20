@@ -1,0 +1,711 @@
+{
+  "country": "Libya",
+  "total": 141,
+  "municipalities": [
+    {
+      "id": 1,
+      "name_ar": "أبوسليم",
+      "type": "municipality"
+    },
+    {
+      "id": 2,
+      "name_ar": "أوباري",
+      "type": "municipality"
+    },
+    {
+      "id": 3,
+      "name_ar": "أوجلة",
+      "type": "municipality"
+    },
+    {
+      "id": 4,
+      "name_ar": "اجخرة",
+      "type": "municipality"
+    },
+    {
+      "id": 5,
+      "name_ar": "إجدابيا",
+      "type": "municipality"
+    },
+    {
+      "id": 6,
+      "name_ar": "إدري الشاطئ",
+      "type": "municipality"
+    },
+    {
+      "id": 7,
+      "name_ar": "اسبيعة",
+      "type": "municipality"
+    },
+    {
+      "id": 8,
+      "name_ar": "الأبرق",
+      "type": "municipality"
+    },
+    {
+      "id": 9,
+      "name_ar": "الأبيار",
+      "type": "municipality"
+    },
+    {
+      "id": 10,
+      "name_ar": "الأصابعة",
+      "type": "municipality"
+    },
+    {
+      "id": 11,
+      "name_ar": "البردي",
+      "type": "municipality"
+    },
+    {
+      "id": 12,
+      "name_ar": "البريقة",
+      "type": "municipality"
+    },
+    {
+      "id": 13,
+      "name_ar": "البيضاء",
+      "type": "municipality"
+    },
+    {
+      "id": 14,
+      "name_ar": "الجفرة",
+      "type": "municipality"
+    },
+    {
+      "id": 15,
+      "name_ar": "الجميل",
+      "type": "municipality"
+    },
+    {
+      "id": 16,
+      "name_ar": "الحرابة",
+      "type": "municipality"
+    },
+    {
+      "id": 17,
+      "name_ar": "الحوامد",
+      "type": "municipality"
+    },
+    {
+      "id": 18,
+      "name_ar": "الخمس",
+      "type": "municipality"
+    },
+    {
+      "id": 19,
+      "name_ar": "الرجبان",
+      "type": "municipality"
+    },
+    {
+      "id": 20,
+      "name_ar": "الرحيبات",
+      "type": "municipality"
+    },
+    {
+      "id": 21,
+      "name_ar": "الرياينة",
+      "type": "municipality"
+    },
+    {
+      "id": 22,
+      "name_ar": "الزاوية",
+      "type": "municipality"
+    },
+    {
+      "id": 23,
+      "name_ar": "الزاوية الجنوب",
+      "type": "municipality"
+    },
+    {
+      "id": 24,
+      "name_ar": "الزاوية الغرب",
+      "type": "municipality"
+    },
+    {
+      "id": 25,
+      "name_ar": "الزنتان",
+      "type": "municipality"
+    },
+    {
+      "id": 26,
+      "name_ar": "الزهراء",
+      "type": "municipality"
+    },
+    {
+      "id": 27,
+      "name_ar": "الزويتينة سلطان",
+      "type": "municipality"
+    },
+    {
+      "id": 28,
+      "name_ar": "السائح",
+      "type": "municipality"
+    },
+    {
+      "id": 29,
+      "name_ar": "الشرقية",
+      "type": "municipality"
+    },
+    {
+      "id": 30,
+      "name_ar": "الشقيقة",
+      "type": "municipality"
+    },
+    {
+      "id": 31,
+      "name_ar": "الشويرف",
+      "type": "municipality"
+    },
+    {
+      "id": 32,
+      "name_ar": "العامرية",
+      "type": "municipality"
+    },
+    {
+      "id": 33,
+      "name_ar": "العجيلات",
+      "type": "municipality"
+    },
+    {
+      "id": 34,
+      "name_ar": "العربان",
+      "type": "municipality"
+    },
+    {
+      "id": 35,
+      "name_ar": "العزيزية",
+      "type": "municipality"
+    },
+    {
+      "id": 36,
+      "name_ar": "العواته",
+      "type": "municipality"
+    },
+    {
+      "id": 37,
+      "name_ar": "الغريفة",
+      "type": "municipality"
+    },
+    {
+      "id": 38,
+      "name_ar": "القبة",
+      "type": "municipality"
+    },
+    {
+      "id": 39,
+      "name_ar": "القرة بوللي",
+      "type": "municipality"
+    },
+    {
+      "id": 40,
+      "name_ar": "القرضة الشاطئ",
+      "type": "municipality"
+    },
+    {
+      "id": 41,
+      "name_ar": "القطرون",
+      "type": "municipality"
+    },
+    {
+      "id": 42,
+      "name_ar": "القلعة",
+      "type": "municipality"
+    },
+    {
+      "id": 43,
+      "name_ar": "القواليش",
+      "type": "municipality"
+    },
+    {
+      "id": 44,
+      "name_ar": "القيقب",
+      "type": "municipality"
+    },
+    {
+      "id": 45,
+      "name_ar": "الكفرة",
+      "type": "municipality"
+    },
+    {
+      "id": 46,
+      "name_ar": "الماية",
+      "type": "municipality"
+    },
+    {
+      "id": 47,
+      "name_ar": "المرج",
+      "type": "municipality"
+    },
+    {
+      "id": 48,
+      "name_ar": "العوينة",
+      "type": "municipality"
+    },
+    {
+      "id": 49,
+      "name_ar": "المعمورة",
+      "type": "municipality"
+    },
+    {
+      "id": 50,
+      "name_ar": "المليطانية",
+      "type": "municipality"
+    },
+    {
+      "id": 51,
+      "name_ar": "المنشية الجميل",
+      "type": "municipality"
+    },
+    {
+      "id": 52,
+      "name_ar": "الناصرية",
+      "type": "municipality"
+    },
+    {
+      "id": 53,
+      "name_ar": "امساعد",
+      "type": "municipality"
+    },
+    {
+      "id": 54,
+      "name_ar": "انتلات البيضان",
+      "type": "municipality"
+    },
+    {
+      "id": 55,
+      "name_ar": "بئر الأشهب",
+      "type": "municipality"
+    },
+    {
+      "id": 56,
+      "name_ar": "باطن الجبل",
+      "type": "municipality"
+    },
+    {
+      "id": 57,
+      "name_ar": "براك الشاطئ",
+      "type": "municipality"
+    },
+    {
+      "id": 58,
+      "name_ar": "بنت بية",
+      "type": "municipality"
+    },
+    {
+      "id": 59,
+      "name_ar": "بنغازي",
+      "type": "municipality"
+    },
+    {
+      "id": 60,
+      "name_ar": "بني وليد",
+      "type": "municipality"
+    },
+    {
+      "id": 61,
+      "name_ar": "تاجوراء",
+      "type": "municipality"
+    },
+    {
+      "id": 62,
+      "name_ar": "تازربو",
+      "type": "municipality"
+    },
+    {
+      "id": 63,
+      "name_ar": "تاورغاء",
+      "type": "municipality"
+    },
+    {
+      "id": 64,
+      "name_ar": "تراغن",
+      "type": "municipality"
+    },
+    {
+      "id": 65,
+      "name_ar": "ترهونة",
+      "type": "municipality"
+    },
+    {
+      "id": 66,
+      "name_ar": "توكرة",
+      "type": "municipality"
+    },
+    {
+      "id": 67,
+      "name_ar": "جادو",
+      "type": "municipality"
+    },
+    {
+      "id": 68,
+      "name_ar": "جالو",
+      "type": "municipality"
+    },
+    {
+      "id": 69,
+      "name_ar": "جردس العبيد",
+      "type": "municipality"
+    },
+    {
+      "id": 70,
+      "name_ar": "جنزور",
+      "type": "municipality"
+    },
+    {
+      "id": 71,
+      "name_ar": "جنوب الجبل الأخضر",
+      "type": "municipality"
+    },
+    {
+      "id": 72,
+      "name_ar": "حي الأندلس",
+      "type": "municipality"
+    },
+    {
+      "id": 73,
+      "name_ar": "خليج السدرة",
+      "type": "municipality"
+    },
+    {
+      "id": 74,
+      "name_ar": "درج",
+      "type": "municipality"
+    },
+    {
+      "id": 75,
+      "name_ar": "درنة",
+      "type": "municipality"
+    },
+    {
+      "id": 76,
+      "name_ar": "ربيانة",
+      "type": "municipality"
+    },
+    {
+      "id": 77,
+      "name_ar": "رقدالين",
+      "type": "municipality"
+    },
+    {
+      "id": 78,
+      "name_ar": "زلطن",
+      "type": "municipality"
+    },
+    {
+      "id": 79,
+      "name_ar": "زليتن",
+      "type": "municipality"
+    },
+    {
+      "id": 80,
+      "name_ar": "زمزم",
+      "type": "municipality"
+    },
+    {
+      "id": 81,
+      "name_ar": "زوارة",
+      "type": "municipality"
+    },
+    {
+      "id": 82,
+      "name_ar": "ساحل الجبل",
+      "type": "municipality"
+    },
+    {
+      "id": 83,
+      "name_ar": "سبها",
+      "type": "municipality"
+    },
+    {
+      "id": 84,
+      "name_ar": "سرت",
+      "type": "municipality"
+    },
+    {
+      "id": 85,
+      "name_ar": "سلوق",
+      "type": "municipality"
+    },
+    {
+      "id": 86,
+      "name_ar": "سواني بن أدم",
+      "type": "municipality"
+    },
+    {
+      "id": 87,
+      "name_ar": "سوسة",
+      "type": "municipality"
+    },
+    {
+      "id": 88,
+      "name_ar": "سوق الجمعة",
+      "type": "municipality"
+    },
+    {
+      "id": 89,
+      "name_ar": "سوق الخميس",
+      "type": "municipality"
+    },
+    {
+      "id": 90,
+      "name_ar": "شحات",
+      "type": "municipality"
+    },
+    {
+      "id": 91,
+      "name_ar": "صبراتة",
+      "type": "municipality"
+    },
+    {
+      "id": 92,
+      "name_ar": "صرمان",
+      "type": "municipality"
+    },
+    {
+      "id": 93,
+      "name_ar": "طبرق",
+      "type": "municipality"
+    },
+    {
+      "id": 94,
+      "name_ar": "طرابلس المركز",
+      "type": "municipality"
+    },
+    {
+      "id": 95,
+      "name_ar": "ظاهر الجبل",
+      "type": "municipality"
+    },
+    {
+      "id": 96,
+      "name_ar": "عمر المختار",
+      "type": "municipality"
+    },
+    {
+      "id": 97,
+      "name_ar": "عين زارة",
+      "type": "municipality"
+    },
+    {
+      "id": 98,
+      "name_ar": "عين غزالة",
+      "type": "municipality"
+    },
+    {
+      "id": 99,
+      "name_ar": "غات",
+      "type": "municipality"
+    },
+    {
+      "id": 100,
+      "name_ar": "غدامس",
+      "type": "municipality"
+    },
+    {
+      "id": 101,
+      "name_ar": "غريان",
+      "type": "municipality"
+    },
+    {
+      "id": 102,
+      "name_ar": "قصر بن غشير",
+      "type": "municipality"
+    },
+    {
+      "id": 103,
+      "name_ar": "قصر خيار",
+      "type": "municipality"
+    },
+    {
+      "id": 104,
+      "name_ar": "قمينس",
+      "type": "municipality"
+    },
+    {
+      "id": 105,
+      "name_ar": "كاباو",
+      "type": "municipality"
+    },
+    {
+      "id": 106,
+      "name_ar": "ككلة",
+      "type": "municipality"
+    },
+    {
+      "id": 107,
+      "name_ar": "مرادة",
+      "type": "municipality"
+    },
+    {
+      "id": 108,
+      "name_ar": "مرزق",
+      "type": "municipality"
+    },
+    {
+      "id": 109,
+      "name_ar": "مرسى دفنة",
+      "type": "municipality"
+    },
+    {
+      "id": 110,
+      "name_ar": "مزدة",
+      "type": "municipality"
+    },
+    {
+      "id": 111,
+      "name_ar": "مسلاتة",
+      "type": "municipality"
+    },
+    {
+      "id": 112,
+      "name_ar": "مصراتة",
+      "type": "municipality"
+    },
+    {
+      "id": 113,
+      "name_ar": "نالوت",
+      "type": "municipality"
+    },
+    {
+      "id": 114,
+      "name_ar": "نسمة",
+      "type": "municipality"
+    },
+    {
+      "id": 115,
+      "name_ar": "هراوة",
+      "type": "municipality"
+    },
+    {
+      "id": 116,
+      "name_ar": "وادي البوانيس",
+      "type": "municipality"
+    },
+    {
+      "id": 117,
+      "name_ar": "وادي عتبة",
+      "type": "municipality"
+    },
+    {
+      "id": 118,
+      "name_ar": "وازن",
+      "type": "municipality"
+    },
+    {
+      "id": 119,
+      "name_ar": "وردامة",
+      "type": "municipality"
+    },
+    {
+      "id": 120,
+      "name_ar": "يفرن",
+      "type": "municipality"
+    },
+    {
+      "id": 121,
+      "name_ar": "أم الرزم",
+      "type": "municipality"
+    },
+    {
+      "id": 122,
+      "name_ar": "الجليدة",
+      "type": "municipality"
+    },
+    {
+      "id": 123,
+      "name_ar": "الجديدة",
+      "type": "municipality"
+    },
+    {
+      "id": 125,
+      "name_ar": "مدور الزيتون",
+      "type": "municipality"
+    },
+    {
+      "id": 126,
+      "name_ar": "العوينات",
+      "type": "municipality"
+    },
+    {
+      "id": 127,
+      "name_ar": "تجرهي",
+      "type": "municipality"
+    },
+    {
+      "id": 128,
+      "name_ar": "المردوم",
+      "type": "municipality"
+    },
+    {
+      "id": 129,
+      "name_ar": "تنيناي",
+      "type": "municipality"
+    },
+    {
+      "id": 130,
+      "name_ar": "القريات",
+      "type": "municipality"
+    },
+    {
+      "id": 131,
+      "name_ar": "زلة",
+      "type": "municipality"
+    },
+    {
+      "id": 132,
+      "name_ar": "برقن",
+      "type": "municipality"
+    },
+    {
+      "id": 133,
+      "name_ar": "اوال",
+      "type": "municipality"
+    },
+    {
+      "id": 134,
+      "name_ar": "تهالة",
+      "type": "municipality"
+    },
+    {
+      "id": 135,
+      "name_ar": "بركت",
+      "type": "municipality"
+    },
+    {
+      "id": 136,
+      "name_ar": "سيناون",
+      "type": "municipality"
+    },
+    {
+      "id": 137,
+      "name_ar": "زويلة",
+      "type": "municipality"
+    },
+    {
+      "id": 138,
+      "name_ar": "راس الطبل",
+      "type": "municipality"
+    },
+    {
+      "id": 139,
+      "name_ar": "المنطقة الادارية الشعبة",
+      "type": "municipality"
+    },
+    {
+      "id": 141,
+      "name_ar": "جرمة",
+      "type": "municipality"
+    },
+    {
+      "id": 142,
+      "name_ar": "قرارة",
+      "type": "municipality"
+    },
+    {
+      "id": 143,
+      "name_ar": "الرقيبة",
+      "type": "municipality"
+    }
+  ]
+}
