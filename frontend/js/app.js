@@ -19,10 +19,12 @@ let currentReportRows = [];
 let currentLicensesStatusReportRows = [];
 let currentEditingFacilityCode = "";
 let facilitiesLoadError = "";
+let currentFacilitiesPage = 1;
 let libyaCities = [];
 let libyaMunicipalities = [];
 let officialFacilitiesCache = [];
 let defaultReportOutputTemplate = "";
+const facilitiesPageSize = 20;
 
 let map = null;
 let marker = null;
@@ -292,6 +294,7 @@ function getFacilityDisplayName(facility) {
 function normalizeArabicText(text) {
     return String(text || "")
         .toLowerCase()
+        .replace(/ـ/g, "")
         .replace(/[أإآا]/g, "ا")
         .replace(/[ى]/g, "ي")
         .replace(/[ة]/g, "ه")
@@ -301,14 +304,234 @@ function normalizeArabicText(text) {
         .trim();
 }
 
+function normalizeArabicSearchText(text) {
+    return normalizeArabicText(text)
+        .replace(/(^|\s)ال/g, "$1")
+        .replace(/(^|\s)ا(?=\S)/g, "$1")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function compactSearchText(text) {
+    return normalizeArabicSearchText(text).replace(/\s+/g, "");
+}
+
+function textMatchesArabicSearch(text, query) {
+    const normalizedText = normalizeArabicText(text);
+    const normalizedQuery = normalizeArabicText(query);
+    const searchText = normalizeArabicSearchText(text);
+    const searchQuery = normalizeArabicSearchText(query);
+
+    if (!normalizedQuery) {
+        return true;
+    }
+
+    return normalizedText.includes(normalizedQuery) ||
+        searchText.includes(searchQuery) ||
+        compactSearchText(text).includes(compactSearchText(query));
+}
+
 function getFacilitySearchText(facility) {
     return normalizeArabicText([
         facility.name,
         facility.type,
         facility.city,
         facility.municipality,
-        facility.facility_code
+        facility.facility_code,
+        facility.classification,
+        getFacilityClassificationStatus(facility),
+        normalizeFacilityStatus(facility.status),
+        getLicenseStatusArabic(getFacilityLicenseStatus(facility)),
+        getFacilityLicenseStatus(facility)
     ].join(" "));
+}
+
+function getFacilityAutocompleteLabel(facility) {
+    return `${facility.name || "مرفق بدون اسم"} - ${facility.type || "-"} - ${facility.municipality || "-"} - ${facility.city || "-"} - ${facility.facility_code || "-"}`;
+}
+
+function searchFacilities(query = "", filters = {}) {
+    const normalizedQuery = String(query || "").trim();
+
+    return facilities.filter(facility => {
+        if (normalizedQuery && !textMatchesArabicSearch(getFacilitySearchText(facility), normalizedQuery)) {
+            return false;
+        }
+
+        if (filters.type && facility.type !== filters.type) {
+            return false;
+        }
+
+        if (filters.municipality && facility.municipality !== filters.municipality) {
+            return false;
+        }
+
+        if (filters.city && facility.city !== filters.city) {
+            return false;
+        }
+
+        if (filters.licenseStatus && normalizeLicenseStatusValue(getFacilityLicenseStatus(facility)) !== filters.licenseStatus) {
+            return false;
+        }
+
+        if (filters.status && normalizeFacilityStatus(facility.status) !== filters.status) {
+            return false;
+        }
+
+        if (filters.classification) {
+            const classificationValue = facility.classification || "غير مصنف";
+            const classificationStatus = getFacilityClassificationStatus(facility);
+
+            if (classificationValue !== filters.classification && classificationStatus !== filters.classification) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+}
+
+function renderAutocompleteResults(containerId, results, onSelect, emptyMessage = "لا توجد نتائج مطابقة") {
+    const container = document.getElementById(containerId);
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    if (!Array.isArray(results) || results.length === 0) {
+        container.innerHTML = `<div class="search-no-results">${emptyMessage}</div>`;
+        container.classList.remove("hidden");
+        return;
+    }
+
+    results.slice(0, 25).forEach(facility => {
+        const item = document.createElement("div");
+        item.className = "search-result-item";
+        item.innerHTML = `
+            <strong>${escapeHtml(facility.name || "مرفق بدون اسم")}</strong>
+            <br>
+            ${escapeHtml(facility.type || "-")} - ${escapeHtml(facility.municipality || "-")} - ${escapeHtml(facility.city || "-")} - ${escapeHtml(facility.facility_code || "-")}
+        `;
+        item.addEventListener("mousedown", function(event) {
+            event.preventDefault();
+            onSelect(facility);
+        });
+        container.appendChild(item);
+    });
+
+    container.classList.remove("hidden");
+}
+
+function hideAutocompleteResults(containerId) {
+    const container = document.getElementById(containerId);
+
+    if (container) {
+        container.innerHTML = "";
+        container.classList.add("hidden");
+    }
+}
+
+function findSingleMatchingFacility(query) {
+    const searchText = String(query || "").trim();
+
+    if (!searchText) {
+        return null;
+    }
+
+    const exactMatches = facilities.filter(facility => {
+        return normalizeArabicText(getFacilityDisplayName(facility)) === normalizeArabicText(searchText) ||
+            normalizeArabicText(facility.name) === normalizeArabicText(searchText) ||
+            normalizeArabicText(facility.facility_code) === normalizeArabicText(searchText);
+    });
+
+    if (exactMatches.length === 1) {
+        return exactMatches[0];
+    }
+
+    const matches = searchFacilities(searchText);
+    return matches.length === 1 ? matches[0] : null;
+}
+
+function resolveFacilityAutocompleteSelection(hiddenInputId, searchInputId, selectHandler) {
+    const selectedCode = getTextValue(hiddenInputId);
+    const selectedFacility = getFacilityByCode(selectedCode);
+
+    if (selectedFacility) {
+        return selectedFacility;
+    }
+
+    const singleMatch = findSingleMatchingFacility(getTextValue(searchInputId));
+
+    if (singleMatch) {
+        selectHandler(singleMatch);
+        return singleMatch;
+    }
+
+    return null;
+}
+
+function updateSelectedFacilityNote(elementId, facility) {
+    const note = document.getElementById(elementId);
+
+    if (!note) {
+        return;
+    }
+
+    if (!facility) {
+        note.textContent = "";
+        note.classList.add("hidden");
+        return;
+    }
+
+    note.textContent = `المرفق المختار: ${getFacilityAutocompleteLabel(facility)}`;
+    note.classList.remove("hidden");
+}
+
+function clearFacilityAutocompleteSelection(hiddenInputId, searchInputId, resultsContainerId, selectedNoteId) {
+    setValue(hiddenInputId, "");
+    setValue(searchInputId, "");
+    hideAutocompleteResults(resultsContainerId);
+    updateSelectedFacilityNote(selectedNoteId, null);
+}
+
+function renderFacilityAutocompleteFromInput(searchInputId, hiddenInputId, resultsContainerId, onSelect) {
+    const searchInput = document.getElementById(searchInputId);
+
+    if (!searchInput) {
+        return;
+    }
+
+    const query = searchInput.value.trim();
+    setValue(hiddenInputId, "");
+
+    if (!query) {
+        hideAutocompleteResults(resultsContainerId);
+        return;
+    }
+
+    renderAutocompleteResults(
+        resultsContainerId,
+        searchFacilities(query),
+        onSelect,
+        "لا توجد مرافق مطابقة"
+    );
+}
+
+function selectFacilityForLicense(facility) {
+    setValue("licenseFacilitySearch", getFacilityAutocompleteLabel(facility));
+    setValue("licenseFacility", facility.facility_code || "");
+    hideAutocompleteResults("licenseFacilityResults");
+    updateSelectedFacilityNote("licenseFacilitySelected", facility);
+}
+
+function selectFacilityForOccupancy(facility) {
+    setValue("occupancyFacilitySearch", getFacilityAutocompleteLabel(facility));
+    setValue("occupancyFacility", facility.facility_code || "");
+    hideAutocompleteResults("occupancyFacilityResults");
+    updateSelectedFacilityNote("occupancyFacilitySelected", facility);
+    fillFacilityCapacityForOccupancy();
 }
 
 function getDataFilePaths(fileName) {
@@ -604,6 +827,7 @@ function mergeFacilitiesData(savedItems, sourceItems) {
 }
 
 function refreshAllFacilityDropdowns() {
+    populateFacilitiesFilters();
     populateFacilitySelect();
     populateOccupancyFacilitySelect();
     populateReportFacilitySelect();
@@ -942,7 +1166,84 @@ function updateDashboard() {
 // ===============================
 
 
-function renderFacilitiesTable() {
+function setSelectOptions(selectId, values, allLabel = "الكل") {
+    const select = document.getElementById(selectId);
+
+    if (!select) {
+        return;
+    }
+
+    const currentValue = select.value;
+    select.innerHTML = `<option value="">${allLabel}</option>`;
+
+    values
+        .filter(Boolean)
+        .filter((value, index, array) => array.indexOf(value) === index)
+        .sort((first, second) => String(first).localeCompare(String(second), "ar"))
+        .forEach(value => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+        });
+
+    if ([...select.options].some(option => option.value === currentValue)) {
+        select.value = currentValue;
+    }
+}
+
+function populateFacilitiesFilters() {
+    if (!Array.isArray(facilities)) {
+        return;
+    }
+
+    setSelectOptions("facilitiesTypeFilter", facilities.map(item => item.type));
+    setSelectOptions("facilitiesMunicipalityFilter", facilities.map(item => item.municipality));
+    setSelectOptions("facilitiesCityFilter", facilities.map(item => item.city));
+    setSelectOptions("facilitiesClassificationFilter", [
+        ...facilities.map(item => item.classification || "غير مصنف"),
+        "مصنف",
+        "غير مصنف"
+    ]);
+}
+
+function getFacilitiesFilterValues() {
+    return {
+        type: getTextValue("facilitiesTypeFilter"),
+        municipality: getTextValue("facilitiesMunicipalityFilter"),
+        city: getTextValue("facilitiesCityFilter"),
+        licenseStatus: getTextValue("facilitiesLicenseStatusFilter"),
+        status: getTextValue("facilitiesStatusFilter"),
+        classification: getTextValue("facilitiesClassificationFilter")
+    };
+}
+
+function applyFacilitiesFilters() {
+    return searchFacilities(getTextValue("facilitiesSearchInput"), getFacilitiesFilterValues());
+}
+
+function renderFacilitiesPagination(totalItems, totalPages, startIndex, endIndex) {
+    setText(
+        "facilitiesPaginationInfo",
+        totalItems > 0
+            ? `عرض ${startIndex + 1} إلى ${endIndex} من أصل ${totalItems} مرفق`
+            : "عرض 0 إلى 0 من أصل 0 مرفق"
+    );
+    setText("facilitiesPageNumber", `الصفحة ${currentFacilitiesPage} من ${totalPages}`);
+
+    const prevButton = document.getElementById("facilitiesPrevPageBtn");
+    const nextButton = document.getElementById("facilitiesNextPageBtn");
+
+    if (prevButton) {
+        prevButton.disabled = currentFacilitiesPage <= 1;
+    }
+
+    if (nextButton) {
+        nextButton.disabled = currentFacilitiesPage >= totalPages;
+    }
+}
+
+function renderFacilitiesTablePage() {
     const tableBody = document.getElementById("facilitiesTable");
 
     if (!tableBody) {
@@ -955,10 +1256,30 @@ function renderFacilitiesTable() {
         const row = document.createElement("tr");
         row.innerHTML = `<td colspan="13">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
         tableBody.appendChild(row);
+        currentFacilitiesPage = 1;
+        renderFacilitiesPagination(0, 1, 0, 0);
         return;
     }
 
-    facilities.forEach(item => {
+    const filteredFacilities = applyFacilitiesFilters();
+    const totalItems = filteredFacilities.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / facilitiesPageSize));
+    currentFacilitiesPage = Math.min(Math.max(currentFacilitiesPage, 1), totalPages);
+
+    if (totalItems === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="13">لا توجد مرافق مطابقة للبحث أو الفلاتر المحددة</td>`;
+        tableBody.appendChild(row);
+        currentFacilitiesPage = 1;
+        renderFacilitiesPagination(0, 1, 0, 0);
+        return;
+    }
+
+    const startIndex = (currentFacilitiesPage - 1) * facilitiesPageSize;
+    const endIndex = Math.min(startIndex + facilitiesPageSize, totalItems);
+    const pageItems = filteredFacilities.slice(startIndex, endIndex);
+
+    pageItems.forEach(item => {
         const row = document.createElement("tr");
         const licenseStatus = getLicenseStatusArabic(getFacilityLicenseStatus(item));
 
@@ -982,6 +1303,22 @@ function renderFacilitiesTable() {
 
         tableBody.appendChild(row);
     });
+
+    renderFacilitiesPagination(totalItems, totalPages, startIndex, endIndex);
+}
+
+function renderFacilitiesTable() {
+    renderFacilitiesTablePage();
+}
+
+function resetFacilitiesPaginationAndRender() {
+    currentFacilitiesPage = 1;
+    renderFacilitiesTablePage();
+}
+
+function changeFacilitiesPage(direction) {
+    currentFacilitiesPage += direction;
+    renderFacilitiesTablePage();
 }
 
 function getFacilityUnitsDescription(facility) {
@@ -1570,31 +1907,7 @@ function getMultipleFileNames(inputId) {
 // ===============================
 
 function populateFacilitySelect() {
-    const select = document.getElementById("licenseFacility");
-
-    if (!select) {
-        return;
-    }
-
-    select.innerHTML = `<option value="">اختر المرفق...</option>`;
-
-    if (!Array.isArray(facilities) || facilities.length === 0) {
-        const option = document.createElement("option");
-        option.value = "";
-        option.textContent = "لا توجد مرافق محفوظة - أضف مرفقاً أولاً";
-        option.disabled = true;
-        select.appendChild(option);
-        return;
-    }
-
-    facilities.forEach(facility => {
-        const option = document.createElement("option");
-
-        option.value = facility.facility_code;
-        option.textContent = getFacilityDisplayName(facility);
-
-        select.appendChild(option);
-    });
+    hideAutocompleteResults("licenseFacilityResults");
 }
 
 function getFacilityByCode(facilityCode) {
@@ -1614,11 +1927,20 @@ function updateLicenseExpiryDate() {
 function handleLicenseSubmit(event) {
     event.preventDefault();
 
-    const facilityCode = getTextValue("licenseFacility");
-    const facility = getFacilityByCode(facilityCode);
+    const facility = resolveFacilityAutocompleteSelection(
+        "licenseFacility",
+        "licenseFacilitySearch",
+        selectFacilityForLicense
+    );
 
-    if (!facilityCode || !facility) {
-        alert("لا يمكن إنشاء ترخيص بدون اختيار مرفق من السجل العام");
+    if (!facility) {
+        renderFacilityAutocompleteFromInput(
+            "licenseFacilitySearch",
+            "licenseFacility",
+            "licenseFacilityResults",
+            selectFacilityForLicense
+        );
+        alert("يرجى اختيار المرفق من القائمة المقترحة قبل حفظ الترخيص");
         return;
     }
 
@@ -1677,6 +1999,7 @@ function handleLicenseSubmit(event) {
 
     const form = document.getElementById("licenseForm");
     if (form) form.reset();
+    clearFacilityAutocompleteSelection("licenseFacility", "licenseFacilitySearch", "licenseFacilityResults", "licenseFacilitySelected");
 }
 
 function renderLicensesTable() {
@@ -1727,31 +2050,7 @@ function getLicenseStatusArabic(status) {
 // ===============================
 
 function populateOccupancyFacilitySelect() {
-    const select = document.getElementById("occupancyFacility");
-
-    if (!select) {
-        return;
-    }
-
-    select.innerHTML = `<option value="">اختر المرفق...</option>`;
-
-    if (!Array.isArray(facilities) || facilities.length === 0) {
-        const option = document.createElement("option");
-        option.value = "";
-        option.textContent = "لا توجد مرافق محفوظة - أضف مرفقاً أولاً";
-        option.disabled = true;
-        select.appendChild(option);
-        return;
-    }
-
-    facilities.forEach(facility => {
-        const option = document.createElement("option");
-
-        option.value = facility.facility_code;
-        option.textContent = getFacilityDisplayName(facility);
-
-        select.appendChild(option);
-    });
+    hideAutocompleteResults("occupancyFacilityResults");
 }
 
 function fillFacilityCapacityForOccupancy() {
@@ -1819,13 +2118,24 @@ function handleOccupancySubmit(event) {
 
     calculateOccupancyIndicators();
 
-    const facilityCode = getTextValue("occupancyFacility");
-    const facility = facilities.find(item => item.facility_code === facilityCode);
+    const facility = resolveFacilityAutocompleteSelection(
+        "occupancyFacility",
+        "occupancyFacilitySearch",
+        selectFacilityForOccupancy
+    );
 
     if (!facility) {
-        alert("يرجى اختيار مرفق صحيح");
+        renderFacilityAutocompleteFromInput(
+            "occupancyFacilitySearch",
+            "occupancyFacility",
+            "occupancyFacilityResults",
+            selectFacilityForOccupancy
+        );
+        alert("يرجى اختيار المرفق من القائمة المقترحة قبل حفظ تقرير الإشغال");
         return;
     }
+
+    const facilityCode = facility.facility_code;
 
     const year = getNumberValue("occupancyYear");
     const month = getNumberValue("occupancyMonth");
@@ -1888,6 +2198,7 @@ function handleOccupancySubmit(event) {
     const form = document.getElementById("occupancyForm");
     if (form) form.reset();
 
+    clearFacilityAutocompleteSelection("occupancyFacility", "occupancyFacilitySearch", "occupancyFacilityResults", "occupancyFacilitySelected");
     updateMonthDays();
 }
 
@@ -2432,12 +2743,10 @@ function filterReportFacilities() {
     }
 
     const rawSearch = searchInput.value.trim();
-    const searchText = normalizeArabicText(rawSearch);
 
     hiddenInput.value = "";
-    resultsBox.innerHTML = "";
 
-    if (!searchText) {
+    if (!rawSearch) {
         resultsBox.classList.add("hidden");
         return;
     }
@@ -2448,73 +2757,23 @@ function filterReportFacilities() {
         return;
     }
 
-    const matchedFacilities = facilities.filter(facility => {
-        return getFacilitySearchText(facility).includes(searchText);
-    });
-
-    if (matchedFacilities.length === 0) {
-        resultsBox.innerHTML = `<div class="search-no-results">لا توجد نتائج مطابقة</div>`;
-        resultsBox.classList.remove("hidden");
-        return;
-    }
-
-    matchedFacilities.forEach(facility => {
-        const item = document.createElement("div");
-        item.className = "search-result-item";
-
-        item.innerHTML = `
-            <strong>${facility.name || "مرفق بدون اسم"}</strong>
-            <br>
-            ${facility.type || "-"} - ${facility.city || "-"} - ${facility.facility_code || "-"}
-        `;
-
-        item.addEventListener("mousedown", function(event) {
-            event.preventDefault();
-            selectReportFacility(facility);
-        });
-
-        resultsBox.appendChild(item);
-    });
-
-    resultsBox.classList.remove("hidden");
+    renderAutocompleteResults(
+        "reportFacilityResults",
+        searchFacilities(rawSearch),
+        selectReportFacility,
+        "لا توجد نتائج مطابقة"
+    );
 }
 
 function selectReportFacility(facility) {
-    setValue("reportFacilitySearch", getFacilityDisplayName(facility));
+    setValue("reportFacilitySearch", getFacilityAutocompleteLabel(facility));
     setValue("reportFacility", facility.facility_code || "");
 
-    const resultsBox = document.getElementById("reportFacilityResults");
-    if (resultsBox) {
-        resultsBox.innerHTML = "";
-        resultsBox.classList.add("hidden");
-    }
+    hideAutocompleteResults("reportFacilityResults");
 }
 
 function findFacilityFromReportSearchText() {
-    const searchTextRaw = getTextValue("reportFacilitySearch");
-    const searchText = normalizeArabicText(searchTextRaw);
-
-    if (!searchText) {
-        return null;
-    }
-
-    const exactMatch = facilities.find(facility => {
-        return normalizeArabicText(getFacilityDisplayName(facility)) === searchText;
-    });
-
-    if (exactMatch) {
-        return exactMatch;
-    }
-
-    const matchedFacilities = facilities.filter(facility => {
-        return getFacilitySearchText(facility).includes(searchText);
-    });
-
-    if (matchedFacilities.length === 1) {
-        return matchedFacilities[0];
-    }
-
-    return null;
+    return findSingleMatchingFacility(getTextValue("reportFacilitySearch"));
 }
 
 function toggleReportMonth() {
@@ -3229,6 +3488,32 @@ function bindEvents() {
     const licenseForm = document.getElementById("licenseForm");
     if (licenseForm) {
         licenseForm.addEventListener("submit", handleLicenseSubmit);
+        licenseForm.addEventListener("reset", function() {
+            setTimeout(() => {
+                clearFacilityAutocompleteSelection("licenseFacility", "licenseFacilitySearch", "licenseFacilityResults", "licenseFacilitySelected");
+            }, 0);
+        });
+    }
+
+    const licenseFacilitySearch = document.getElementById("licenseFacilitySearch");
+    if (licenseFacilitySearch) {
+        licenseFacilitySearch.addEventListener("input", function() {
+            updateSelectedFacilityNote("licenseFacilitySelected", null);
+            renderFacilityAutocompleteFromInput(
+                "licenseFacilitySearch",
+                "licenseFacility",
+                "licenseFacilityResults",
+                selectFacilityForLicense
+            );
+        });
+        licenseFacilitySearch.addEventListener("focus", function() {
+            renderFacilityAutocompleteFromInput(
+                "licenseFacilitySearch",
+                "licenseFacility",
+                "licenseFacilityResults",
+                selectFacilityForLicense
+            );
+        });
     }
 
     const licenseIssueDate = document.getElementById("licenseIssueDate");
@@ -3242,11 +3527,36 @@ function bindEvents() {
     const occupancyForm = document.getElementById("occupancyForm");
     if (occupancyForm) {
         occupancyForm.addEventListener("submit", handleOccupancySubmit);
+        occupancyForm.addEventListener("reset", function() {
+            setTimeout(() => {
+                clearFacilityAutocompleteSelection("occupancyFacility", "occupancyFacilitySearch", "occupancyFacilityResults", "occupancyFacilitySelected");
+                calculateOccupancyIndicators();
+            }, 0);
+        });
     }
 
-    const occupancyFacility = document.getElementById("occupancyFacility");
-    if (occupancyFacility) {
-        occupancyFacility.addEventListener("change", fillFacilityCapacityForOccupancy);
+    const occupancyFacilitySearch = document.getElementById("occupancyFacilitySearch");
+    if (occupancyFacilitySearch) {
+        occupancyFacilitySearch.addEventListener("input", function() {
+            updateSelectedFacilityNote("occupancyFacilitySelected", null);
+            setValue("occupancyRooms", 0);
+            setValue("occupancyBeds", 0);
+            calculateOccupancyIndicators();
+            renderFacilityAutocompleteFromInput(
+                "occupancyFacilitySearch",
+                "occupancyFacility",
+                "occupancyFacilityResults",
+                selectFacilityForOccupancy
+            );
+        });
+        occupancyFacilitySearch.addEventListener("focus", function() {
+            renderFacilityAutocompleteFromInput(
+                "occupancyFacilitySearch",
+                "occupancyFacility",
+                "occupancyFacilityResults",
+                selectFacilityForOccupancy
+            );
+        });
     }
 
     const occupancyYear = document.getElementById("occupancyYear");
@@ -3286,6 +3596,36 @@ function bindEvents() {
     const reportType = document.getElementById("reportType");
     if (reportType) {
         reportType.addEventListener("change", toggleReportMonth);
+    }
+
+    const facilitiesSearchInput = document.getElementById("facilitiesSearchInput");
+    if (facilitiesSearchInput) {
+        facilitiesSearchInput.addEventListener("input", resetFacilitiesPaginationAndRender);
+    }
+
+    [
+        "facilitiesTypeFilter",
+        "facilitiesMunicipalityFilter",
+        "facilitiesCityFilter",
+        "facilitiesLicenseStatusFilter",
+        "facilitiesStatusFilter",
+        "facilitiesClassificationFilter"
+    ].forEach(id => {
+        const field = document.getElementById(id);
+
+        if (field) {
+            field.addEventListener("change", resetFacilitiesPaginationAndRender);
+        }
+    });
+
+    const facilitiesPrevPageBtn = document.getElementById("facilitiesPrevPageBtn");
+    if (facilitiesPrevPageBtn) {
+        facilitiesPrevPageBtn.addEventListener("click", () => changeFacilitiesPage(-1));
+    }
+
+    const facilitiesNextPageBtn = document.getElementById("facilitiesNextPageBtn");
+    if (facilitiesNextPageBtn) {
+        facilitiesNextPageBtn.addEventListener("click", () => changeFacilitiesPage(1));
     }
 
     [
@@ -3330,6 +3670,10 @@ function bindEvents() {
         const resultsBox = document.getElementById("reportFacilityResults");
         const cityInput = document.getElementById("facilityCity");
         const cityResultsBox = document.getElementById("facilityCityResults");
+        const licenseInput = document.getElementById("licenseFacilitySearch");
+        const licenseResultsBox = document.getElementById("licenseFacilityResults");
+        const occupancyInput = document.getElementById("occupancyFacilitySearch");
+        const occupancyResultsBox = document.getElementById("occupancyFacilityResults");
 
         if (searchInput && resultsBox &&
             !searchInput.contains(event.target) && !resultsBox.contains(event.target)) {
@@ -3339,6 +3683,16 @@ function bindEvents() {
         if (cityInput && cityResultsBox &&
             !cityInput.contains(event.target) && !cityResultsBox.contains(event.target)) {
             cityResultsBox.classList.add("hidden");
+        }
+
+        if (licenseInput && licenseResultsBox &&
+            !licenseInput.contains(event.target) && !licenseResultsBox.contains(event.target)) {
+            licenseResultsBox.classList.add("hidden");
+        }
+
+        if (occupancyInput && occupancyResultsBox &&
+            !occupancyInput.contains(event.target) && !occupancyResultsBox.contains(event.target)) {
+            occupancyResultsBox.classList.add("hidden");
         }
     });
 }

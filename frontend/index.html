@@ -116,6 +116,68 @@
                         <button type="button" class="secondary-button" onclick="importOfficialFacilities()">استيراد البيانات الرسمية</button>
                     </div>
 
+                    <div class="form-section facilities-search-panel">
+                        <h3>البحث عن مرفق</h3>
+
+                        <div class="form-grid">
+                            <div style="grid-column: span 2;">
+                                <label for="facilitiesSearchInput">البحث عن مرفق</label>
+                                <input type="text" id="facilitiesSearchInput" placeholder="اكتب اسم المرفق، الكود الوطني، البلدية، المدينة، النوع أو الحالة">
+                            </div>
+
+                            <div>
+                                <label for="facilitiesTypeFilter">نوع المرفق</label>
+                                <select id="facilitiesTypeFilter">
+                                    <option value="">الكل</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="facilitiesMunicipalityFilter">البلدية</label>
+                                <select id="facilitiesMunicipalityFilter">
+                                    <option value="">الكل</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="facilitiesCityFilter">المدينة</label>
+                                <select id="facilitiesCityFilter">
+                                    <option value="">الكل</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="facilitiesLicenseStatusFilter">حالة الترخيص</label>
+                                <select id="facilitiesLicenseStatusFilter">
+                                    <option value="">الكل</option>
+                                    <option value="Active">ساري</option>
+                                    <option value="Expired">منتهي</option>
+                                    <option value="Pending">قيد الإجراء</option>
+                                    <option value="Suspended">موقوف</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="facilitiesStatusFilter">حالة المرفق</label>
+                                <select id="facilitiesStatusFilter">
+                                    <option value="">الكل</option>
+                                    <option value="نشط">نشط</option>
+                                    <option value="غير نشط">غير نشط</option>
+                                    <option value="صيانة">صيانة</option>
+                                    <option value="مقفل">مقفل</option>
+                                    <option value="قوة قاهرة">قوة قاهرة</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="facilitiesClassificationFilter">التصنيف</label>
+                                <select id="facilitiesClassificationFilter">
+                                    <option value="">الكل</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-wrapper">
                         <table>
                             <thead>
@@ -137,6 +199,15 @@
                             </thead>
                             <tbody id="facilitiesTable"></tbody>
                         </table>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <div id="facilitiesPaginationInfo">عرض 0 إلى 0 من أصل 0 مرفق</div>
+                        <div class="pagination-controls">
+                            <button type="button" id="facilitiesPrevPageBtn" class="secondary-button">السابق</button>
+                            <span id="facilitiesPageNumber">الصفحة 1 من 1</span>
+                            <button type="button" id="facilitiesNextPageBtn" class="secondary-button">التالي</button>
+                        </div>
                     </div>
                 </section>
 
@@ -546,11 +617,12 @@
                             <h3>أولاً: بيانات المرفق والترخيص</h3>
 
                             <div class="form-grid">
-                                <div>
-                                    <label for="licenseFacility">اسم المرفق</label>
-                                    <select id="licenseFacility" required>
-                                        <option value="">اختر المرفق...</option>
-                                    </select>
+                                <div class="autocomplete-box">
+                                    <label for="licenseFacilitySearch">اختيار المرفق</label>
+                                    <input type="text" id="licenseFacilitySearch" placeholder="اكتب اسم المرفق أو الكود الوطني..." autocomplete="off" required>
+                                    <input type="hidden" id="licenseFacility">
+                                    <div id="licenseFacilityResults" class="search-results hidden"></div>
+                                    <div id="licenseFacilitySelected" class="selected-facility-note hidden"></div>
                                 </div>
 
                                 <div>
@@ -657,11 +729,12 @@
                             <h3>أولاً: بيانات المرفق والفترة الإحصائية</h3>
 
                             <div class="form-grid">
-                                <div>
-                                    <label for="occupancyFacility">اسم المرفق</label>
-                                    <select id="occupancyFacility" required>
-                                        <option value="">اختر المرفق...</option>
-                                    </select>
+                                <div class="autocomplete-box">
+                                    <label for="occupancyFacilitySearch">اختيار المرفق</label>
+                                    <input type="text" id="occupancyFacilitySearch" placeholder="اكتب اسم المرفق أو الكود الوطني..." autocomplete="off" required>
+                                    <input type="hidden" id="occupancyFacility">
+                                    <div id="occupancyFacilityResults" class="search-results hidden"></div>
+                                    <div id="occupancyFacilitySelected" class="selected-facility-note hidden"></div>
                                 </div>
 
                                 <div>
