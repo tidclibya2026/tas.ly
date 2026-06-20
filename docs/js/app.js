@@ -16,11 +16,13 @@ let facilities = [];
 let licenses = [];
 let occupancyReports = [];
 let currentReportRows = [];
+let currentLicensesStatusReportRows = [];
 let currentEditingFacilityCode = "";
 let facilitiesLoadError = "";
 let libyaCities = [];
 let libyaMunicipalities = [];
 let officialFacilitiesCache = [];
+let defaultReportOutputTemplate = "";
 
 let map = null;
 let marker = null;
@@ -220,6 +222,67 @@ function addOneYear(dateValue) {
     }
 
     return date.toISOString().slice(0, 10);
+}
+
+function parseDateOnly(dateValue) {
+    if (!dateValue) {
+        return null;
+    }
+
+    const [year, month, day] = String(dateValue).slice(0, 10).split("-").map(Number);
+
+    if (!year || !month || !day) {
+        return null;
+    }
+
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getTodayDateOnly() {
+    const now = new Date();
+    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+}
+
+function formatDateOnly(dateValue) {
+    return dateValue ? String(dateValue).slice(0, 10) : "غير محدد";
+}
+
+function getLicenseExpiryDateValue(license) {
+    return license.expiry_date ||
+        license.licenseExpiryDate ||
+        license.license_expiry_date ||
+        "";
+}
+
+function getLicenseIssueDateValue(license) {
+    return license.issue_date ||
+        license.licenseIssueDate ||
+        license.license_issue_date ||
+        "";
+}
+
+function normalizeLicenseStatusValue(status) {
+    const value = String(status || "").trim();
+    const normalized = normalizeArabicText(value);
+
+    if (value === "Active" || normalized === normalizeArabicText("ساري")) {
+        return "Active";
+    }
+
+    if (value === "Expired" || normalized === normalizeArabicText("منتهي")) {
+        return "Expired";
+    }
+
+    if (value === "Pending" || normalized === normalizeArabicText("قيد الإجراء")) {
+        return "Pending";
+    }
+
+    if (value === "Suspended" || normalized === normalizeArabicText("موقوف")) {
+        return "Suspended";
+    }
+
+    return value || "Pending";
 }
 
 function getFacilityDisplayName(facility) {
@@ -1882,6 +1945,455 @@ function getMonthName(month) {
     return months[month] || "-";
 }
 
+function getOfficialReportHeaderHtml(reportName) {
+    return `
+        <div class="official-report-header">
+            <h2>وزارة السياحة والصناعات التقليدية</h2>
+            <p>إدارة المهن والرقابة السياحية</p>
+            <p>قسم الإيواء السياحي</p>
+            <strong>اسم التقرير: ${escapeHtml(reportName)}</strong>
+        </div>
+    `;
+}
+
+function getOfficialReportFooterHtml() {
+    return `
+        <div class="official-report-footer">
+            تصميم وبرمجة مركز المعلومات والتوثيق السياحي 2026
+        </div>
+    `;
+}
+
+function ensureDefaultReportOutput() {
+    const reportOutput = document.getElementById("reportOutput");
+
+    if (!reportOutput) {
+        return;
+    }
+
+    if (!defaultReportOutputTemplate) {
+        defaultReportOutputTemplate = reportOutput.innerHTML;
+    }
+
+    if (!document.getElementById("reportTable")) {
+        reportOutput.innerHTML = defaultReportOutputTemplate;
+    }
+}
+
+function calculateLicenseDaysRemaining(expiryDate) {
+    const expiry = parseDateOnly(expiryDate);
+
+    if (!expiry) {
+        return null;
+    }
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    return Math.ceil((expiry.getTime() - getTodayDateOnly().getTime()) / dayMs);
+}
+
+function getLicenseStatusForReport(license) {
+    return normalizeLicenseStatusValue(
+        license.license_status ||
+        license.licenseStatus ||
+        license.status ||
+        ""
+    );
+}
+
+function getLicenseControlStatus(license) {
+    const status = getLicenseStatusForReport(license);
+    const daysRemaining = calculateLicenseDaysRemaining(getLicenseExpiryDateValue(license));
+
+    if (status === "Expired" || (daysRemaining !== null && daysRemaining < 0)) {
+        return "منتهي";
+    }
+
+    if (status === "Suspended") {
+        return "موقوف";
+    }
+
+    if (daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 30) {
+        return "ينتهي خلال 30 يوماً";
+    }
+
+    if (daysRemaining !== null && daysRemaining >= 31 && daysRemaining <= 60) {
+        return "ينتهي خلال 60 يوماً";
+    }
+
+    if (daysRemaining !== null && daysRemaining >= 61 && daysRemaining <= 90) {
+        return "ينتهي خلال 90 يوماً";
+    }
+
+    if (status === "Pending") {
+        return "قيد الإجراء";
+    }
+
+    if (daysRemaining === null) {
+        return "غير محدد";
+    }
+
+    return "ساري";
+}
+
+function getLicenseExpiryRange(license) {
+    const daysRemaining = calculateLicenseDaysRemaining(getLicenseExpiryDateValue(license));
+    const status = getLicenseStatusForReport(license);
+
+    if (status === "Expired" || (daysRemaining !== null && daysRemaining < 0)) {
+        return "expired";
+    }
+
+    if (daysRemaining === null) {
+        return "unspecified";
+    }
+
+    if (daysRemaining <= 30) {
+        return "within_30";
+    }
+
+    if (daysRemaining <= 60) {
+        return "within_60";
+    }
+
+    if (daysRemaining <= 90) {
+        return "within_90";
+    }
+
+    return "future";
+}
+
+function getLicenseExpiryRangeLabel(range) {
+    const labels = {
+        expired: "منتهي",
+        within_30: "ينتهي خلال 30 يوماً",
+        within_60: "ينتهي خلال 60 يوماً",
+        within_90: "ينتهي خلال 90 يوماً",
+        one_to_three_months: "ينتهي من شهر إلى ثلاثة أشهر",
+        unspecified: "غير محدد",
+        future: "أكثر من 90 يوماً"
+    };
+
+    return labels[range] || "-";
+}
+
+function getLicenseReportRows() {
+    return licenses.map(license => {
+        const facility = getFacilityByCode(license.facility_code);
+        const expiryDate = getLicenseExpiryDateValue(license);
+        const issueDate = getLicenseIssueDateValue(license);
+        const daysRemaining = calculateLicenseDaysRemaining(expiryDate);
+        const status = getLicenseStatusForReport(license);
+        const range = getLicenseExpiryRange(license);
+
+        return {
+            facility_code: license.facility_code || "-",
+            facility_name: facility ? facility.name : (license.facility_name || "-"),
+            facility_type: facility ? facility.type : "-",
+            municipality: facility ? facility.municipality : "-",
+            city: facility ? facility.city : "-",
+            license_number: license.license_number || "-",
+            license_type: license.license_type || "-",
+            issue_date: formatDateOnly(issueDate),
+            expiry_date: formatDateOnly(expiryDate),
+            days_remaining: daysRemaining === null ? "غير محدد" : daysRemaining,
+            license_status: getLicenseStatusArabic(status),
+            license_status_value: status,
+            control_status: getLicenseControlStatus(license),
+            expiry_range: range,
+            renewal_count: Number(license.renewal_count || 0),
+            notes: license.notes || "-",
+            search_text: normalizeArabicText([
+                license.facility_code,
+                license.facility_name,
+                license.license_number,
+                facility ? getFacilityDisplayName(facility) : ""
+            ].join(" ")),
+            issue_year: issueDate ? Number(String(issueDate).slice(0, 4)) : null,
+            expiry_year: expiryDate ? Number(String(expiryDate).slice(0, 4)) : null
+        };
+    });
+}
+
+function getFilteredLicenseStatusRows() {
+    const statusFilter = getTextValue("licenseReportStatusFilter");
+    const expiryRangeFilter = getTextValue("licenseReportExpiryRange");
+    const municipalityFilter = normalizeArabicText(getTextValue("licenseReportMunicipality"));
+    const cityFilter = normalizeArabicText(getTextValue("licenseReportCity"));
+    const typeFilter = getTextValue("licenseReportFacilityType");
+    const searchText = normalizeArabicText(getTextValue("reportFacilitySearch"));
+    const year = getNumberValue("reportYear");
+
+    return getLicenseReportRows().filter(row => {
+        if (statusFilter && row.license_status_value !== statusFilter) {
+            return false;
+        }
+
+        if (expiryRangeFilter === "one_to_three_months") {
+            const days = Number(row.days_remaining);
+            if (!Number.isFinite(days) || days <= 30 || days > 90) {
+                return false;
+            }
+        } else if (expiryRangeFilter && row.expiry_range !== expiryRangeFilter) {
+            return false;
+        }
+
+        if (municipalityFilter && !normalizeArabicText(row.municipality).includes(municipalityFilter)) {
+            return false;
+        }
+
+        if (cityFilter && !normalizeArabicText(row.city).includes(cityFilter)) {
+            return false;
+        }
+
+        if (typeFilter && row.facility_type !== typeFilter) {
+            return false;
+        }
+
+        if (searchText && !row.search_text.includes(searchText)) {
+            return false;
+        }
+
+        if (year && row.issue_year !== year && row.expiry_year !== year) {
+            return false;
+        }
+
+        return true;
+    });
+}
+
+function calculateLicensesStatusSummary(rows) {
+    const total = rows.length;
+    const active = rows.filter(row => {
+        const days = Number(row.days_remaining);
+        return Number.isFinite(days) &&
+            days > 0 &&
+            row.license_status_value !== "Expired" &&
+            row.license_status_value !== "Suspended";
+    }).length;
+    const expired = rows.filter(row => row.control_status === "منتهي").length;
+    const within30 = rows.filter(row => row.expiry_range === "within_30").length;
+    const within60 = rows.filter(row => row.expiry_range === "within_60").length;
+    const within90 = rows.filter(row => row.expiry_range === "within_90").length;
+    const oneToThreeMonths = rows.filter(row => {
+        const days = Number(row.days_remaining);
+        return Number.isFinite(days) && days > 30 && days <= 90;
+    }).length;
+
+    return {
+        total,
+        active,
+        expired,
+        within30,
+        within60,
+        within90,
+        oneToThreeMonths,
+        activePercent: total > 0 ? (active / total) * 100 : 0,
+        expiredPercent: total > 0 ? (expired / total) * 100 : 0
+    };
+}
+
+function renderLicensesStatusSummary(summary) {
+    return `
+        <div class="cards report-cards licenses-status-cards">
+            <div class="card"><h3>إجمالي التراخيص</h3><p>${summary.total}</p></div>
+            <div class="card"><h3>التراخيص السارية</h3><p>${summary.active}</p></div>
+            <div class="card"><h3>التراخيص المنتهية</h3><p>${summary.expired}</p></div>
+            <div class="card"><h3>تنتهي خلال 30 يوماً</h3><p>${summary.within30}</p></div>
+            <div class="card"><h3>تنتهي خلال 60 يوماً</h3><p>${summary.within60}</p></div>
+            <div class="card"><h3>تنتهي خلال 90 يوماً</h3><p>${summary.within90}</p></div>
+            <div class="card"><h3>من شهر إلى ثلاثة أشهر</h3><p>${summary.oneToThreeMonths}</p></div>
+            <div class="card"><h3>نسبة السارية</h3><p>${summary.activePercent.toFixed(2)}%</p></div>
+            <div class="card"><h3>نسبة المنتهية</h3><p>${summary.expiredPercent.toFixed(2)}%</p></div>
+        </div>
+    `;
+}
+
+function renderLicensesStatusTable(rows) {
+    if (!rows.length) {
+        return `<tr><td colspan="14">لا توجد بيانات تراخيص مطابقة للفلاتر المحددة</td></tr>`;
+    }
+
+    return rows.map(row => `
+        <tr>
+            <td>${escapeHtml(row.facility_code)}</td>
+            <td>${escapeHtml(row.facility_name)}</td>
+            <td>${escapeHtml(row.facility_type)}</td>
+            <td>${escapeHtml(row.municipality)}</td>
+            <td>${escapeHtml(row.city)}</td>
+            <td>${escapeHtml(row.license_number)}</td>
+            <td>${escapeHtml(row.license_type)}</td>
+            <td>${escapeHtml(row.issue_date)}</td>
+            <td>${escapeHtml(row.expiry_date)}</td>
+            <td>${escapeHtml(row.days_remaining)}</td>
+            <td>${escapeHtml(row.license_status)}</td>
+            <td>${escapeHtml(row.control_status)}</td>
+            <td>${escapeHtml(row.renewal_count)}</td>
+            <td>${escapeHtml(row.notes)}</td>
+        </tr>
+    `).join("");
+}
+
+function generateLicensesStatusReport() {
+    const reportOutput = document.getElementById("reportOutput");
+
+    if (!reportOutput) {
+        return;
+    }
+
+    currentLicensesStatusReportRows = getFilteredLicenseStatusRows();
+    const summary = calculateLicensesStatusSummary(currentLicensesStatusReportRows);
+    const reportDate = new Date().toLocaleDateString("ar-LY");
+
+    reportOutput.innerHTML = `
+        ${getOfficialReportHeaderHtml("تقرير حالة التراخيص السياحية")}
+        <div class="official-report-meta">تاريخ إعداد التقرير: ${escapeHtml(reportDate)}</div>
+        ${renderLicensesStatusSummary(summary)}
+        <div class="table-wrapper licenses-status-table-wrapper">
+            <table class="licenses-status-table">
+                <thead>
+                    <tr>
+                        <th>الكود الوطني للمرفق</th>
+                        <th>اسم المرفق</th>
+                        <th>نوع المرفق</th>
+                        <th>البلدية</th>
+                        <th>المدينة</th>
+                        <th>رقم الترخيص</th>
+                        <th>نوع الترخيص</th>
+                        <th>تاريخ الإصدار</th>
+                        <th>تاريخ الانتهاء</th>
+                        <th>عدد الأيام المتبقية</th>
+                        <th>حالة الترخيص</th>
+                        <th>التصنيف الرقابي للترخيص</th>
+                        <th>عدد مرات التجديد</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>${renderLicensesStatusTable(currentLicensesStatusReportRows)}</tbody>
+            </table>
+        </div>
+        ${getOfficialReportFooterHtml()}
+    `;
+}
+
+function exportLicensesStatusReportCSV() {
+    if (!currentLicensesStatusReportRows || currentLicensesStatusReportRows.length === 0) {
+        currentLicensesStatusReportRows = getFilteredLicenseStatusRows();
+    }
+
+    if (!currentLicensesStatusReportRows.length) {
+        alert("لا توجد بيانات تراخيص لتصديرها");
+        return;
+    }
+
+    const headers = [
+        "الكود الوطني للمرفق",
+        "اسم المرفق",
+        "نوع المرفق",
+        "البلدية",
+        "المدينة",
+        "رقم الترخيص",
+        "نوع الترخيص",
+        "تاريخ الإصدار",
+        "تاريخ الانتهاء",
+        "عدد الأيام المتبقية",
+        "حالة الترخيص",
+        "التصنيف الرقابي للترخيص",
+        "عدد مرات التجديد",
+        "ملاحظات"
+    ];
+
+    let csvContent = "\uFEFF";
+    csvContent += [
+        "وزارة السياحة والصناعات التقليدية",
+        "إدارة المهن والرقابة السياحية",
+        "قسم الإيواء السياحي",
+        "اسم التقرير: تقرير حالة التراخيص السياحية"
+    ].map(escapeCsvValue).join("\n") + "\n\n";
+    csvContent += headers.map(escapeCsvValue).join(",") + "\n";
+
+    currentLicensesStatusReportRows.forEach(row => {
+        csvContent += [
+            row.facility_code,
+            row.facility_name,
+            row.facility_type,
+            row.municipality,
+            row.city,
+            row.license_number,
+            row.license_type,
+            row.issue_date,
+            row.expiry_date,
+            row.days_remaining,
+            row.license_status,
+            row.control_status,
+            row.renewal_count,
+            row.notes
+        ].map(escapeCsvValue).join(",") + "\n";
+    });
+
+    csvContent += "\n" + escapeCsvValue("تصميم وبرمجة مركز المعلومات والتوثيق السياحي 2026") + "\n";
+
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "_");
+    const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `licenses_status_report_${today}.csv`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function printLicensesStatusReport() {
+    if (!currentLicensesStatusReportRows || currentLicensesStatusReportRows.length === 0) {
+        generateLicensesStatusReport();
+    }
+
+    const reportOutput = document.getElementById("reportOutput");
+
+    if (!reportOutput) {
+        return;
+    }
+
+    const printWindow = window.open("", "_blank");
+
+    if (!printWindow) {
+        alert("تعذر فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.");
+        return;
+    }
+
+    printWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="UTF-8">
+            <title>تقرير حالة التراخيص السياحية</title>
+            <style>
+                body { font-family: Arial, sans-serif; direction: rtl; padding: 22px; color: #222; }
+                .official-report-header { text-align: center; border-bottom: 2px solid #0277bd; padding-bottom: 12px; margin-bottom: 16px; }
+                .official-report-header h2 { margin: 0 0 8px; color: #0277bd; }
+                .official-report-header p { margin: 4px 0; font-weight: bold; }
+                .official-report-meta { margin: 12px 0; font-weight: bold; }
+                .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+                .card { border: 1px solid #cfd8dc; padding: 8px; text-align: center; border-radius: 6px; }
+                .card h3 { margin: 0 0 6px; font-size: 12px; color: #37474f; }
+                .card p { margin: 0; font-size: 18px; font-weight: bold; color: #0277bd; }
+                table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+                th, td { border: 1px solid #777; padding: 5px; text-align: center; font-size: 10px; }
+                th { background: #0277bd; color: white; }
+                .official-report-footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #90a4ae; text-align: center; font-weight: bold; }
+                @page { size: A4 landscape; margin: 10mm; }
+            </style>
+        </head>
+        <body>${reportOutput.innerHTML}</body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.print();
+}
+
 // ===============================
 // شاشة التقارير والبحث الذكي
 // ===============================
@@ -2008,15 +2520,30 @@ function findFacilityFromReportSearchText() {
 function toggleReportMonth() {
     const reportType = getTextValue("reportType");
     const monthContainer = document.getElementById("reportMonthContainer");
+    const yearInput = document.getElementById("reportYear");
+    const isLicenseStatusReport = reportType === "licenses_status";
 
-    if (!monthContainer) {
-        return;
+    if (monthContainer) {
+        monthContainer.classList.toggle("hidden", reportType === "annual" || isLicenseStatusReport);
     }
 
-    if (reportType === "annual") {
-        monthContainer.classList.add("hidden");
-    } else {
-        monthContainer.classList.remove("hidden");
+    document.querySelectorAll(".license-report-filter").forEach(item => {
+        item.classList.toggle("hidden", !isLicenseStatusReport);
+    });
+
+    if (yearInput) {
+        if (isLicenseStatusReport) {
+            yearInput.required = false;
+            yearInput.placeholder = "الكل";
+            yearInput.value = "";
+        } else {
+            yearInput.required = true;
+            yearInput.placeholder = "";
+
+            if (!yearInput.value) {
+                yearInput.value = new Date().getFullYear();
+            }
+        }
     }
 }
 
@@ -2026,6 +2553,15 @@ function handleReportSubmit(event) {
 }
 
 function generateReport() {
+    const reportType = getTextValue("reportType");
+
+    if (reportType === "licenses_status") {
+        generateLicensesStatusReport();
+        return;
+    }
+
+    ensureDefaultReportOutput();
+
     let facilityCode = getTextValue("reportFacility");
 
     if (!facilityCode) {
@@ -2043,9 +2579,13 @@ function generateReport() {
         return;
     }
 
-    const reportType = getTextValue("reportType");
     const reportYear = getNumberValue("reportYear");
     const reportMonth = getNumberValue("reportMonth");
+
+    if (!reportYear) {
+        alert("يرجى إدخال سنة التقرير");
+        return;
+    }
 
     let filteredReports = occupancyReports.filter(report => {
         return report.facility_code === facilityCode && Number(report.year) === reportYear;
@@ -2158,12 +2698,26 @@ function setReportSummary(
 }
 
 function exportReportToExcel() {
+    if (getTextValue("reportType") === "licenses_status") {
+        exportLicensesStatusReportCSV();
+        return;
+    }
+
     if (!currentReportRows || currentReportRows.length === 0) {
         alert("لا توجد بيانات لتصديرها");
         return;
     }
 
     let csvContent = "\uFEFF";
+    const reportName = getTextValue("reportType") === "annual"
+        ? "التقرير السنوي للإشغال"
+        : "تقرير الإشغال الشهري";
+    csvContent += [
+        "وزارة السياحة والصناعات التقليدية",
+        "إدارة المهن والرقابة السياحية",
+        "قسم الإيواء السياحي",
+        `اسم التقرير: ${reportName}`
+    ].map(escapeCsvValue).join("\n") + "\n\n";
     csvContent += "المرفق,السنة,الشهر,ليبيون,عرب,أجانب,إجمالي النزلاء,الليالي السياحية,الليالي الغرفية المباعة,إشغال الغرف,إشغال الأسرة,متوسط الإقامة\n";
 
     currentReportRows.forEach(report => {
@@ -2182,6 +2736,8 @@ function exportReportToExcel() {
             report.average_length_of_stay || "0 ليلة"
         ].join(",") + "\n";
     });
+
+    csvContent += "\n" + escapeCsvValue("تصميم وبرمجة مركز المعلومات والتوثيق السياحي 2026") + "\n";
 
     const blob = new Blob([csvContent], {
         type: "text/csv;charset=utf-8;"
@@ -2420,6 +2976,11 @@ function updateStatisticsSection() {
 }
 
 function printReport() {
+    if (getTextValue("reportType") === "licenses_status") {
+        printLicensesStatusReport();
+        return;
+    }
+
     const reportOutput = document.getElementById("reportOutput");
 
     if (!reportOutput) {
@@ -2427,6 +2988,15 @@ function printReport() {
     }
 
     const printWindow = window.open("", "_blank");
+    const reportName = getTextValue("reportType") === "annual"
+        ? "التقرير السنوي للإشغال"
+        : "تقرير الإشغال الشهري";
+    const reportDate = new Date().toLocaleDateString("ar-LY");
+
+    if (!printWindow) {
+        alert("تعذر فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.");
+        return;
+    }
 
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
@@ -2443,6 +3013,35 @@ function printReport() {
 
                 h1, h2, h3 {
                     color: #0277bd;
+                }
+
+                .official-report-header {
+                    text-align: center;
+                    border-bottom: 2px solid #0277bd;
+                    padding-bottom: 12px;
+                    margin-bottom: 16px;
+                }
+
+                .official-report-header h2 {
+                    margin: 0 0 8px;
+                }
+
+                .official-report-header p {
+                    margin: 4px 0;
+                    font-weight: bold;
+                }
+
+                .official-report-meta {
+                    margin: 12px 0;
+                    font-weight: bold;
+                }
+
+                .official-report-footer {
+                    margin-top: 18px;
+                    padding-top: 10px;
+                    border-top: 1px solid #90a4ae;
+                    text-align: center;
+                    font-weight: bold;
                 }
 
                 table {
@@ -2490,9 +3089,10 @@ function printReport() {
             </style>
         </head>
         <body>
-            <h1>منظومة الإيواء السياحي الليبية</h1>
-            <h2>تقرير الإشغال والليالي السياحية</h2>
+            ${getOfficialReportHeaderHtml(reportName)}
+            <div class="official-report-meta">تاريخ إعداد التقرير: ${escapeHtml(reportDate)}</div>
             ${reportOutput.innerHTML}
+            ${getOfficialReportFooterHtml()}
         </body>
         </html>
     `);
@@ -2688,9 +3288,31 @@ function bindEvents() {
         reportType.addEventListener("change", toggleReportMonth);
     }
 
+    [
+        "licenseReportStatusFilter",
+        "licenseReportExpiryRange",
+        "licenseReportMunicipality",
+        "licenseReportCity",
+        "licenseReportFacilityType"
+    ].forEach(id => {
+        const field = document.getElementById(id);
+
+        if (field) {
+            field.addEventListener("input", function() {
+                currentLicensesStatusReportRows = [];
+            });
+            field.addEventListener("change", function() {
+                currentLicensesStatusReportRows = [];
+            });
+        }
+    });
+
     const reportFacilitySearch = document.getElementById("reportFacilitySearch");
     if (reportFacilitySearch) {
         reportFacilitySearch.addEventListener("input", filterReportFacilities);
+        reportFacilitySearch.addEventListener("input", function() {
+            currentLicensesStatusReportRows = [];
+        });
         reportFacilitySearch.addEventListener("focus", filterReportFacilities);
 
         reportFacilitySearch.addEventListener("keydown", function(event) {
@@ -2726,6 +3348,8 @@ function bindEvents() {
 // ===============================
 
 bindEvents();
+ensureDefaultReportOutput();
+toggleReportMonth();
 toggleFacilityFields();
 toggleSeasonalWorkersFields();
 updateAllFacilityCalculatedFields();

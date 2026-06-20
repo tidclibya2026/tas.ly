@@ -580,6 +580,57 @@ tr:hover {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.official-report-header {
+    text-align: center;
+    border-bottom: 2px solid #0288d1;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+}
+
+.official-report-header h2 {
+    color: #0277bd;
+    margin-bottom: 8px;
+}
+
+.official-report-header p {
+    margin: 3px 0;
+    font-weight: 700;
+    color: #37474f;
+}
+
+.official-report-header strong {
+    display: inline-block;
+    margin-top: 10px;
+    color: #015f96;
+}
+
+.official-report-meta {
+    margin: 12px 0 18px;
+    color: #455a64;
+    font-weight: 700;
+}
+
+.official-report-footer {
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 1px solid #b0bec5;
+    text-align: center;
+    color: #37474f;
+    font-weight: 700;
+}
+
+.licenses-status-cards .card p {
+    font-size: 25px;
+}
+
+.licenses-status-table-wrapper {
+    margin-top: 24px;
+}
+
+.licenses-status-table {
+    min-width: 1600px;
+}
+
 #reportFacilitySearch {
     padding-right: 14px;
     background: #ffffff;

@@ -855,7 +855,6 @@
                                         id="reportFacilitySearch"
                                         placeholder="اكتب اسم المرفق أو أول حرف..."
                                         autocomplete="off"
-                                        required
                                     >
 
                                     <input type="hidden" id="reportFacility">
@@ -868,12 +867,13 @@
                                     <select id="reportType" required>
                                         <option value="monthly">تقرير شهري</option>
                                         <option value="annual">تقرير سنوي</option>
+                                        <option value="licenses_status">تقرير حالة التراخيص السياحية</option>
                                     </select>
                                 </div>
 
                                 <div>
                                     <label for="reportYear">السنة</label>
-                                    <input type="number" id="reportYear" min="2020" max="2100" value="2026" required>
+                                    <input type="number" id="reportYear" min="2020" max="2100" value="2026">
                                 </div>
 
                                 <div id="reportMonthContainer">
@@ -891,6 +891,53 @@
                                         <option value="10">أكتوبر</option>
                                         <option value="11">نوفمبر</option>
                                         <option value="12">ديسمبر</option>
+                                    </select>
+                                </div>
+
+                                <div id="licenseReportStatusContainer" class="license-report-filter hidden">
+                                    <label for="licenseReportStatusFilter">حالة الترخيص</label>
+                                    <select id="licenseReportStatusFilter">
+                                        <option value="">الكل</option>
+                                        <option value="Active">ساري</option>
+                                        <option value="Expired">منتهي</option>
+                                        <option value="Pending">قيد الإجراء</option>
+                                        <option value="Suspended">موقوف</option>
+                                    </select>
+                                </div>
+
+                                <div id="licenseReportRangeContainer" class="license-report-filter hidden">
+                                    <label for="licenseReportExpiryRange">نطاق الانتهاء</label>
+                                    <select id="licenseReportExpiryRange">
+                                        <option value="">الكل</option>
+                                        <option value="expired">منتهي</option>
+                                        <option value="within_30">ينتهي خلال 30 يوماً</option>
+                                        <option value="within_60">ينتهي خلال 60 يوماً</option>
+                                        <option value="within_90">ينتهي خلال 90 يوماً</option>
+                                        <option value="one_to_three_months">ينتهي من شهر إلى ثلاثة أشهر</option>
+                                    </select>
+                                </div>
+
+                                <div id="licenseReportMunicipalityContainer" class="license-report-filter hidden">
+                                    <label for="licenseReportMunicipality">البلدية</label>
+                                    <input type="text" id="licenseReportMunicipality" list="facilityMunicipalityOptions" placeholder="الكل">
+                                </div>
+
+                                <div id="licenseReportCityContainer" class="license-report-filter hidden">
+                                    <label for="licenseReportCity">المدينة</label>
+                                    <input type="text" id="licenseReportCity" placeholder="الكل">
+                                </div>
+
+                                <div id="licenseReportFacilityTypeContainer" class="license-report-filter hidden">
+                                    <label for="licenseReportFacilityType">نوع المرفق</label>
+                                    <select id="licenseReportFacilityType">
+                                        <option value="">الكل</option>
+                                        <option value="فندق">فندق</option>
+                                        <option value="قرية سياحية">قرية سياحية</option>
+                                        <option value="منتجع">منتجع</option>
+                                        <option value="شقق فندقية">شقق فندقية</option>
+                                        <option value="نزل">نزل</option>
+                                        <option value="إقامة سياحية">إقامة سياحية</option>
+                                        <option value="شاليه سياحي">شاليه سياحي</option>
                                     </select>
                                 </div>
                             </div>
