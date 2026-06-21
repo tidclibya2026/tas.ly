@@ -17,6 +17,7 @@ let licenses = [];
 let occupancyReports = [];
 let currentReportRows = [];
 let currentLicensesStatusReportRows = [];
+let currentAdvancedReport = null;
 let currentEditingFacilityCode = "";
 let facilitiesLoadError = "";
 let currentFacilitiesPage = 1;
@@ -2706,6 +2707,1008 @@ function printLicensesStatusReport() {
 }
 
 // ===============================
+// مخرجات التقارير المتقدمة
+// ===============================
+
+const advancedReportColumnDefinitions = [
+    { key: "facility_code", label: "الكود الوطني", basic: true },
+    { key: "facility_name", label: "اسم المرفق", basic: true },
+    { key: "facility_type", label: "نوع المرفق", basic: true },
+    { key: "municipality", label: "البلدية", basic: true },
+    { key: "city", label: "المدينة", basic: true },
+    { key: "address", label: "العنوان", basic: false },
+    { key: "classification_status", label: "التصنيف", basic: true },
+    { key: "classification", label: "درجة التصنيف", basic: false },
+    { key: "facility_status", label: "حالة المرفق", basic: true },
+    { key: "license_status", label: "حالة الترخيص", basic: true },
+    { key: "license_number", label: "رقم الترخيص", basic: false },
+    { key: "issue_date", label: "تاريخ الإصدار", basic: false },
+    { key: "expiry_date", label: "تاريخ الانتهاء", basic: false },
+    { key: "days_remaining", label: "عدد الأيام المتبقية", basic: false },
+    { key: "rooms", label: "عدد الغرف", basic: true },
+    { key: "beds", label: "عدد الأسرة", basic: true },
+    { key: "suites", label: "عدد الأجنحة", basic: false },
+    { key: "chalets", label: "عدد الشاليهات أو الوحدات", basic: false },
+    { key: "total_workers", label: "إجمالي العاملين", basic: true },
+    { key: "national_workers", label: "العمالة الوطنية", basic: false },
+    { key: "foreign_workers", label: "العمالة الأجنبية", basic: false },
+    { key: "seasonal_workers", label: "العمالة الموسمية", basic: false },
+    { key: "latest_occupancy", label: "آخر بيانات إشغال مسجلة", basic: false },
+    { key: "room_occupancy", label: "متوسط إشغال الغرف", basic: false },
+    { key: "bed_occupancy", label: "متوسط إشغال الأسرة", basic: false },
+    { key: "average_stay", label: "متوسط مدة الإقامة", basic: false },
+    { key: "notes", label: "ملاحظات", basic: false }
+];
+
+function isAdvancedReportType(reportType) {
+    return String(reportType || "").startsWith("advanced_");
+}
+
+function getAdvancedReportColumnDefinition(key) {
+    return advancedReportColumnDefinitions.find(column => column.key === key);
+}
+
+function getReportTypeLabel(reportType) {
+    const labels = {
+        monthly: "تقرير الإشغال الشهري",
+        annual: "التقرير السنوي للإشغال",
+        licenses_status: "تقرير حالة التراخيص السياحية",
+        advanced_facility: "تقرير مرفق محدد",
+        advanced_facilities: "تقرير عام لكل المرافق",
+        advanced_facility_type: "تقرير حسب نوع المرفق",
+        advanced_city: "تقرير حسب المدينة",
+        advanced_municipality: "تقرير حسب البلدية",
+        advanced_license_renewal: "تقرير تجديد أذن المزاولة خلال فترة",
+        advanced_license_expiry: "تقرير أذونات المزاولة القريبة من الانتهاء",
+        advanced_expired_licenses: "تقرير أذونات المزاولة المنتهية خلال فترة"
+    };
+
+    return labels[reportType] || "تقرير";
+}
+
+function getReportPreparedBy() {
+    return localStorage.getItem("tas_logged_in") === "true" ? demoUser.name : "-";
+}
+
+function toSafeNumber(value) {
+    const number = Number(value || 0);
+    return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function isDateWithinRange(dateValue, fromDate, toDate) {
+    const date = parseDateOnly(dateValue);
+    const from = parseDateOnly(fromDate);
+    const to = parseDateOnly(toDate);
+
+    if (!date) {
+        return false;
+    }
+
+    if (from && date.getTime() < from.getTime()) {
+        return false;
+    }
+
+    if (to && date.getTime() > to.getTime()) {
+        return false;
+    }
+
+    return true;
+}
+
+function getLicensePeriodDate(license) {
+    return license.renewal_date ||
+        license.renewalDate ||
+        getLicenseIssueDateValue(license) ||
+        getLicenseExpiryDateValue(license) ||
+        "";
+}
+
+function getLicenseSortTimestamp(license) {
+    const candidates = [
+        license.updated_at,
+        license.created_at,
+        getLicenseExpiryDateValue(license),
+        getLicenseIssueDateValue(license)
+    ];
+
+    for (const candidate of candidates) {
+        const parsed = parseDateOnly(candidate);
+
+        if (parsed) {
+            return parsed.getTime();
+        }
+    }
+
+    return 0;
+}
+
+function getFacilityLatestLicense(facilityCode) {
+    const rows = licenses
+        .filter(license => license.facility_code === facilityCode)
+        .sort((first, second) => getLicenseSortTimestamp(second) - getLicenseSortTimestamp(first));
+
+    return rows[0] || null;
+}
+
+function getFacilityNationalWorkers(facility) {
+    const genderTotal = toSafeNumber(facility.national_male_workers || facility.local_male_workers) +
+        toSafeNumber(facility.national_female_workers || facility.local_female_workers);
+
+    return genderTotal || toSafeNumber(facility.local_workers);
+}
+
+function getFacilityForeignWorkers(facility) {
+    const genderTotal = toSafeNumber(facility.foreign_male_workers) +
+        toSafeNumber(facility.foreign_female_workers);
+
+    return genderTotal || toSafeNumber(facility.foreign_workers);
+}
+
+function getFacilitySeasonalWorkersTotal(facility) {
+    const seasonal = facility.seasonal_workers || {};
+    return toSafeNumber(seasonal.total_workers) ||
+        toSafeNumber(seasonal.national_male_workers) +
+        toSafeNumber(seasonal.national_female_workers) +
+        toSafeNumber(seasonal.foreign_male_workers) +
+        toSafeNumber(seasonal.foreign_female_workers);
+}
+
+function getFacilityUnitsTotal(facility) {
+    return toSafeNumber(facility.chalets) ||
+        toSafeNumber(facility.total_units) ||
+        toSafeNumber(facility.apartments);
+}
+
+function getOccupancyReportPeriodDate(report) {
+    const year = Number(report.year || 0);
+    const month = Number(report.month || 1);
+
+    if (!year || !month) {
+        return null;
+    }
+
+    return new Date(Date.UTC(year, month - 1, 1));
+}
+
+function isOccupancyReportInAdvancedPeriod(report, filters) {
+    if (filters.year && Number(report.year) !== filters.year) {
+        return false;
+    }
+
+    if (filters.month && Number(report.month) !== filters.month) {
+        return false;
+    }
+
+    if (!filters.fromDate && !filters.toDate) {
+        return true;
+    }
+
+    const periodDate = getOccupancyReportPeriodDate(report);
+    const from = parseDateOnly(filters.fromDate);
+    const to = parseDateOnly(filters.toDate);
+
+    if (!periodDate) {
+        return false;
+    }
+
+    if (from && periodDate.getTime() < from.getTime()) {
+        return false;
+    }
+
+    if (to && periodDate.getTime() > to.getTime()) {
+        return false;
+    }
+
+    return true;
+}
+
+function getFacilityOccupancyStats(facilityCode, filters = {}) {
+    const rows = occupancyReports
+        .filter(report => report.facility_code === facilityCode)
+        .filter(report => isOccupancyReportInAdvancedPeriod(report, filters));
+
+    const sortedRows = [...rows].sort((first, second) => {
+        const firstDate = getOccupancyReportPeriodDate(first);
+        const secondDate = getOccupancyReportPeriodDate(second);
+        return (secondDate ? secondDate.getTime() : 0) - (firstDate ? firstDate.getTime() : 0);
+    });
+    const latest = sortedRows[0] || null;
+    const totalGuests = rows.reduce((sum, item) => sum + toSafeNumber(item.total_guests), 0);
+    const totalGuestNights = rows.reduce((sum, item) => sum + toSafeNumber(item.total_guest_nights), 0);
+    const totalSoldRoomNights = rows.reduce((sum, item) => sum + toSafeNumber(item.sold_room_nights), 0);
+    const totalAvailableRoomNights = rows.reduce((sum, item) => sum + toSafeNumber(item.available_room_nights), 0);
+    const totalAvailableBedNights = rows.reduce((sum, item) => sum + toSafeNumber(item.available_bed_nights), 0);
+    const roomOccupancy = totalAvailableRoomNights > 0 ? (totalSoldRoomNights / totalAvailableRoomNights) * 100 : 0;
+    const bedOccupancy = totalAvailableBedNights > 0 ? (totalGuestNights / totalAvailableBedNights) * 100 : 0;
+    const averageStay = totalGuests > 0 ? totalGuestNights / totalGuests : 0;
+
+    return {
+        latest_period: latest ? `${getMonthName(latest.month)} ${latest.year || ""}`.trim() : "-",
+        room_occupancy: formatPercent(roomOccupancy),
+        bed_occupancy: formatPercent(bedOccupancy),
+        average_stay: formatStay(averageStay)
+    };
+}
+
+function getFacilityAdvancedRow(facility, index, filters = {}) {
+    const license = getFacilityLatestLicense(facility.facility_code);
+    const issueDate = license ? getLicenseIssueDateValue(license) : (facility.license_issue_date || "");
+    const expiryDate = license ? getLicenseExpiryDateValue(license) : (facility.license_expiry_date || "");
+    const daysRemaining = calculateLicenseDaysRemaining(expiryDate);
+    const licenseStatusValue = license
+        ? getLicenseStatusForReport(license)
+        : normalizeLicenseStatusValue(facility.licenseStatus || facility.license_status || "");
+    const hasLicenseData = Boolean(license || facility.license_number || facility.license_issue_date || facility.license_expiry_date);
+    const occupancy = getFacilityOccupancyStats(facility.facility_code, filters);
+
+    return {
+        sequence: index,
+        facility_code: facility.facility_code || "-",
+        facility_name: facility.name || "-",
+        facility_type: facility.type || "-",
+        municipality: facility.municipality || "-",
+        city: facility.city || "-",
+        address: facility.address || "-",
+        classification_status: getFacilityClassificationStatus(facility),
+        classification: facility.classification || "غير مصنف",
+        facility_status: normalizeFacilityStatus(facility.status),
+        license_status: hasLicenseData ? getLicenseStatusArabic(licenseStatusValue) : "بدون ترخيص مسجل",
+        license_status_value: hasLicenseData ? licenseStatusValue : "no_license",
+        license_range: license ? getLicenseExpiryRange(license) : "unspecified",
+        license_number: license ? (license.license_number || "-") : (facility.license_number || "-"),
+        license_type: license ? (license.license_type || "-") : (facility.license_type || "-"),
+        issue_date: formatDateOnly(issueDate),
+        expiry_date: formatDateOnly(expiryDate),
+        days_remaining: daysRemaining === null ? "-" : daysRemaining,
+        rooms: toSafeNumber(facility.rooms),
+        beds: toSafeNumber(facility.beds),
+        suites: toSafeNumber(facility.suites),
+        chalets: getFacilityUnitsTotal(facility),
+        total_workers: getTotalWorkers(facility),
+        national_workers: getFacilityNationalWorkers(facility),
+        foreign_workers: getFacilityForeignWorkers(facility),
+        seasonal_workers: getFacilitySeasonalWorkersTotal(facility),
+        latest_occupancy: occupancy.latest_period,
+        room_occupancy: occupancy.room_occupancy,
+        bed_occupancy: occupancy.bed_occupancy,
+        average_stay: occupancy.average_stay,
+        notes: facility.notes || (license ? license.notes : "") || "-"
+    };
+}
+
+function getFacilityAdvancedRowFromLicense(license, index, filters = {}) {
+    const facility = getFacilityByCode(license.facility_code) || normalizeFacilityRecord({
+        facility_code: license.facility_code || "",
+        name: license.facility_name || "مرفق غير موجود في السجل العام",
+        type: "",
+        municipality: "",
+        city: ""
+    });
+    const row = getFacilityAdvancedRow(facility, index, filters);
+    const issueDate = getLicenseIssueDateValue(license);
+    const expiryDate = getLicenseExpiryDateValue(license);
+    const daysRemaining = calculateLicenseDaysRemaining(expiryDate);
+    const statusValue = getLicenseStatusForReport(license);
+
+    return {
+        ...row,
+        facility_code: license.facility_code || row.facility_code,
+        facility_name: facility.name || license.facility_name || row.facility_name,
+        license_status: getLicenseStatusArabic(statusValue),
+        license_status_value: statusValue,
+        license_range: getLicenseExpiryRange(license),
+        license_number: license.license_number || "-",
+        license_type: license.license_type || "-",
+        issue_date: formatDateOnly(issueDate),
+        expiry_date: formatDateOnly(expiryDate),
+        days_remaining: daysRemaining === null ? "-" : daysRemaining,
+        notes: license.notes || row.notes || "-"
+    };
+}
+
+function getAdvancedReportFilters() {
+    return {
+        reportType: getTextValue("reportType"),
+        scope: getTextValue("advancedReportScope"),
+        facilityCode: getTextValue("reportFacility"),
+        facilitySearch: getTextValue("reportFacilitySearch"),
+        type: getTextValue("advancedFacilityType"),
+        city: getTextValue("advancedCity"),
+        municipality: getTextValue("advancedMunicipality"),
+        licenseStatus: getTextValue("advancedLicenseStatus"),
+        facilityStatus: getTextValue("advancedFacilityStatus"),
+        classification: getTextValue("advancedClassification"),
+        fromDate: getTextValue("advancedFromDate"),
+        toDate: getTextValue("advancedToDate"),
+        year: getNumberValue("reportYear"),
+        month: getNumberValue("reportMonth")
+    };
+}
+
+function matchesTextFilter(value, filterValue) {
+    return !filterValue || textMatchesArabicSearch(value, filterValue);
+}
+
+function facilityMatchesAdvancedLicenseStatus(facility, filterValue) {
+    if (!filterValue) {
+        return true;
+    }
+
+    const license = getFacilityLatestLicense(facility.facility_code);
+
+    if (filterValue === "no_license") {
+        return !license && !facility.license_number && !facility.license_expiry_date;
+    }
+
+    if (!license) {
+        return normalizeLicenseStatusValue(facility.licenseStatus || facility.license_status || "") === filterValue;
+    }
+
+    if (filterValue === "within_30" || filterValue === "within_60" || filterValue === "within_90") {
+        return getLicenseExpiryRange(license) === filterValue;
+    }
+
+    return getLicenseStatusForReport(license) === filterValue;
+}
+
+function facilityMatchesAdvancedDateRange(facility, filters) {
+    if (!filters.fromDate && !filters.toDate) {
+        return true;
+    }
+
+    const license = getFacilityLatestLicense(facility.facility_code);
+
+    if (license) {
+        if (isDateWithinRange(getLicenseIssueDateValue(license), filters.fromDate, filters.toDate)) {
+            return true;
+        }
+
+        if (isDateWithinRange(getLicenseExpiryDateValue(license), filters.fromDate, filters.toDate)) {
+            return true;
+        }
+    }
+
+    return occupancyReports.some(report => {
+        if (report.facility_code !== facility.facility_code) {
+            return false;
+        }
+
+        return isOccupancyReportInAdvancedPeriod(report, {
+            fromDate: filters.fromDate,
+            toDate: filters.toDate,
+            year: 0,
+            month: 0
+        });
+    });
+}
+
+function filterFacilitiesByAdvancedOptions(items, filters) {
+    return items.filter(facility => {
+        if (filters.facilityCode && facility.facility_code !== filters.facilityCode) {
+            return false;
+        }
+
+        if (!filters.facilityCode && filters.facilitySearch && !textMatchesArabicSearch(getFacilitySearchText(facility), filters.facilitySearch)) {
+            return false;
+        }
+
+        if (filters.type && facility.type !== filters.type) {
+            return false;
+        }
+
+        if (!matchesTextFilter(facility.city || "", filters.city)) {
+            return false;
+        }
+
+        if (!matchesTextFilter(facility.municipality || "", filters.municipality)) {
+            return false;
+        }
+
+        if (filters.facilityStatus && normalizeFacilityStatus(facility.status) !== filters.facilityStatus) {
+            return false;
+        }
+
+        if (filters.classification === "classified" && getFacilityClassificationStatus(facility) !== "مصنف") {
+            return false;
+        }
+
+        if (filters.classification === "unclassified" && getFacilityClassificationStatus(facility) !== "غير مصنف") {
+            return false;
+        }
+
+        if (filters.classification && !["classified", "unclassified"].includes(filters.classification) && facility.classification !== filters.classification) {
+            return false;
+        }
+
+        if (!facilityMatchesAdvancedLicenseStatus(facility, filters.licenseStatus)) {
+            return false;
+        }
+
+        if (!facilityMatchesAdvancedDateRange(facility, filters)) {
+            return false;
+        }
+
+        return true;
+    });
+}
+
+function filterLicensesByDateRange(items, fromDate, toDate, getDateValue = getLicensePeriodDate) {
+    return items.filter(license => isDateWithinRange(getDateValue(license), fromDate, toDate));
+}
+
+function filterLicensesByRenewalPeriod(items, fromDate, toDate) {
+    return filterLicensesByDateRange(items, fromDate, toDate, getLicensePeriodDate);
+}
+
+function filterLicensesByExpiryPeriod(items, fromDate, toDate) {
+    return filterLicensesByDateRange(items, fromDate, toDate, getLicenseExpiryDateValue);
+}
+
+function getFacilityCodesForAdvancedLicenseReport(filters) {
+    const facilityFilters = {
+        ...filters,
+        fromDate: "",
+        toDate: "",
+        licenseStatus: ""
+    };
+
+    return new Set(
+        filterFacilitiesByAdvancedOptions(facilities, facilityFilters)
+            .map(facility => facility.facility_code)
+            .filter(Boolean)
+    );
+}
+
+function licenseMatchesAdvancedStatus(license, statusFilter) {
+    if (!statusFilter) {
+        return true;
+    }
+
+    if (statusFilter === "no_license") {
+        return false;
+    }
+
+    if (statusFilter === "within_30" || statusFilter === "within_60" || statusFilter === "within_90") {
+        return getLicenseExpiryRange(license) === statusFilter;
+    }
+
+    return getLicenseStatusForReport(license) === statusFilter;
+}
+
+function getFilteredLicensesForAdvancedReport(filters) {
+    const facilityCodes = getFacilityCodesForAdvancedLicenseReport(filters);
+
+    return licenses.filter(license => {
+        if (!facilityCodes.has(license.facility_code)) {
+            return false;
+        }
+
+        return licenseMatchesAdvancedStatus(license, filters.licenseStatus);
+    });
+}
+
+function calculateLicensePeriodStatus(license) {
+    return getLicenseControlStatus(license);
+}
+
+function calculateFacilitiesTotals(rows) {
+    const totalFacilities = rows.length;
+    const totalRooms = rows.reduce((sum, row) => sum + toSafeNumber(row.rooms), 0);
+    const totalBeds = rows.reduce((sum, row) => sum + toSafeNumber(row.beds), 0);
+    const totalSuites = rows.reduce((sum, row) => sum + toSafeNumber(row.suites), 0);
+    const totalChalets = rows.reduce((sum, row) => sum + toSafeNumber(row.chalets), 0);
+    const totalWorkers = rows.reduce((sum, row) => sum + toSafeNumber(row.total_workers), 0);
+    const nationalWorkers = rows.reduce((sum, row) => sum + toSafeNumber(row.national_workers), 0);
+    const foreignWorkers = rows.reduce((sum, row) => sum + toSafeNumber(row.foreign_workers), 0);
+    const seasonalWorkers = rows.reduce((sum, row) => sum + toSafeNumber(row.seasonal_workers), 0);
+    const activeLicenses = rows.filter(row => row.license_status_value === "Active").length;
+    const expiredLicenses = rows.filter(row => row.license_status_value === "Expired" || Number(row.days_remaining) < 0).length;
+    const nearExpiryLicenses = rows.filter(row => ["within_30", "within_60", "within_90"].includes(row.license_range)).length;
+    const activeFacilities = rows.filter(row => row.facility_status === "نشط").length;
+    const classifiedFacilities = rows.filter(row => row.classification_status === "مصنف").length;
+
+    return {
+        totalFacilities,
+        totalRooms,
+        totalBeds,
+        totalSuites,
+        totalChalets,
+        totalWorkers,
+        nationalWorkers,
+        foreignWorkers,
+        seasonalWorkers,
+        activeLicenses,
+        expiredLicenses,
+        nearExpiryLicenses,
+        activeFacilities,
+        classifiedFacilities,
+        activePercent: totalFacilities > 0 ? (activeFacilities / totalFacilities) * 100 : 0,
+        classifiedPercent: totalFacilities > 0 ? (classifiedFacilities / totalFacilities) * 100 : 0
+    };
+}
+
+function renderAdvancedReportSummary(summary) {
+    return `
+        <div class="cards report-cards">
+            <div class="card"><h3>إجمالي المرافق</h3><p>${summary.totalFacilities}</p></div>
+            <div class="card"><h3>إجمالي الغرف</h3><p>${summary.totalRooms}</p></div>
+            <div class="card"><h3>إجمالي الأسرة</h3><p>${summary.totalBeds}</p></div>
+            <div class="card"><h3>إجمالي الأجنحة</h3><p>${summary.totalSuites}</p></div>
+            <div class="card"><h3>إجمالي الشاليهات أو الوحدات</h3><p>${summary.totalChalets}</p></div>
+            <div class="card"><h3>إجمالي العاملين</h3><p>${summary.totalWorkers}</p></div>
+            <div class="card"><h3>العمالة الوطنية</h3><p>${summary.nationalWorkers}</p></div>
+            <div class="card"><h3>العمالة الأجنبية</h3><p>${summary.foreignWorkers}</p></div>
+            <div class="card"><h3>العمالة الموسمية</h3><p>${summary.seasonalWorkers}</p></div>
+            <div class="card"><h3>التراخيص السارية</h3><p>${summary.activeLicenses}</p></div>
+            <div class="card"><h3>التراخيص المنتهية</h3><p>${summary.expiredLicenses}</p></div>
+            <div class="card"><h3>تراخيص قريبة من الانتهاء</h3><p>${summary.nearExpiryLicenses}</p></div>
+            <div class="card"><h3>نسبة المرافق المصنفة</h3><p>${summary.classifiedPercent.toFixed(1)}%</p></div>
+            <div class="card"><h3>نسبة المرافق النشطة</h3><p>${summary.activePercent.toFixed(1)}%</p></div>
+        </div>
+    `;
+}
+
+function getSelectedReportColumns() {
+    const checkedColumns = Array.from(document.querySelectorAll("#advancedReportColumns input[type='checkbox']:checked"))
+        .map(input => input.value)
+        .filter(key => getAdvancedReportColumnDefinition(key));
+
+    if (checkedColumns.length > 0) {
+        return checkedColumns.map(getAdvancedReportColumnDefinition);
+    }
+
+    return advancedReportColumnDefinitions.filter(column => column.basic);
+}
+
+function selectAdvancedReportColumns(mode) {
+    const inputs = Array.from(document.querySelectorAll("#advancedReportColumns input[type='checkbox']"));
+
+    inputs.forEach(input => {
+        const definition = getAdvancedReportColumnDefinition(input.value);
+
+        if (mode === "all") {
+            input.checked = true;
+        } else if (mode === "none") {
+            input.checked = false;
+        } else if (mode === "basic") {
+            input.checked = Boolean(definition && definition.basic);
+        }
+    });
+
+    applySelectedColumnsToReport();
+}
+
+function getAdvancedReportCellValue(row, column) {
+    const value = row[column.key];
+    return value === null || value === undefined || value === "" ? "-" : value;
+}
+
+function renderAdvancedReportTable(columns, rows) {
+    const headerHtml = columns.map(column => `<th>${escapeHtml(column.label)}</th>`).join("");
+
+    if (!rows.length) {
+        return `
+            <div class="table-wrapper">
+                <table class="advanced-report-table">
+                    <thead><tr>${headerHtml}</tr></thead>
+                    <tbody><tr><td colspan="${columns.length || 1}" class="advanced-report-empty">لا توجد بيانات مطابقة للفلاتر المحددة</td></tr></tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    const rowsHtml = rows.map(row => {
+        const cells = columns.map(column => `<td>${escapeHtml(getAdvancedReportCellValue(row, column))}</td>`).join("");
+        return `<tr>${cells}</tr>`;
+    }).join("");
+
+    return `
+        <div class="table-wrapper">
+            <table class="advanced-report-table">
+                <thead><tr>${headerHtml}</tr></thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </div>
+    `;
+}
+
+function getAdvancedReportFilterLabels(filters) {
+    const labels = [];
+
+    if (filters.type) labels.push(`نوع المرفق: ${filters.type}`);
+    if (filters.city) labels.push(`المدينة: ${filters.city}`);
+    if (filters.municipality) labels.push(`البلدية: ${filters.municipality}`);
+    if (filters.licenseStatus) {
+        const statusLabel = filters.licenseStatus.startsWith("within_")
+            ? getLicenseExpiryRangeLabel(filters.licenseStatus)
+            : (filters.licenseStatus === "no_license" ? "بدون ترخيص مسجل" : getLicenseStatusArabic(filters.licenseStatus));
+        labels.push(`حالة الترخيص: ${statusLabel}`);
+    }
+    if (filters.facilityStatus) labels.push(`حالة المرفق: ${filters.facilityStatus}`);
+    if (filters.classification) labels.push(`التصنيف: ${filters.classification === "classified" ? "مصنف" : filters.classification === "unclassified" ? "غير مصنف" : filters.classification}`);
+    if (filters.fromDate) labels.push(`من تاريخ: ${filters.fromDate}`);
+    if (filters.toDate) labels.push(`إلى تاريخ: ${filters.toDate}`);
+    if (filters.facilitySearch) labels.push(`بحث: ${filters.facilitySearch}`);
+
+    return labels;
+}
+
+function renderAdvancedReportFilters(filters) {
+    const labels = getAdvancedReportFilterLabels(filters);
+
+    if (!labels.length) {
+        return `<div class="advanced-report-filters"><span>الفلاتر: الكل</span></div>`;
+    }
+
+    return `<div class="advanced-report-filters">${labels.map(label => `<span>${escapeHtml(label)}</span>`).join("")}</div>`;
+}
+
+function renderAdvancedReportOutput(report) {
+    const reportOutput = document.getElementById("reportOutput");
+
+    if (!reportOutput) {
+        return;
+    }
+
+    reportOutput.innerHTML = `
+        ${getOfficialReportHeaderHtml(report.title)}
+        <div class="official-report-meta">تاريخ إعداد التقرير: ${escapeHtml(report.reportDate)}</div>
+        <div class="official-report-meta">أعد التقرير: ${escapeHtml(report.preparedBy)}</div>
+        ${renderAdvancedReportFilters(report.filters)}
+        ${renderAdvancedReportSummary(report.summary)}
+        ${renderAdvancedReportTable(report.columns, report.rows)}
+        ${getOfficialReportFooterHtml()}
+    `;
+}
+
+function applySelectedColumnsToReport() {
+    if (!currentAdvancedReport) {
+        return;
+    }
+
+    currentAdvancedReport.columns = getSelectedReportColumns();
+    renderAdvancedReportOutput(currentAdvancedReport);
+}
+
+function buildAdvancedFacilitiesReport(title, rows, filters) {
+    const columns = getSelectedReportColumns();
+    const summary = calculateFacilitiesTotals(rows);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "_");
+
+    currentAdvancedReport = {
+        title,
+        rows,
+        columns,
+        summary,
+        filters,
+        reportDate: new Date().toLocaleDateString("ar-LY"),
+        preparedBy: getReportPreparedBy(),
+        fileName: `${String(filters.reportType || "advanced_report").replace(/[^a-z0-9_]/gi, "_")}_${today}.csv`
+    };
+
+    currentReportRows = rows;
+    renderAdvancedReportOutput(currentAdvancedReport);
+}
+
+function resolveAdvancedReportFacility() {
+    return resolveFacilityAutocompleteSelection(
+        "reportFacility",
+        "reportFacilitySearch",
+        selectReportFacility
+    );
+}
+
+function generateFacilitySingleReport() {
+    const filters = getAdvancedReportFilters();
+    const facility = resolveAdvancedReportFacility();
+
+    if (!facility) {
+        renderFacilityAutocompleteFromInput(
+            "reportFacilitySearch",
+            "reportFacility",
+            "reportFacilityResults",
+            selectReportFacility
+        );
+        alert("يرجى اختيار مرفق من البحث الذكي لإصدار تقرير مرفق محدد");
+        return;
+    }
+
+    filters.facilityCode = facility.facility_code;
+    const rows = [getFacilityAdvancedRow(facility, 1, filters)];
+    buildAdvancedFacilitiesReport(`تقرير مرفق محدد - ${facility.name || facility.facility_code}`, rows, filters);
+}
+
+function generateFacilityTypeReport() {
+    const filters = getAdvancedReportFilters();
+    const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
+        .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters));
+    const typeLabel = filters.type ? ` - ${filters.type}` : "";
+    const title = filters.reportType === "advanced_facilities"
+        ? `تقرير عام لكل المرافق${typeLabel}`
+        : `تقرير حسب نوع المرفق${typeLabel}`;
+
+    buildAdvancedFacilitiesReport(title, rows, filters);
+}
+
+function generateCityReport() {
+    const filters = getAdvancedReportFilters();
+
+    if (!filters.city) {
+        alert("يرجى إدخال المدينة لإصدار تقرير حسب المدينة");
+        return;
+    }
+
+    const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
+        .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters));
+
+    buildAdvancedFacilitiesReport(`تقرير حسب المدينة - ${filters.city}`, rows, filters);
+}
+
+function generateMunicipalityReport() {
+    const filters = getAdvancedReportFilters();
+
+    if (!filters.municipality) {
+        alert("يرجى إدخال البلدية لإصدار تقرير حسب البلدية");
+        return;
+    }
+
+    const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
+        .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters));
+
+    buildAdvancedFacilitiesReport(`تقرير حسب البلدية - ${filters.municipality}`, rows, filters);
+}
+
+function generateLicenseRenewalReport() {
+    const filters = getAdvancedReportFilters();
+
+    if (!filters.fromDate || !filters.toDate) {
+        alert("يرجى اختيار فترة التقرير");
+        return;
+    }
+
+    const rows = filterLicensesByRenewalPeriod(
+        getFilteredLicensesForAdvancedReport(filters),
+        filters.fromDate,
+        filters.toDate
+    ).map((license, index) => getFacilityAdvancedRowFromLicense(license, index + 1, filters));
+
+    buildAdvancedFacilitiesReport("تقرير تجديد أذن المزاولة خلال فترة", rows, filters);
+}
+
+function generateLicenseExpiryReport() {
+    const filters = getAdvancedReportFilters();
+    let filteredLicenses = getFilteredLicensesForAdvancedReport(filters);
+
+    if (filters.fromDate || filters.toDate) {
+        filteredLicenses = filterLicensesByExpiryPeriod(filteredLicenses, filters.fromDate, filters.toDate);
+    } else if (!["within_30", "within_60", "within_90"].includes(filters.licenseStatus)) {
+        filteredLicenses = filteredLicenses.filter(license => {
+            const days = calculateLicenseDaysRemaining(getLicenseExpiryDateValue(license));
+            return Number.isFinite(days) && days >= 0 && days <= 90;
+        });
+    }
+
+    const rows = filteredLicenses
+        .filter(license => {
+            const days = calculateLicenseDaysRemaining(getLicenseExpiryDateValue(license));
+            return Number.isFinite(days) && days >= 0;
+        })
+        .map((license, index) => getFacilityAdvancedRowFromLicense(license, index + 1, filters));
+
+    buildAdvancedFacilitiesReport("تقرير أذونات المزاولة القريبة من الانتهاء", rows, filters);
+}
+
+function generateExpiredLicensesPeriodReport() {
+    const filters = getAdvancedReportFilters();
+    let filteredLicenses = getFilteredLicensesForAdvancedReport({
+        ...filters,
+        licenseStatus: ""
+    }).filter(license => {
+        const days = calculateLicenseDaysRemaining(getLicenseExpiryDateValue(license));
+        return getLicenseStatusForReport(license) === "Expired" || (Number.isFinite(days) && days < 0);
+    });
+
+    if (filters.fromDate || filters.toDate) {
+        filteredLicenses = filterLicensesByExpiryPeriod(filteredLicenses, filters.fromDate, filters.toDate);
+    }
+
+    const rows = filteredLicenses
+        .map((license, index) => getFacilityAdvancedRowFromLicense(license, index + 1, filters));
+
+    buildAdvancedFacilitiesReport("تقرير أذونات المزاولة المنتهية خلال فترة", rows, filters);
+}
+
+function generateCapacityByLocationReport() {
+    const filters = getAdvancedReportFilters();
+    const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
+        .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters));
+
+    buildAdvancedFacilitiesReport("تقرير الطاقة الاستيعابية حسب الموقع", rows, filters);
+}
+
+function generateWorkforceByLocationReport() {
+    const filters = getAdvancedReportFilters();
+    const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
+        .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters));
+
+    buildAdvancedFacilitiesReport("تقرير العمالة حسب الموقع أو نوع المرفق", rows, filters);
+}
+
+function generateMissingDataReport() {
+    const filters = getAdvancedReportFilters();
+    const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
+        .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters))
+        .filter(row => {
+            return row.license_number === "-" ||
+                row.issue_date === "غير محدد" ||
+                row.expiry_date === "غير محدد" ||
+                row.rooms === 0 ||
+                row.beds === 0 ||
+                row.municipality === "-" ||
+                row.city === "-" ||
+                row.classification_status === "غير مصنف" ||
+                row.facility_status === "-" ||
+                row.total_workers === 0;
+        });
+
+    buildAdvancedFacilitiesReport("تقرير المرافق بدون بيانات مكتملة", rows, filters);
+}
+
+function generateAdvancedReport() {
+    const reportType = getTextValue("reportType");
+    const scope = getTextValue("advancedReportScope");
+
+    if (reportType === "advanced_facilities") {
+        if (scope === "facility") {
+            generateFacilitySingleReport();
+            return;
+        }
+
+        if (scope === "city") {
+            generateCityReport();
+            return;
+        }
+
+        if (scope === "municipality") {
+            generateMunicipalityReport();
+            return;
+        }
+    }
+
+    if (reportType === "advanced_facility") {
+        generateFacilitySingleReport();
+        return;
+    }
+
+    if (reportType === "advanced_city") {
+        generateCityReport();
+        return;
+    }
+
+    if (reportType === "advanced_municipality") {
+        generateMunicipalityReport();
+        return;
+    }
+
+    if (reportType === "advanced_license_renewal") {
+        generateLicenseRenewalReport();
+        return;
+    }
+
+    if (reportType === "advanced_license_expiry") {
+        generateLicenseExpiryReport();
+        return;
+    }
+
+    if (reportType === "advanced_expired_licenses") {
+        generateExpiredLicensesPeriodReport();
+        return;
+    }
+
+    generateFacilityTypeReport();
+}
+
+function exportAdvancedReportCSV() {
+    if (!currentAdvancedReport || !Array.isArray(currentAdvancedReport.rows)) {
+        generateAdvancedReport();
+    }
+
+    if (!currentAdvancedReport || !currentAdvancedReport.rows.length) {
+        alert("لا توجد بيانات لتصديرها");
+        return;
+    }
+
+    const report = currentAdvancedReport;
+    let csvContent = "\uFEFF";
+
+    csvContent += [
+        "وزارة السياحة والصناعات التقليدية",
+        "إدارة المهن والرقابة السياحية",
+        "قسم الإيواء السياحي",
+        `اسم التقرير: ${report.title}`,
+        `تاريخ إعداد التقرير: ${report.reportDate}`,
+        `أعد التقرير: ${report.preparedBy}`
+    ].map(escapeCsvValue).join("\n") + "\n\n";
+
+    const filterLabels = getAdvancedReportFilterLabels(report.filters);
+    if (filterLabels.length) {
+        csvContent += filterLabels.map(escapeCsvValue).join("\n") + "\n\n";
+    }
+
+    csvContent += report.columns.map(column => escapeCsvValue(column.label)).join(",") + "\n";
+
+    report.rows.forEach(row => {
+        csvContent += report.columns
+            .map(column => escapeCsvValue(getAdvancedReportCellValue(row, column)))
+            .join(",") + "\n";
+    });
+
+    csvContent += "\n" + escapeCsvValue("تصميم وبرمجة مركز المعلومات والتوثيق السياحي 2026") + "\n";
+
+    const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = report.fileName || "advanced_report.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function printAdvancedReport() {
+    if (!currentAdvancedReport) {
+        generateAdvancedReport();
+    }
+
+    const reportOutput = document.getElementById("reportOutput");
+
+    if (!reportOutput) {
+        return;
+    }
+
+    const printWindow = window.open("", "_blank");
+
+    if (!printWindow) {
+        alert("تعذر فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.");
+        return;
+    }
+
+    printWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="UTF-8">
+            <title>${escapeHtml(currentAdvancedReport ? currentAdvancedReport.title : "تقرير")}</title>
+            <style>
+                body { font-family: Arial, sans-serif; direction: rtl; padding: 22px; color: #222; }
+                .official-report-header { text-align: center; border-bottom: 2px solid #0277bd; padding-bottom: 12px; margin-bottom: 16px; }
+                .official-report-header h2 { margin: 0 0 8px; color: #0277bd; }
+                .official-report-header p { margin: 4px 0; font-weight: bold; }
+                .official-report-meta { margin: 10px 0; font-weight: bold; }
+                .advanced-report-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 16px; }
+                .advanced-report-filters span { border: 1px solid #90caf9; padding: 5px 8px; border-radius: 12px; font-size: 11px; }
+                .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0; }
+                .card { border: 1px solid #cfd8dc; padding: 8px; text-align: center; border-radius: 6px; }
+                .card h3 { margin: 0 0 6px; font-size: 11px; color: #37474f; }
+                .card p { margin: 0; font-size: 17px; font-weight: bold; color: #0277bd; }
+                table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+                th, td { border: 1px solid #777; padding: 5px; text-align: center; font-size: 10px; }
+                th { background: #0277bd; color: white; }
+                .official-report-footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #90a4ae; text-align: center; font-weight: bold; }
+                @page { size: A4 landscape; margin: 10mm; }
+            </style>
+        </head>
+        <body>${reportOutput.innerHTML}</body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// ===============================
 // شاشة التقارير والبحث الذكي
 // ===============================
 
@@ -2768,6 +3771,7 @@ function filterReportFacilities() {
 function selectReportFacility(facility) {
     setValue("reportFacilitySearch", getFacilityAutocompleteLabel(facility));
     setValue("reportFacility", facility.facility_code || "");
+    currentAdvancedReport = null;
 
     hideAutocompleteResults("reportFacilityResults");
 }
@@ -2781,20 +3785,42 @@ function toggleReportMonth() {
     const monthContainer = document.getElementById("reportMonthContainer");
     const yearInput = document.getElementById("reportYear");
     const isLicenseStatusReport = reportType === "licenses_status";
+    const isAdvancedReport = isAdvancedReportType(reportType);
+    const advancedOptions = document.getElementById("advancedReportOptions");
 
     if (monthContainer) {
-        monthContainer.classList.toggle("hidden", reportType === "annual" || isLicenseStatusReport);
+        monthContainer.classList.toggle("hidden", (reportType === "annual" || isLicenseStatusReport) && !isAdvancedReport);
     }
 
     document.querySelectorAll(".license-report-filter").forEach(item => {
         item.classList.toggle("hidden", !isLicenseStatusReport);
     });
 
+    if (advancedOptions) {
+        advancedOptions.classList.toggle("hidden", !isAdvancedReport);
+    }
+
+    const scopeByType = {
+        advanced_facility: "facility",
+        advanced_facilities: "all",
+        advanced_facility_type: "type",
+        advanced_city: "city",
+        advanced_municipality: "municipality",
+        advanced_license_renewal: "period",
+        advanced_license_expiry: "license_status",
+        advanced_expired_licenses: "period"
+    };
+    setSelectValue("advancedReportScope", scopeByType[reportType] || "all");
+    currentAdvancedReport = null;
+
     if (yearInput) {
-        if (isLicenseStatusReport) {
+        if (isLicenseStatusReport || isAdvancedReport) {
             yearInput.required = false;
-            yearInput.placeholder = "الكل";
-            yearInput.value = "";
+            yearInput.placeholder = isAdvancedReport ? "اختياري" : "الكل";
+
+            if (isLicenseStatusReport) {
+                yearInput.value = "";
+            }
         } else {
             yearInput.required = true;
             yearInput.placeholder = "";
@@ -2816,6 +3842,11 @@ function generateReport() {
 
     if (reportType === "licenses_status") {
         generateLicensesStatusReport();
+        return;
+    }
+
+    if (isAdvancedReportType(reportType)) {
+        generateAdvancedReport();
         return;
     }
 
@@ -2959,6 +3990,11 @@ function setReportSummary(
 function exportReportToExcel() {
     if (getTextValue("reportType") === "licenses_status") {
         exportLicensesStatusReportCSV();
+        return;
+    }
+
+    if (isAdvancedReportType(getTextValue("reportType"))) {
+        exportAdvancedReportCSV();
         return;
     }
 
@@ -3237,6 +4273,11 @@ function updateStatisticsSection() {
 function printReport() {
     if (getTextValue("reportType") === "licenses_status") {
         printLicensesStatusReport();
+        return;
+    }
+
+    if (isAdvancedReportType(getTextValue("reportType"))) {
+        printAdvancedReport();
         return;
     }
 
@@ -3596,6 +4637,7 @@ function bindEvents() {
     const reportType = document.getElementById("reportType");
     if (reportType) {
         reportType.addEventListener("change", toggleReportMonth);
+        toggleReportMonth();
     }
 
     const facilitiesSearchInput = document.getElementById("facilitiesSearchInput");
@@ -3647,11 +4689,43 @@ function bindEvents() {
         }
     });
 
+    [
+        "advancedReportScope",
+        "advancedFacilityType",
+        "advancedMunicipality",
+        "advancedCity",
+        "advancedLicenseStatus",
+        "advancedFacilityStatus",
+        "advancedClassification",
+        "advancedFromDate",
+        "advancedToDate",
+        "reportYear",
+        "reportMonth"
+    ].forEach(id => {
+        const field = document.getElementById(id);
+
+        if (field) {
+            field.addEventListener("input", function() {
+                currentAdvancedReport = null;
+            });
+            field.addEventListener("change", function() {
+                currentAdvancedReport = null;
+            });
+        }
+    });
+
+    document.querySelectorAll("#advancedReportColumns input[type='checkbox']").forEach(input => {
+        input.addEventListener("change", function() {
+            applySelectedColumnsToReport();
+        });
+    });
+
     const reportFacilitySearch = document.getElementById("reportFacilitySearch");
     if (reportFacilitySearch) {
         reportFacilitySearch.addEventListener("input", filterReportFacilities);
         reportFacilitySearch.addEventListener("input", function() {
             currentLicensesStatusReportRows = [];
+            currentAdvancedReport = null;
         });
         reportFacilitySearch.addEventListener("focus", filterReportFacilities);
 

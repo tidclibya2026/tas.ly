@@ -938,9 +938,23 @@
                                 <div>
                                     <label for="reportType">نوع التقرير</label>
                                     <select id="reportType" required>
-                                        <option value="monthly">تقرير شهري</option>
-                                        <option value="annual">تقرير سنوي</option>
-                                        <option value="licenses_status">تقرير حالة التراخيص السياحية</option>
+                                        <optgroup label="تقارير الإشغال">
+                                            <option value="monthly">تقرير شهري</option>
+                                            <option value="annual">تقرير سنوي</option>
+                                        </optgroup>
+                                        <optgroup label="تقارير رقابية">
+                                            <option value="licenses_status">تقرير حالة التراخيص السياحية</option>
+                                        </optgroup>
+                                        <optgroup label="مخرجات التقارير المتقدمة">
+                                            <option value="advanced_facility">تقرير مرفق محدد</option>
+                                            <option value="advanced_facilities">تقرير عام لكل المرافق</option>
+                                            <option value="advanced_facility_type">تقرير حسب نوع المرفق</option>
+                                            <option value="advanced_city">تقرير حسب المدينة</option>
+                                            <option value="advanced_municipality">تقرير حسب البلدية</option>
+                                            <option value="advanced_license_renewal">تقرير تجديد أذن المزاولة خلال فترة</option>
+                                            <option value="advanced_license_expiry">تقرير أذونات المزاولة القريبة من الانتهاء</option>
+                                            <option value="advanced_expired_licenses">تقرير أذونات المزاولة المنتهية خلال فترة</option>
+                                        </optgroup>
                                     </select>
                                 </div>
 
@@ -1012,6 +1026,141 @@
                                         <option value="إقامة سياحية">إقامة سياحية</option>
                                         <option value="شاليه سياحي">شاليه سياحي</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <div id="advancedReportOptions" class="advanced-report-options hidden">
+                                <h3>مخرجات التقارير المتقدمة</h3>
+
+                                <div class="form-grid">
+                                    <div>
+                                        <label for="advancedReportScope">مجال التقرير</label>
+                                        <select id="advancedReportScope">
+                                            <option value="all">كل المرافق</option>
+                                            <option value="facility">مرفق محدد</option>
+                                            <option value="type">نوع مرفق</option>
+                                            <option value="city">مدينة</option>
+                                            <option value="municipality">بلدية</option>
+                                            <option value="period">فترة زمنية</option>
+                                            <option value="license_status">حالة ترخيص</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedFacilityType">نوع المرفق</label>
+                                        <select id="advancedFacilityType">
+                                            <option value="">الكل</option>
+                                            <option value="فندق">فندق</option>
+                                            <option value="قرية سياحية">قرية سياحية</option>
+                                            <option value="منتجع">منتجع</option>
+                                            <option value="شقق فندقية">شقق فندقية</option>
+                                            <option value="نزل">نزل</option>
+                                            <option value="إقامة سياحية">إقامة سياحية</option>
+                                            <option value="شاليه سياحي">شاليه سياحي</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedMunicipality">البلدية</label>
+                                        <input type="text" id="advancedMunicipality" list="facilityMunicipalityOptions" placeholder="الكل">
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedCity">المدينة</label>
+                                        <input type="text" id="advancedCity" placeholder="الكل">
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedLicenseStatus">حالة الترخيص</label>
+                                        <select id="advancedLicenseStatus">
+                                            <option value="">الكل</option>
+                                            <option value="Active">ساري</option>
+                                            <option value="Expired">منتهي</option>
+                                            <option value="Pending">قيد الإجراء</option>
+                                            <option value="Suspended">موقوف</option>
+                                            <option value="within_30">ينتهي خلال 30 يوماً</option>
+                                            <option value="within_60">ينتهي خلال 60 يوماً</option>
+                                            <option value="within_90">ينتهي خلال 90 يوماً</option>
+                                            <option value="no_license">بدون ترخيص مسجل</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedFacilityStatus">حالة المرفق</label>
+                                        <select id="advancedFacilityStatus">
+                                            <option value="">الكل</option>
+                                            <option value="نشط">نشط</option>
+                                            <option value="غير نشط">غير نشط</option>
+                                            <option value="صيانة">صيانة</option>
+                                            <option value="مقفل">مقفل</option>
+                                            <option value="قوة قاهرة">قوة قاهرة</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedClassification">درجة التصنيف</label>
+                                        <select id="advancedClassification">
+                                            <option value="">الكل</option>
+                                            <option value="classified">مصنف</option>
+                                            <option value="unclassified">غير مصنف</option>
+                                            <option value="نجمة">نجمة</option>
+                                            <option value="نجمتان">نجمتان</option>
+                                            <option value="ثلاث نجوم">ثلاث نجوم</option>
+                                            <option value="أربع نجوم">أربع نجوم</option>
+                                            <option value="خمس نجوم">خمس نجوم</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedFromDate">من تاريخ</label>
+                                        <input type="date" id="advancedFromDate">
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedToDate">إلى تاريخ</label>
+                                        <input type="date" id="advancedToDate">
+                                    </div>
+                                </div>
+
+                                <div class="advanced-columns-panel">
+                                    <div class="advanced-columns-header">
+                                        <h4>اختيار الأعمدة</h4>
+                                        <div class="inline-actions">
+                                            <button type="button" class="secondary-button small-button" onclick="selectAdvancedReportColumns('all')">تحديد الكل</button>
+                                            <button type="button" class="secondary-button small-button" onclick="selectAdvancedReportColumns('none')">إلغاء التحديد</button>
+                                            <button type="button" class="secondary-button small-button" onclick="selectAdvancedReportColumns('basic')">الأعمدة الأساسية فقط</button>
+                                        </div>
+                                    </div>
+
+                                    <div id="advancedReportColumns" class="advanced-columns-grid">
+                                        <label><input type="checkbox" value="facility_code" checked> الكود الوطني</label>
+                                        <label><input type="checkbox" value="facility_name" checked> اسم المرفق</label>
+                                        <label><input type="checkbox" value="facility_type" checked> نوع المرفق</label>
+                                        <label><input type="checkbox" value="municipality" checked> البلدية</label>
+                                        <label><input type="checkbox" value="city" checked> المدينة</label>
+                                        <label><input type="checkbox" value="address"> العنوان</label>
+                                        <label><input type="checkbox" value="classification_status" checked> التصنيف</label>
+                                        <label><input type="checkbox" value="classification"> درجة التصنيف</label>
+                                        <label><input type="checkbox" value="facility_status" checked> حالة المرفق</label>
+                                        <label><input type="checkbox" value="license_status" checked> حالة الترخيص</label>
+                                        <label><input type="checkbox" value="license_number"> رقم الترخيص</label>
+                                        <label><input type="checkbox" value="issue_date"> تاريخ الإصدار</label>
+                                        <label><input type="checkbox" value="expiry_date"> تاريخ الانتهاء</label>
+                                        <label><input type="checkbox" value="days_remaining"> عدد الأيام المتبقية</label>
+                                        <label><input type="checkbox" value="rooms" checked> عدد الغرف</label>
+                                        <label><input type="checkbox" value="beds" checked> عدد الأسرة</label>
+                                        <label><input type="checkbox" value="suites"> عدد الأجنحة</label>
+                                        <label><input type="checkbox" value="chalets"> عدد الشاليهات أو الوحدات</label>
+                                        <label><input type="checkbox" value="total_workers" checked> إجمالي العاملين</label>
+                                        <label><input type="checkbox" value="national_workers"> العمالة الوطنية</label>
+                                        <label><input type="checkbox" value="foreign_workers"> العمالة الأجنبية</label>
+                                        <label><input type="checkbox" value="seasonal_workers"> العمالة الموسمية</label>
+                                        <label><input type="checkbox" value="latest_occupancy"> آخر بيانات إشغال مسجلة</label>
+                                        <label><input type="checkbox" value="room_occupancy"> إشغال الغرف</label>
+                                        <label><input type="checkbox" value="bed_occupancy"> إشغال الأسرة</label>
+                                        <label><input type="checkbox" value="average_stay"> متوسط مدة الإقامة</label>
+                                        <label><input type="checkbox" value="notes"> ملاحظات</label>
+                                    </div>
                                 </div>
                             </div>
 
