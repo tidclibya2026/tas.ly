@@ -767,6 +767,13 @@ tr:hover {
     font-weight: 700;
 }
 
+.advanced-report-preset-note {
+    margin: 10px 0 0;
+    color: #607d8b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
 .advanced-report-empty {
     padding: 18px;
     text-align: center;

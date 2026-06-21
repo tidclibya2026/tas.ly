@@ -2722,6 +2722,7 @@ const advancedReportColumnDefinitions = [
     { key: "facility_status", label: "حالة المرفق", basic: true },
     { key: "license_status", label: "حالة الترخيص", basic: true },
     { key: "license_number", label: "رقم الترخيص", basic: false },
+    { key: "license_type", label: "نوع الإذن/الترخيص", basic: false },
     { key: "issue_date", label: "تاريخ الإصدار", basic: false },
     { key: "expiry_date", label: "تاريخ الانتهاء", basic: false },
     { key: "days_remaining", label: "عدد الأيام المتبقية", basic: false },
@@ -2740,6 +2741,132 @@ const advancedReportColumnDefinitions = [
     { key: "notes", label: "ملاحظات", basic: false }
 ];
 
+const advancedReportOutputPresets = {
+    comprehensive: {
+        label: "تقرير شامل",
+        columns: [
+            "facility_code",
+            "facility_name",
+            "facility_type",
+            "municipality",
+            "city",
+            "classification_status",
+            "classification",
+            "facility_status",
+            "license_status",
+            "license_number",
+            "issue_date",
+            "expiry_date",
+            "days_remaining",
+            "rooms",
+            "beds",
+            "suites",
+            "chalets",
+            "total_workers",
+            "national_workers",
+            "foreign_workers",
+            "seasonal_workers",
+            "latest_occupancy",
+            "room_occupancy",
+            "bed_occupancy",
+            "average_stay"
+        ]
+    },
+    core: {
+        label: "بيانات المرافق الأساسية",
+        columns: [
+            "facility_code",
+            "facility_name",
+            "facility_type",
+            "municipality",
+            "city",
+            "classification_status",
+            "classification",
+            "facility_status",
+            "license_status"
+        ]
+    },
+    capacity: {
+        label: "الطاقة الاستيعابية",
+        columns: [
+            "facility_code",
+            "facility_name",
+            "facility_type",
+            "municipality",
+            "city",
+            "rooms",
+            "beds",
+            "suites",
+            "chalets"
+        ]
+    },
+    licenses: {
+        label: "التراخيص والأذونات",
+        columns: [
+            "facility_code",
+            "facility_name",
+            "facility_type",
+            "municipality",
+            "city",
+            "license_status",
+            "license_number",
+            "license_type",
+            "issue_date",
+            "expiry_date",
+            "days_remaining",
+            "notes"
+        ]
+    },
+    workforce: {
+        label: "العمالة",
+        columns: [
+            "facility_code",
+            "facility_name",
+            "facility_type",
+            "municipality",
+            "city",
+            "total_workers",
+            "national_workers",
+            "foreign_workers",
+            "seasonal_workers"
+        ]
+    },
+    occupancy: {
+        label: "الإشغال",
+        columns: [
+            "facility_code",
+            "facility_name",
+            "facility_type",
+            "municipality",
+            "city",
+            "latest_occupancy",
+            "room_occupancy",
+            "bed_occupancy",
+            "average_stay"
+        ]
+    },
+    missing: {
+        label: "النواقص الرقابية",
+        columns: [
+            "facility_code",
+            "facility_name",
+            "facility_type",
+            "municipality",
+            "city",
+            "classification_status",
+            "facility_status",
+            "license_status",
+            "license_number",
+            "issue_date",
+            "expiry_date",
+            "rooms",
+            "beds",
+            "total_workers",
+            "notes"
+        ]
+    }
+};
+
 function isAdvancedReportType(reportType) {
     return String(reportType || "").startsWith("advanced_");
 }
@@ -2753,12 +2880,12 @@ function getReportTypeLabel(reportType) {
         monthly: "تقرير الإشغال الشهري",
         annual: "التقرير السنوي للإشغال",
         licenses_status: "تقرير حالة التراخيص السياحية",
-        advanced_facility: "تقرير مرفق محدد",
-        advanced_facilities: "تقرير عام لكل المرافق",
+        advanced_facility: "التقرير باسم المرفق",
+        advanced_facilities: "تقرير عام متعدد الخيارات",
         advanced_facility_type: "تقرير حسب نوع المرفق",
         advanced_city: "تقرير حسب المدينة",
         advanced_municipality: "تقرير حسب البلدية",
-        advanced_license_renewal: "تقرير تجديد أذن المزاولة خلال فترة",
+        advanced_license_renewal: "إصدارات الأذونات من فترة إلى فترة",
         advanced_license_expiry: "تقرير أذونات المزاولة القريبة من الانتهاء",
         advanced_expired_licenses: "تقرير أذونات المزاولة المنتهية خلال فترة"
     };
@@ -3010,6 +3137,7 @@ function getAdvancedReportFilters() {
     return {
         reportType: getTextValue("reportType"),
         scope: getTextValue("advancedReportScope"),
+        outputPreset: getAdvancedOutputPreset(),
         facilityCode: getTextValue("reportFacility"),
         facilitySearch: getTextValue("reportFacilitySearch"),
         type: getTextValue("advancedFacilityType"),
@@ -3227,6 +3355,19 @@ function calculateFacilitiesTotals(rows) {
     };
 }
 
+function hasMissingAdvancedData(row) {
+    return row.license_number === "-" ||
+        row.issue_date === "غير محدد" ||
+        row.expiry_date === "غير محدد" ||
+        row.rooms === 0 ||
+        row.beds === 0 ||
+        row.municipality === "-" ||
+        row.city === "-" ||
+        row.classification_status === "غير مصنف" ||
+        row.facility_status === "-" ||
+        row.total_workers === 0;
+}
+
 function renderAdvancedReportSummary(summary) {
     return `
         <div class="cards report-cards">
@@ -3258,6 +3399,35 @@ function getSelectedReportColumns() {
     }
 
     return advancedReportColumnDefinitions.filter(column => column.basic);
+}
+
+function getAdvancedOutputPreset() {
+    const value = getTextValue("advancedOutputPreset");
+    return advancedReportOutputPresets[value] ? value : "comprehensive";
+}
+
+function getAdvancedOutputPresetLabel(value = getAdvancedOutputPreset()) {
+    const presetKey = advancedReportOutputPresets[value] ? value : "comprehensive";
+    return advancedReportOutputPresets[presetKey].label;
+}
+
+function setAdvancedReportColumnsByKeys(columnKeys) {
+    const keySet = new Set(columnKeys);
+
+    document.querySelectorAll("#advancedReportColumns input[type='checkbox']").forEach(input => {
+        input.checked = keySet.has(input.value);
+    });
+}
+
+function applyAdvancedOutputPreset() {
+    const preset = advancedReportOutputPresets[getAdvancedOutputPreset()];
+
+    if (!preset) {
+        return;
+    }
+
+    setAdvancedReportColumnsByKeys(preset.columns);
+    applySelectedColumnsToReport();
 }
 
 function selectAdvancedReportColumns(mode) {
@@ -3315,6 +3485,7 @@ function renderAdvancedReportTable(columns, rows) {
 function getAdvancedReportFilterLabels(filters) {
     const labels = [];
 
+    if (filters.outputPreset) labels.push(`مخرجات التقرير: ${getAdvancedOutputPresetLabel(filters.outputPreset)}`);
     if (filters.type) labels.push(`نوع المرفق: ${filters.type}`);
     if (filters.city) labels.push(`المدينة: ${filters.city}`);
     if (filters.municipality) labels.push(`البلدية: ${filters.municipality}`);
@@ -3415,16 +3586,21 @@ function generateFacilitySingleReport() {
 
     filters.facilityCode = facility.facility_code;
     const rows = [getFacilityAdvancedRow(facility, 1, filters)];
-    buildAdvancedFacilitiesReport(`تقرير مرفق محدد - ${facility.name || facility.facility_code}`, rows, filters);
+    buildAdvancedFacilitiesReport(`التقرير باسم المرفق - ${facility.name || facility.facility_code}`, rows, filters);
 }
 
 function generateFacilityTypeReport() {
     const filters = getAdvancedReportFilters();
-    const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
+    let rows = filterFacilitiesByAdvancedOptions(facilities, filters)
         .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters));
+
+    if (filters.outputPreset === "missing") {
+        rows = rows.filter(hasMissingAdvancedData);
+    }
+
     const typeLabel = filters.type ? ` - ${filters.type}` : "";
     const title = filters.reportType === "advanced_facilities"
-        ? `تقرير عام لكل المرافق${typeLabel}`
+        ? `تقرير عام متعدد الخيارات - ${getAdvancedOutputPresetLabel(filters.outputPreset)}${typeLabel}`
         : `تقرير حسب نوع المرفق${typeLabel}`;
 
     buildAdvancedFacilitiesReport(title, rows, filters);
@@ -3472,7 +3648,7 @@ function generateLicenseRenewalReport() {
         filters.toDate
     ).map((license, index) => getFacilityAdvancedRowFromLicense(license, index + 1, filters));
 
-    buildAdvancedFacilitiesReport("تقرير تجديد أذن المزاولة خلال فترة", rows, filters);
+    buildAdvancedFacilitiesReport("إصدارات الأذونات من فترة إلى فترة", rows, filters);
 }
 
 function generateLicenseExpiryReport() {
@@ -3538,18 +3714,7 @@ function generateMissingDataReport() {
     const filters = getAdvancedReportFilters();
     const rows = filterFacilitiesByAdvancedOptions(facilities, filters)
         .map((facility, index) => getFacilityAdvancedRow(facility, index + 1, filters))
-        .filter(row => {
-            return row.license_number === "-" ||
-                row.issue_date === "غير محدد" ||
-                row.expiry_date === "غير محدد" ||
-                row.rooms === 0 ||
-                row.beds === 0 ||
-                row.municipality === "-" ||
-                row.city === "-" ||
-                row.classification_status === "غير مصنف" ||
-                row.facility_status === "-" ||
-                row.total_workers === 0;
-        });
+        .filter(hasMissingAdvancedData);
 
     buildAdvancedFacilitiesReport("تقرير المرافق بدون بيانات مكتملة", rows, filters);
 }
@@ -3811,7 +3976,24 @@ function toggleReportMonth() {
         advanced_expired_licenses: "period"
     };
     setSelectValue("advancedReportScope", scopeByType[reportType] || "all");
+
+    const presetByType = {
+        advanced_facility: "comprehensive",
+        advanced_facilities: "comprehensive",
+        advanced_facility_type: "core",
+        advanced_city: "comprehensive",
+        advanced_municipality: "comprehensive",
+        advanced_license_renewal: "licenses",
+        advanced_license_expiry: "licenses",
+        advanced_expired_licenses: "licenses"
+    };
+
     currentAdvancedReport = null;
+
+    if (isAdvancedReport) {
+        setSelectValue("advancedOutputPreset", presetByType[reportType] || "comprehensive");
+        applyAdvancedOutputPreset();
+    }
 
     if (yearInput) {
         if (isLicenseStatusReport || isAdvancedReport) {
@@ -4691,6 +4873,7 @@ function bindEvents() {
 
     [
         "advancedReportScope",
+        "advancedOutputPreset",
         "advancedFacilityType",
         "advancedMunicipality",
         "advancedCity",
@@ -4713,6 +4896,11 @@ function bindEvents() {
             });
         }
     });
+
+    const advancedOutputPreset = document.getElementById("advancedOutputPreset");
+    if (advancedOutputPreset) {
+        advancedOutputPreset.addEventListener("change", applyAdvancedOutputPreset);
+    }
 
     document.querySelectorAll("#advancedReportColumns input[type='checkbox']").forEach(input => {
         input.addEventListener("change", function() {

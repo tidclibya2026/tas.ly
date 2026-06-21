@@ -945,13 +945,15 @@
                                         <optgroup label="تقارير رقابية">
                                             <option value="licenses_status">تقرير حالة التراخيص السياحية</option>
                                         </optgroup>
-                                        <optgroup label="مخرجات التقارير المتقدمة">
-                                            <option value="advanced_facility">تقرير مرفق محدد</option>
-                                            <option value="advanced_facilities">تقرير عام لكل المرافق</option>
-                                            <option value="advanced_facility_type">تقرير حسب نوع المرفق</option>
+                                        <optgroup label="التقارير العامة المطلوبة">
+                                            <option value="advanced_facility">التقرير باسم المرفق</option>
+                                            <option value="advanced_license_renewal">إصدارات الأذونات من فترة إلى فترة</option>
                                             <option value="advanced_city">تقرير حسب المدينة</option>
+                                            <option value="advanced_facilities">تقرير عام متعدد الخيارات</option>
+                                        </optgroup>
+                                        <optgroup label="مخرجات إضافية">
+                                            <option value="advanced_facility_type">تقرير حسب نوع المرفق</option>
                                             <option value="advanced_municipality">تقرير حسب البلدية</option>
-                                            <option value="advanced_license_renewal">تقرير تجديد أذن المزاولة خلال فترة</option>
                                             <option value="advanced_license_expiry">تقرير أذونات المزاولة القريبة من الانتهاء</option>
                                             <option value="advanced_expired_licenses">تقرير أذونات المزاولة المنتهية خلال فترة</option>
                                         </optgroup>
@@ -1043,6 +1045,19 @@
                                             <option value="municipality">بلدية</option>
                                             <option value="period">فترة زمنية</option>
                                             <option value="license_status">حالة ترخيص</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="advancedOutputPresetContainer">
+                                        <label for="advancedOutputPreset">مخرجات التقرير العام</label>
+                                        <select id="advancedOutputPreset">
+                                            <option value="comprehensive">تقرير شامل</option>
+                                            <option value="core">بيانات المرافق الأساسية</option>
+                                            <option value="capacity">الطاقة الاستيعابية</option>
+                                            <option value="licenses">التراخيص والأذونات</option>
+                                            <option value="workforce">العمالة</option>
+                                            <option value="occupancy">الإشغال</option>
+                                            <option value="missing">النواقص الرقابية</option>
                                         </select>
                                     </div>
 
@@ -1144,6 +1159,7 @@
                                         <label><input type="checkbox" value="facility_status" checked> حالة المرفق</label>
                                         <label><input type="checkbox" value="license_status" checked> حالة الترخيص</label>
                                         <label><input type="checkbox" value="license_number"> رقم الترخيص</label>
+                                        <label><input type="checkbox" value="license_type"> نوع الإذن/الترخيص</label>
                                         <label><input type="checkbox" value="issue_date"> تاريخ الإصدار</label>
                                         <label><input type="checkbox" value="expiry_date"> تاريخ الانتهاء</label>
                                         <label><input type="checkbox" value="days_remaining"> عدد الأيام المتبقية</label>
