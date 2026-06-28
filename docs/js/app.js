@@ -619,6 +619,349 @@ function isSeasonalWorkersYes(value) {
         value === "يوجد";
 }
 
+
+const defaultRoomDetailTypes = [
+    "فردية",
+    "زوجية",
+    "ثلاثية",
+    "رباعية",
+    "مزدوجة",
+    "غرف مجهزة لذوي الاحتياجات الخاصة"
+];
+
+const defaultSuiteDetailTypes = [
+    "أجنحة رئاسية",
+    "أجنحة ممتازة",
+    "أجنحة عادية"
+];
+
+function isYesValue(value) {
+    return value === true || value === "yes" || value === "نعم" || value === "متوفر" || value === "متوفرة";
+}
+
+function getCheckboxValue(id) {
+    const element = document.getElementById(id);
+    return Boolean(element && element.checked);
+}
+
+function setChecked(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.checked = Boolean(value);
+    }
+}
+
+function normalizeRoomDetails(facility) {
+    const savedRows = Array.isArray(facility.room_details) ? facility.room_details : [];
+    return defaultRoomDetailTypes.map(roomType => {
+        const saved = savedRows.find(row => row.room_type === roomType) || {};
+        return {
+            room_type: roomType,
+            rooms_count: Number(saved.rooms_count || 0),
+            beds_count: Number(saved.beds_count || 0),
+            room_rate: Number(saved.room_rate || 0),
+            notes: saved.notes || ""
+        };
+    });
+}
+
+function normalizeSuiteDetails(facility) {
+    const savedRows = Array.isArray(facility.suite_details) ? facility.suite_details : [];
+    return defaultSuiteDetailTypes.map(suiteType => {
+        const saved = savedRows.find(row => row.suite_type === suiteType) || {};
+        return {
+            suite_type: suiteType,
+            suites_count: Number(saved.suites_count || 0),
+            beds_count: Number(saved.beds_count || 0),
+            suite_rate: Number(saved.suite_rate || 0),
+            notes: saved.notes || ""
+        };
+    });
+}
+
+function normalizeRestaurantCafeDetails(facility) {
+    return Array.isArray(facility.restaurant_cafe_details)
+        ? facility.restaurant_cafe_details.map((row, index) => ({
+            sequence: Number(row.sequence || index + 1),
+            name: row.name || "",
+            seats_count: Number(row.seats_count || 0),
+            tables_count: Number(row.tables_count || 0),
+            notes: row.notes || ""
+        }))
+        : [];
+}
+
+function normalizeMeetingHallDetails(facility) {
+    return Array.isArray(facility.meeting_hall_details)
+        ? facility.meeting_hall_details.map((row, index) => ({
+            sequence: Number(row.sequence || index + 1),
+            name: row.name || "",
+            seats_count: Number(row.seats_count || 0),
+            notes: row.notes || ""
+        }))
+        : [];
+}
+
+function getRestaurantCafeTotalsFromData(rows) {
+    const items = Array.isArray(rows) ? rows : [];
+    return {
+        count: items.filter(row => row.name || Number(row.seats_count || 0) > 0 || Number(row.tables_count || 0) > 0).length,
+        seats: items.reduce((sum, row) => sum + Number(row.seats_count || 0), 0),
+        tables: items.reduce((sum, row) => sum + Number(row.tables_count || 0), 0)
+    };
+}
+
+function getMeetingHallTotalsFromData(rows) {
+    const items = Array.isArray(rows) ? rows : [];
+    return {
+        count: items.filter(row => row.name || Number(row.seats_count || 0) > 0).length,
+        seats: items.reduce((sum, row) => sum + Number(row.seats_count || 0), 0)
+    };
+}
+
+function normalizeServices(facility) {
+    const services = facility.services || {};
+    const restaurantRows = normalizeRestaurantCafeDetails(facility);
+    const hallRows = normalizeMeetingHallDetails(facility);
+    const restaurantTotals = getRestaurantCafeTotalsFromData(restaurantRows);
+    const hallTotals = getMeetingHallTotalsFromData(hallRows);
+    const recreation = services.recreation || {};
+
+    return {
+        restaurants_available: isYesValue(services.restaurants_available) || restaurantTotals.count > 0,
+        restaurants_count: Number(services.restaurants_count || restaurantTotals.count || 0),
+        meeting_halls_available: isYesValue(services.meeting_halls_available) || hallTotals.count > 0,
+        meeting_halls_capacity: Number(services.meeting_halls_capacity || hallTotals.seats || 0),
+        recreation: {
+            pool: Boolean(recreation.pool),
+            gym: Boolean(recreation.gym),
+            spa: Boolean(recreation.spa),
+            kids_area: Boolean(recreation.kids_area),
+            playgrounds: Boolean(recreation.playgrounds),
+            swimming_pools: Boolean(recreation.swimming_pools)
+        },
+        parking_available: isYesValue(services.parking_available),
+        parking_capacity: Number(services.parking_capacity || 0),
+        wifi_status: services.wifi_status || "غير متوفر"
+    };
+}
+
+function normalizeAccessibility(facility) {
+    const accessibility = facility.accessibility || {};
+    return {
+        accessible_rooms_available: isYesValue(accessibility.accessible_rooms_available),
+        accessible_entrances_available: isYesValue(accessibility.accessible_entrances_available),
+        accessible_elevators_available: isYesValue(accessibility.accessible_elevators_available),
+        accessible_bathrooms_available: isYesValue(accessibility.accessible_bathrooms_available),
+        notes: accessibility.notes || ""
+    };
+}
+
+function normalizeSafety(facility) {
+    const safety = facility.safety || {};
+    return {
+        fire_system_status: safety.fire_system_status || "غير معتمدة / تحت التجهيز",
+        cctv_status: safety.cctv_status || "غير متوفرة",
+        emergency_exits_status: safety.emergency_exits_status || "غير مطابقة",
+        first_aid_available: isYesValue(safety.first_aid_available)
+    };
+}
+
+function normalizeSustainability(facility) {
+    const sustainability = facility.sustainability || {};
+    return {
+        solar_energy: Boolean(sustainability.solar_energy),
+        water_recycling: Boolean(sustainability.water_recycling),
+        energy_saving_systems: Boolean(sustainability.energy_saving_systems)
+    };
+}
+
+function normalizeFacilityDocuments(facility) {
+    const documents = facility.documents || {};
+    return {
+        passport_file: documents.passport_file || "",
+        national_id_file: documents.national_id_file || "",
+        facility_documents: Array.isArray(documents.facility_documents) ? documents.facility_documents : [],
+        commercial_register_file: documents.commercial_register_file || "",
+        tourism_license_file: documents.tourism_license_file || "",
+        facility_photos: Array.isArray(documents.facility_photos) ? documents.facility_photos : [],
+        inspection_report_file: documents.inspection_report_file || ""
+    };
+}
+
+function getDetailInputNumber(input) {
+    const value = Number(input && input.value ? input.value : 0);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getInputInRow(row, selector) {
+    return row ? row.querySelector(selector) : null;
+}
+
+function getRoomDetailsFromForm() {
+    return Array.from(document.querySelectorAll("#roomDetailsTable tbody tr")).map(row => ({
+        room_type: row.dataset.roomType || "",
+        rooms_count: getDetailInputNumber(getInputInRow(row, ".room-detail-rooms")),
+        beds_count: getDetailInputNumber(getInputInRow(row, ".room-detail-beds")),
+        room_rate: getDetailInputNumber(getInputInRow(row, ".room-detail-rate")),
+        notes: (getInputInRow(row, ".room-detail-notes") || {}).value || ""
+    }));
+}
+
+function getSuiteDetailsFromForm() {
+    return Array.from(document.querySelectorAll("#suiteDetailsTable tbody tr")).map(row => ({
+        suite_type: row.dataset.suiteType || "",
+        suites_count: getDetailInputNumber(getInputInRow(row, ".suite-detail-suites")),
+        beds_count: getDetailInputNumber(getInputInRow(row, ".suite-detail-beds")),
+        suite_rate: getDetailInputNumber(getInputInRow(row, ".suite-detail-rate")),
+        notes: (getInputInRow(row, ".suite-detail-notes") || {}).value || ""
+    }));
+}
+
+function getRestaurantCafeDetailsFromForm() {
+    return Array.from(document.querySelectorAll("#restaurantCafeDetailsTable tbody tr")).map((row, index) => ({
+        sequence: index + 1,
+        name: (getInputInRow(row, ".restaurant-name") || {}).value || "",
+        seats_count: getDetailInputNumber(getInputInRow(row, ".restaurant-seats")),
+        tables_count: getDetailInputNumber(getInputInRow(row, ".restaurant-tables")),
+        notes: (getInputInRow(row, ".restaurant-notes") || {}).value || ""
+    })).filter(row => row.name || row.seats_count > 0 || row.tables_count > 0 || row.notes);
+}
+
+function getMeetingHallDetailsFromForm() {
+    return Array.from(document.querySelectorAll("#meetingHallDetailsTable tbody tr")).map((row, index) => ({
+        sequence: index + 1,
+        name: (getInputInRow(row, ".meeting-hall-name") || {}).value || "",
+        seats_count: getDetailInputNumber(getInputInRow(row, ".meeting-hall-seats")),
+        notes: (getInputInRow(row, ".meeting-hall-notes") || {}).value || ""
+    })).filter(row => row.name || row.seats_count > 0 || row.notes);
+}
+
+function calculateRoomDetailsTotals() {
+    const rows = getRoomDetailsFromForm();
+    const totalRooms = rows.reduce((sum, row) => sum + Number(row.rooms_count || 0), 0);
+    const totalBeds = rows.reduce((sum, row) => sum + Number(row.beds_count || 0), 0);
+    const rateRows = rows.filter(row => Number(row.room_rate || 0) > 0);
+    const averageRate = rateRows.length
+        ? rateRows.reduce((sum, row) => sum + Number(row.room_rate || 0), 0) / rateRows.length
+        : 0;
+
+    setText("roomDetailsTotalRooms", totalRooms);
+    setText("roomDetailsTotalBeds", totalBeds);
+    setText("roomDetailsAverageRate", averageRate.toFixed(2));
+
+    return { totalRooms, totalBeds, averageRate };
+}
+
+function calculateSuiteDetailsTotals() {
+    const rows = getSuiteDetailsFromForm();
+    const totalSuites = rows.reduce((sum, row) => sum + Number(row.suites_count || 0), 0);
+    const totalBeds = rows.reduce((sum, row) => sum + Number(row.beds_count || 0), 0);
+    const rateRows = rows.filter(row => Number(row.suite_rate || 0) > 0);
+    const averageRate = rateRows.length
+        ? rateRows.reduce((sum, row) => sum + Number(row.suite_rate || 0), 0) / rateRows.length
+        : 0;
+
+    setText("suiteDetailsTotalSuites", totalSuites);
+    setText("suiteDetailsTotalBeds", totalBeds);
+    setText("suiteDetailsAverageRate", averageRate.toFixed(2));
+
+    return { totalSuites, totalBeds, averageRate };
+}
+
+function calculateRestaurantCafeTotals() {
+    const rows = getRestaurantCafeDetailsFromForm();
+    const totals = getRestaurantCafeTotalsFromData(rows);
+
+    setText("restaurantCafeTotalCount", totals.count);
+    setText("restaurantCafeTotalSeats", totals.seats);
+    setText("restaurantCafeTotalTables", totals.tables);
+
+    if (totals.count > 0) {
+        setSelectValue("restaurantsAvailable", "yes");
+        setValue("restaurantsCount", totals.count);
+    }
+
+    return totals;
+}
+
+function calculateMeetingHallTotals() {
+    const rows = getMeetingHallDetailsFromForm();
+    const totals = getMeetingHallTotalsFromData(rows);
+
+    setText("meetingHallTotalCount", totals.count);
+    setText("meetingHallTotalSeats", totals.seats);
+
+    if (totals.count > 0) {
+        setSelectValue("meetingHallsAvailable", "yes");
+        setValue("meetingHallsCapacity", totals.seats);
+    }
+
+    return totals;
+}
+
+function calculateCapacityFromRoomDetails() {
+    const totals = calculateRoomDetailsTotals();
+
+    if (totals.totalRooms > 0 || totals.totalBeds > 0) {
+        const type = getTextValue("facilityType");
+        if (type === "فندق") {
+            setValue("roomsCount", totals.totalRooms);
+            setValue("bedsCount", totals.totalBeds);
+            if (totals.totalRooms > 0 && totals.totalBeds > 0) {
+                setValue("bedsPerRoom", (totals.totalBeds / totals.totalRooms).toFixed(2));
+            }
+        } else if (type === "قرية سياحية" || type === "منتجع") {
+            setValue("vrRoomsCount", totals.totalRooms);
+            setValue("vrBedsCount", totals.totalBeds);
+            if (totals.totalRooms > 0 && totals.totalBeds > 0) {
+                setValue("vrAverageBedsPerRoom", (totals.totalBeds / totals.totalRooms).toFixed(2));
+            }
+        } else if (type === "شقق فندقية") {
+            setValue("apRoomsCount", totals.totalRooms);
+            setValue("apBedsCount", totals.totalBeds);
+            if (totals.totalRooms > 0 && totals.totalBeds > 0) {
+                setValue("apAverageBedsPerRoom", (totals.totalBeds / totals.totalRooms).toFixed(2));
+            }
+        } else {
+            setValue("hsRoomsCount", totals.totalRooms);
+            setValue("hsBedsCount", totals.totalBeds);
+            if (totals.totalRooms > 0 && totals.totalBeds > 0) {
+                setValue("hsAverageBedsPerRoom", (totals.totalBeds / totals.totalRooms).toFixed(2));
+            }
+        }
+    }
+
+    return totals;
+}
+
+function calculateAccessibilityIndicators() {
+    const hasAccessibleRooms = getTextValue("accessibleRoomsAvailable") === "yes" ||
+        getRoomDetailsFromForm().some(row => row.room_type === "غرف مجهزة لذوي الاحتياجات الخاصة" && Number(row.rooms_count || 0) > 0);
+
+    if (hasAccessibleRooms) {
+        setSelectValue("accessibleRoomsAvailable", "yes");
+    }
+
+    return {
+        accessible_rooms_available: hasAccessibleRooms,
+        accessible_entrances_available: getTextValue("accessibleEntrancesAvailable") === "yes",
+        accessible_elevators_available: getTextValue("accessibleElevatorsAvailable") === "yes",
+        accessible_bathrooms_available: getTextValue("accessibleBathroomsAvailable") === "yes"
+    };
+}
+
+function updateFacilityCapacityTotals() {
+    calculateCapacityFromRoomDetails();
+    const suiteTotals = calculateSuiteDetailsTotals();
+    if (suiteTotals.totalSuites > 0) {
+        setValue("suitesCount", suiteTotals.totalSuites);
+    }
+    calculateRestaurantCafeTotals();
+    calculateMeetingHallTotals();
+    calculateAccessibilityIndicators();
+}
+
 function normalizeSeasonalWorkers(facility) {
     const seasonal = facility.seasonal_workers || {};
     const nationalMale = getNumberField(seasonal, ["national_male_workers", "local_male", "local_male_workers"]);
@@ -651,18 +994,34 @@ function normalizeFacilityRecord(facility) {
     const localWorkers = Number(facility.local_workers || 0) || nationalMale + nationalFemale;
     const foreignWorkers = Number(facility.foreign_workers || 0) || foreignMale + foreignFemale;
     const totalWorkers = Number(facility.total_workers || 0) || localWorkers + foreignWorkers;
-    const averageBedsPerRoom = Number(facility.average_beds_per_room || facility.beds_per_unit || 0) ||
+    const averageBedsPerRoom = Number(facility.average_beds_per_room || facility.beds_per_room || facility.beds_per_unit || 0) ||
         (rooms > 0 && beds > 0 ? Number((beds / rooms).toFixed(2)) : 0);
+    const roomDetails = normalizeRoomDetails(facility);
+    const suiteDetails = normalizeSuiteDetails(facility);
+    const restaurantCafeDetails = normalizeRestaurantCafeDetails(facility);
+    const meetingHallDetails = normalizeMeetingHallDetails(facility);
+    const roomDetailsTotalRooms = roomDetails.reduce((sum, row) => sum + Number(row.rooms_count || 0), 0);
+    const roomDetailsTotalBeds = roomDetails.reduce((sum, row) => sum + Number(row.beds_count || 0), 0);
+    const suiteDetailsTotalSuites = suiteDetails.reduce((sum, row) => sum + Number(row.suites_count || 0), 0);
+    const normalizedRooms = roomDetailsTotalRooms || rooms;
+    const normalizedBeds = roomDetailsTotalBeds || beds;
+    const normalizedAverageBeds = Number(facility.average_beds_per_room || facility.beds_per_room || 0) ||
+        (normalizedRooms > 0 && normalizedBeds > 0 ? Number((normalizedBeds / normalizedRooms).toFixed(2)) : averageBedsPerRoom);
 
     return {
         ...facility,
         facility_code: facility.facility_code || "",
+        name_en: facility.name_en || "",
+        national_number: facility.national_number || "",
         status: normalizeFacilityStatus(facility.status),
         licenseStatus: facility.licenseStatus || facility.license_status || "Pending",
         classification_status: facility.classification_status || getFacilityClassificationStatus(facility),
-        rooms,
-        beds,
-        average_beds_per_room: averageBedsPerRoom,
+        floors_count: Number(facility.floors_count || 0),
+        rooms: normalizedRooms,
+        beds: normalizedBeds,
+        suites: suiteDetailsTotalSuites || Number(facility.suites || 0),
+        average_beds_per_room: normalizedAverageBeds,
+        beds_per_room: normalizedAverageBeds,
         local_workers: localWorkers,
         foreign_workers: foreignWorkers,
         national_male_workers: nationalMale,
@@ -670,6 +1029,18 @@ function normalizeFacilityRecord(facility) {
         foreign_male_workers: foreignMale,
         foreign_female_workers: foreignFemale,
         total_workers: totalWorkers,
+        room_details: roomDetails,
+        suite_details: suiteDetails,
+        services: normalizeServices({ ...facility, restaurant_cafe_details: restaurantCafeDetails, meeting_hall_details: meetingHallDetails }),
+        accessibility: normalizeAccessibility(facility),
+        restaurant_cafe_details: restaurantCafeDetails,
+        meeting_hall_details: meetingHallDetails,
+        safety: normalizeSafety(facility),
+        sustainability: normalizeSustainability(facility),
+        documents: normalizeFacilityDocuments(facility),
+        form_filled_by: facility.form_filled_by || "",
+        form_filled_by_position: facility.form_filled_by_position || "",
+        form_filled_date: facility.form_filled_date || "",
         seasonal_workers: normalizeSeasonalWorkers(facility)
     };
 }
@@ -1029,6 +1400,8 @@ function getFacilityTypeCode(type) {
     if (type === "منتجع") return "RES";
     if (type === "شقق فندقية") return "APT";
     if (type === "نزل") return "HST";
+    if (type === "بيوت الشباب") return "YTH";
+    if (type === "موتيل") return "MOT";
 
     return "ACC";
 }
@@ -1255,7 +1628,7 @@ function renderFacilitiesTablePage() {
 
     if (!Array.isArray(facilities) || facilities.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td colspan="13">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
+        row.innerHTML = `<td colspan="15">${facilitiesLoadError || "لا توجد بيانات مرافق حالياً"}</td>`;
         tableBody.appendChild(row);
         currentFacilitiesPage = 1;
         renderFacilitiesPagination(0, 1, 0, 0);
@@ -1269,7 +1642,7 @@ function renderFacilitiesTablePage() {
 
     if (totalItems === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td colspan="13">لا توجد مرافق مطابقة للبحث أو الفلاتر المحددة</td>`;
+        row.innerHTML = `<td colspan="15">لا توجد مرافق مطابقة للبحث أو الفلاتر المحددة</td>`;
         tableBody.appendChild(row);
         currentFacilitiesPage = 1;
         renderFacilitiesPagination(0, 1, 0, 0);
@@ -1287,17 +1660,20 @@ function renderFacilitiesTablePage() {
         row.innerHTML = `
             <td>${item.facility_code || "-"}</td>
             <td>${item.name || "-"}</td>
+            <td>${item.name_en || "-"}</td>
             <td>${item.type || "-"}</td>
             <td>${item.municipality || "-"}</td>
             <td>${item.city || "-"}</td>
             <td>${getFacilityClassificationStatus(item)}</td>
-            <td>${item.classification || "غير مصنف"}</td>
-            <td>${normalizeFacilityStatus(item.status)}</td>
             <td>${licenseStatus}</td>
+            <td>${item.floors_count || 0}</td>
             <td>${item.rooms || 0}</td>
             <td>${item.beds || 0}</td>
+            <td>${item.suites || 0}</td>
             <td>${getTotalWorkers(item)}</td>
+            <td>${normalizeFacilityStatus(item.status)}</td>
             <td>
+                <button type="button" class="table-action-button" onclick="showFacilityDetails('${item.facility_code || ""}')">عرض التفاصيل</button>
                 <button type="button" class="table-action-button" onclick="startFacilityEdit('${item.facility_code || ""}')">تعديل</button>
             </td>
         `;
@@ -1306,6 +1682,198 @@ function renderFacilitiesTablePage() {
     });
 
     renderFacilitiesPagination(totalItems, totalPages, startIndex, endIndex);
+}
+
+
+function getYesNoLabel(value) {
+    return isYesValue(value) ? "نعم" : "لا";
+}
+
+function renderDetailGrid(items) {
+    return `
+        <div class="detail-grid">
+            ${items.map(item => `
+                <div><span>${escapeHtml(item.label)}</span>${escapeHtml(item.value === undefined || item.value === null || item.value === "" ? "-" : item.value)}</div>
+            `).join("")}
+        </div>
+    `;
+}
+
+function renderDetailRowsTable(headers, rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        return `<div class="advanced-report-empty">لا توجد بيانات مسجلة</div>`;
+    }
+
+    return `
+        <div class="table-wrapper">
+            <table class="facility-details-table">
+                <thead><tr>${headers.map(header => `<th>${escapeHtml(header.label)}</th>`).join("")}</tr></thead>
+                <tbody>
+                    ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header.key] === undefined || row[header.key] === null || row[header.key] === "" ? "-" : row[header.key])}</td>`).join("")}</tr>`).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function getFacilityDetailsHtml(facility) {
+    const services = facility.services || {};
+    const recreation = services.recreation || {};
+    const accessibility = facility.accessibility || {};
+    const safety = facility.safety || {};
+    const sustainability = facility.sustainability || {};
+    const documents = facility.documents || {};
+    const restaurantTotals = getRestaurantCafeTotalsFromData(facility.restaurant_cafe_details || []);
+    const hallTotals = getMeetingHallTotalsFromData(facility.meeting_hall_details || []);
+
+    return `
+        <div class="detail-section">
+            <h4>البيانات الأساسية والهندسية</h4>
+            ${renderDetailGrid([
+                { label: "الكود الوطني", value: facility.facility_code },
+                { label: "اسم المرفق", value: facility.name },
+                { label: "الاسم الإنجليزي", value: facility.name_en },
+                { label: "الرقم الوطني / الإداري", value: facility.national_number },
+                { label: "النوع", value: facility.type },
+                { label: "البلدية", value: facility.municipality },
+                { label: "المدينة", value: facility.city },
+                { label: "العنوان", value: facility.address },
+                { label: "عدد الطوابق", value: facility.floors_count || 0 },
+                { label: "عدد الغرف", value: facility.rooms || 0 },
+                { label: "عدد الأسرة", value: facility.beds || 0 },
+                { label: "عدد الأجنحة", value: facility.suites || 0 }
+            ])}
+        </div>
+
+        <div class="detail-section">
+            <h4>تفصيل الغرف</h4>
+            ${renderDetailRowsTable([
+                { key: "room_type", label: "نوع الغرفة" },
+                { key: "rooms_count", label: "عدد الغرف" },
+                { key: "beds_count", label: "عدد الأسرة" },
+                { key: "room_rate", label: "التسعيرة" },
+                { key: "notes", label: "ملاحظات" }
+            ], (facility.room_details || []).filter(row => Number(row.rooms_count || 0) > 0 || Number(row.beds_count || 0) > 0 || Number(row.room_rate || 0) > 0 || row.notes))}
+        </div>
+
+        <div class="detail-section">
+            <h4>تفصيل الأجنحة</h4>
+            ${renderDetailRowsTable([
+                { key: "suite_type", label: "نوع الجناح" },
+                { key: "suites_count", label: "عدد الأجنحة" },
+                { key: "beds_count", label: "عدد الأسرة" },
+                { key: "suite_rate", label: "التسعيرة" },
+                { key: "notes", label: "ملاحظات" }
+            ], (facility.suite_details || []).filter(row => Number(row.suites_count || 0) > 0 || Number(row.beds_count || 0) > 0 || Number(row.suite_rate || 0) > 0 || row.notes))}
+        </div>
+
+        <div class="detail-section">
+            <h4>الخدمات والمرافق</h4>
+            ${renderDetailGrid([
+                { label: "المطاعم والمقاهي", value: getYesNoLabel(services.restaurants_available) },
+                { label: "عدد المطاعم والمقاهي", value: services.restaurants_count || restaurantTotals.count || 0 },
+                { label: "قاعات الاجتماعات", value: getYesNoLabel(services.meeting_halls_available) },
+                { label: "سعة القاعات", value: services.meeting_halls_capacity || hallTotals.seats || 0 },
+                { label: "مواقف السيارات", value: getYesNoLabel(services.parking_available) },
+                { label: "سعة مواقف السيارات", value: services.parking_capacity || 0 },
+                { label: "Wi-Fi", value: services.wifi_status || "غير متوفر" },
+                { label: "مسبح", value: getYesNoLabel(recreation.pool) },
+                { label: "صالة رياضية", value: getYesNoLabel(recreation.gym) },
+                { label: "سبا", value: getYesNoLabel(recreation.spa) },
+                { label: "منطقة ألعاب أطفال", value: getYesNoLabel(recreation.kids_area) },
+                { label: "ملاعب", value: getYesNoLabel(recreation.playgrounds) }
+            ])}
+        </div>
+
+        <div class="detail-section">
+            <h4>تفصيل المطاعم والمقاهي</h4>
+            ${renderDetailRowsTable([
+                { key: "sequence", label: "ر.م" },
+                { key: "name", label: "الاسم" },
+                { key: "seats_count", label: "المقاعد" },
+                { key: "tables_count", label: "الطاولات" },
+                { key: "notes", label: "ملاحظات" }
+            ], facility.restaurant_cafe_details || [])}
+        </div>
+
+        <div class="detail-section">
+            <h4>قاعات المؤتمرات والاجتماعات</h4>
+            ${renderDetailRowsTable([
+                { key: "sequence", label: "ر.م" },
+                { key: "name", label: "اسم القاعة" },
+                { key: "seats_count", label: "المقاعد" },
+                { key: "notes", label: "ملاحظات" }
+            ], facility.meeting_hall_details || [])}
+        </div>
+
+        <div class="detail-section">
+            <h4>الأمن والسلامة والاستدامة</h4>
+            ${renderDetailGrid([
+                { label: "مرافق لذوي الاحتياجات الخاصة", value: getYesNoLabel(accessibility.accessible_rooms_available || accessibility.accessible_entrances_available || accessibility.accessible_elevators_available || accessibility.accessible_bathrooms_available) },
+                { label: "ملاحظات السياحة الميسرة", value: accessibility.notes },
+                { label: "منظومة إطفاء الحريق", value: safety.fire_system_status },
+                { label: "كاميرات مراقبة", value: safety.cctv_status },
+                { label: "مخارج طوارئ", value: safety.emergency_exits_status },
+                { label: "إسعافات أولية", value: getYesNoLabel(safety.first_aid_available) },
+                { label: "طاقة شمسية", value: getYesNoLabel(sustainability.solar_energy) },
+                { label: "تدوير مياه", value: getYesNoLabel(sustainability.water_recycling) },
+                { label: "أنظمة توفير طاقة", value: getYesNoLabel(sustainability.energy_saving_systems) }
+            ])}
+        </div>
+
+        <div class="detail-section">
+            <h4>المستندات وبيانات معبئ النموذج</h4>
+            ${renderDetailGrid([
+                { label: "السجل التجاري", value: documents.commercial_register_file },
+                { label: "الترخيص السياحي", value: documents.tourism_license_file },
+                { label: "صور المرفق", value: Array.isArray(documents.facility_photos) ? documents.facility_photos.join(" / ") : "" },
+                { label: "تقرير المعاينة الفنية", value: documents.inspection_report_file },
+                { label: "اسم معبئ النموذج", value: facility.form_filled_by },
+                { label: "الصفة الوظيفية", value: facility.form_filled_by_position },
+                { label: "تاريخ تعبئة النموذج", value: facility.form_filled_date }
+            ])}
+        </div>
+    `;
+}
+
+function closeFacilityDetails() {
+    const modal = document.getElementById("facilityDetailsModal");
+    if (modal) {
+        modal.classList.add("hidden");
+    }
+}
+
+function showFacilityDetails(facilityCode) {
+    const facility = getFacilityByCode(facilityCode);
+
+    if (!facility) {
+        alert("تعذر العثور على تفاصيل المرفق");
+        return;
+    }
+
+    let modal = document.getElementById("facilityDetailsModal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "facilityDetailsModal";
+        modal.className = "facility-details-modal";
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="facility-details-card">
+            <div class="facility-details-header">
+                <div>
+                    <h3>${escapeHtml(facility.name || "تفاصيل المرفق")}</h3>
+                    <p>${escapeHtml(facility.facility_code || "-")} - ${escapeHtml(facility.type || "-")}</p>
+                </div>
+                <button type="button" class="secondary-button" onclick="closeFacilityDetails()">إغلاق</button>
+            </div>
+            <div class="facility-details-body">
+                ${getFacilityDetailsHtml(facility)}
+            </div>
+        </div>
+    `;
+    modal.classList.remove("hidden");
 }
 
 function renderFacilitiesTable() {
@@ -1341,11 +1909,207 @@ function getFacilityUnitsDescription(facility) {
 }
 
 
+
+function setRoomDetailsForm(details = []) {
+    const rows = Array.from(document.querySelectorAll("#roomDetailsTable tbody tr"));
+    rows.forEach(row => {
+        const item = details.find(detail => detail.room_type === row.dataset.roomType) || {};
+        const rooms = getInputInRow(row, ".room-detail-rooms");
+        const beds = getInputInRow(row, ".room-detail-beds");
+        const rate = getInputInRow(row, ".room-detail-rate");
+        const notes = getInputInRow(row, ".room-detail-notes");
+        if (rooms) rooms.value = Number(item.rooms_count || 0);
+        if (beds) beds.value = Number(item.beds_count || 0);
+        if (rate) rate.value = Number(item.room_rate || 0);
+        if (notes) notes.value = item.notes || "";
+    });
+    calculateRoomDetailsTotals();
+}
+
+function setSuiteDetailsForm(details = []) {
+    const rows = Array.from(document.querySelectorAll("#suiteDetailsTable tbody tr"));
+    rows.forEach(row => {
+        const item = details.find(detail => detail.suite_type === row.dataset.suiteType) || {};
+        const suites = getInputInRow(row, ".suite-detail-suites");
+        const beds = getInputInRow(row, ".suite-detail-beds");
+        const rate = getInputInRow(row, ".suite-detail-rate");
+        const notes = getInputInRow(row, ".suite-detail-notes");
+        if (suites) suites.value = Number(item.suites_count || 0);
+        if (beds) beds.value = Number(item.beds_count || 0);
+        if (rate) rate.value = Number(item.suite_rate || 0);
+        if (notes) notes.value = item.notes || "";
+    });
+    calculateSuiteDetailsTotals();
+}
+
+function setRestaurantCafeDetailsForm(details = []) {
+    const rows = Array.from(document.querySelectorAll("#restaurantCafeDetailsTable tbody tr"));
+    rows.forEach((row, index) => {
+        const item = details[index] || {};
+        const name = getInputInRow(row, ".restaurant-name");
+        const seats = getInputInRow(row, ".restaurant-seats");
+        const tables = getInputInRow(row, ".restaurant-tables");
+        const notes = getInputInRow(row, ".restaurant-notes");
+        if (name) name.value = item.name || "";
+        if (seats) seats.value = Number(item.seats_count || 0);
+        if (tables) tables.value = Number(item.tables_count || 0);
+        if (notes) notes.value = item.notes || "";
+    });
+    calculateRestaurantCafeTotals();
+}
+
+function setMeetingHallDetailsForm(details = []) {
+    const rows = Array.from(document.querySelectorAll("#meetingHallDetailsTable tbody tr"));
+    rows.forEach((row, index) => {
+        const item = details[index] || {};
+        const name = getInputInRow(row, ".meeting-hall-name");
+        const seats = getInputInRow(row, ".meeting-hall-seats");
+        const notes = getInputInRow(row, ".meeting-hall-notes");
+        if (name) name.value = item.name || "";
+        if (seats) seats.value = Number(item.seats_count || 0);
+        if (notes) notes.value = item.notes || "";
+    });
+    calculateMeetingHallTotals();
+}
+
+function clearFacilityDetailForms() {
+    setRoomDetailsForm([]);
+    setSuiteDetailsForm([]);
+    setRestaurantCafeDetailsForm([]);
+    setMeetingHallDetailsForm([]);
+}
+
+function getServicesFromForm() {
+    return {
+        restaurants_available: getTextValue("restaurantsAvailable") === "yes",
+        restaurants_count: getNumberValue("restaurantsCount"),
+        meeting_halls_available: getTextValue("meetingHallsAvailable") === "yes",
+        meeting_halls_capacity: getNumberValue("meetingHallsCapacity"),
+        recreation: {
+            pool: getCheckboxValue("hasPool"),
+            gym: getCheckboxValue("hasGym"),
+            spa: getCheckboxValue("hasSpa"),
+            kids_area: getCheckboxValue("hasKidsArea"),
+            playgrounds: getCheckboxValue("hasPlaygrounds"),
+            swimming_pools: getCheckboxValue("hasSwimmingPools")
+        },
+        parking_available: getTextValue("parkingAvailable") === "yes",
+        parking_capacity: getNumberValue("parkingCapacity"),
+        wifi_status: getTextValue("wifiStatus") || "غير متوفر"
+    };
+}
+
+function getAccessibilityFromForm() {
+    return {
+        accessible_rooms_available: getTextValue("accessibleRoomsAvailable") === "yes",
+        accessible_entrances_available: getTextValue("accessibleEntrancesAvailable") === "yes",
+        accessible_elevators_available: getTextValue("accessibleElevatorsAvailable") === "yes",
+        accessible_bathrooms_available: getTextValue("accessibleBathroomsAvailable") === "yes",
+        notes: getTextValue("accessibilityNotes")
+    };
+}
+
+function getSafetyFromForm() {
+    return {
+        fire_system_status: getTextValue("fireSystemStatus") || "غير معتمدة / تحت التجهيز",
+        cctv_status: getTextValue("cctvStatus") || "غير متوفرة",
+        emergency_exits_status: getTextValue("emergencyExitsStatus") || "غير مطابقة",
+        first_aid_available: getTextValue("firstAidAvailable") === "yes"
+    };
+}
+
+function getSustainabilityFromForm() {
+    return {
+        solar_energy: getCheckboxValue("usesSolarEnergy"),
+        water_recycling: getCheckboxValue("usesWaterRecycling"),
+        energy_saving_systems: getCheckboxValue("usesEnergySavingSystems")
+    };
+}
+
+function fillFacilityExtendedFields(facility) {
+    setValue("facilityNameEn", facility.name_en || "");
+    setValue("nationalNumber", facility.national_number || "");
+    setValue("floorsCount", Number(facility.floors_count || 0));
+    setRoomDetailsForm(facility.room_details || []);
+    setSuiteDetailsForm(facility.suite_details || []);
+    setRestaurantCafeDetailsForm(facility.restaurant_cafe_details || []);
+    setMeetingHallDetailsForm(facility.meeting_hall_details || []);
+
+    const services = facility.services || {};
+    setSelectValue("restaurantsAvailable", isYesValue(services.restaurants_available) ? "yes" : "no");
+    setValue("restaurantsCount", Number(services.restaurants_count || 0));
+    setSelectValue("meetingHallsAvailable", isYesValue(services.meeting_halls_available) ? "yes" : "no");
+    setValue("meetingHallsCapacity", Number(services.meeting_halls_capacity || 0));
+    setSelectValue("parkingAvailable", isYesValue(services.parking_available) ? "yes" : "no");
+    setValue("parkingCapacity", Number(services.parking_capacity || 0));
+    setSelectValue("wifiStatus", services.wifi_status || "غير متوفر");
+
+    const recreation = services.recreation || {};
+    setChecked("hasPool", recreation.pool);
+    setChecked("hasGym", recreation.gym);
+    setChecked("hasSpa", recreation.spa);
+    setChecked("hasKidsArea", recreation.kids_area);
+    setChecked("hasPlaygrounds", recreation.playgrounds);
+    setChecked("hasSwimmingPools", recreation.swimming_pools);
+
+    const accessibility = facility.accessibility || {};
+    setSelectValue("accessibleRoomsAvailable", isYesValue(accessibility.accessible_rooms_available) ? "yes" : "no");
+    setSelectValue("accessibleEntrancesAvailable", isYesValue(accessibility.accessible_entrances_available) ? "yes" : "no");
+    setSelectValue("accessibleElevatorsAvailable", isYesValue(accessibility.accessible_elevators_available) ? "yes" : "no");
+    setSelectValue("accessibleBathroomsAvailable", isYesValue(accessibility.accessible_bathrooms_available) ? "yes" : "no");
+    setValue("accessibilityNotes", accessibility.notes || "");
+
+    const safety = facility.safety || {};
+    setSelectValue("fireSystemStatus", safety.fire_system_status || "غير معتمدة / تحت التجهيز");
+    setSelectValue("cctvStatus", safety.cctv_status || "غير متوفرة");
+    setSelectValue("emergencyExitsStatus", safety.emergency_exits_status || "غير مطابقة");
+    setSelectValue("firstAidAvailable", isYesValue(safety.first_aid_available) ? "yes" : "no");
+
+    const sustainability = facility.sustainability || {};
+    setChecked("usesSolarEnergy", sustainability.solar_energy);
+    setChecked("usesWaterRecycling", sustainability.water_recycling);
+    setChecked("usesEnergySavingSystems", sustainability.energy_saving_systems);
+
+    setValue("formFilledBy", facility.form_filled_by || "");
+    setValue("formFilledByPosition", facility.form_filled_by_position || "");
+    setValue("formFilledDate", facility.form_filled_date || "");
+}
+
+function validateFacilityExtendedFields() {
+    const nationalNumber = getTextValue("nationalNumber");
+    if (nationalNumber && !/^\d{12}$/.test(nationalNumber)) {
+        alert("الرقم الوطني يجب أن يتكون من 12 خانة.");
+        return false;
+    }
+
+    const email = getTextValue("facilityEmail");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert("يرجى إدخال بريد إلكتروني صحيح");
+        return false;
+    }
+
+    const website = getTextValue("facilityWebsite");
+    if (website) {
+        try {
+            const url = new URL(website);
+            if (!["http:", "https:"].includes(url.protocol)) {
+                throw new Error("invalid protocol");
+            }
+        } catch (error) {
+            alert("يرجى إدخال رابط موقع إلكتروني صحيح يبدأ بـ http:// أو https://");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function clearFacilityCapacityFields() {
     [
+        "floorsCount",
         "suitesCount",
         "roomsCount",
-        "averageBedsPerRoom",
+        "bedsPerRoom",
         "bedsCount",
         "chaletsCount",
         "vrRoomsCount",
@@ -1371,8 +2135,19 @@ function clearFacilityCapacityFields() {
         "seasonalTotalWorkers",
         "seasonStartDate",
         "seasonEndDate",
-        "seasonalWorkersNotes"
+        "seasonalWorkersNotes",
+        "facilityNameEn",
+        "nationalNumber",
+        "restaurantsCount",
+        "meetingHallsCapacity",
+        "parkingCapacity",
+        "accessibilityNotes",
+        "formFilledBy",
+        "formFilledByPosition",
+        "formFilledDate"
     ].forEach(id => setValue(id, ""));
+
+    clearFacilityDetailForms();
 }
 
 function setFacilityFormMode(mode) {
@@ -1383,7 +2158,7 @@ function setFacilityFormMode(mode) {
         "facilityFormDescription",
         isEditMode
             ? "تحديث بيانات المرفق مع الحفاظ على الكود الوطني الحالي"
-            : "تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، أو نزل ضمن السجل الوطني"
+            : "تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، نزل، بيوت الشباب، أو موتيل ضمن السجل الوطني"
     );
     setText("facilitySubmitButton", isEditMode ? "حفظ التعديل" : "حفظ المرفق وتوليد الكود الوطني");
 
@@ -1403,12 +2178,13 @@ function resetFacilityFormState() {
 function fillFacilityCapacityFields(facility) {
     clearFacilityCapacityFields();
 
-    const averageBeds = Number(facility.average_beds_per_room || 0);
+    const averageBeds = Number(facility.average_beds_per_room || facility.beds_per_room || 0);
+    setValue("floorsCount", Number(facility.floors_count || 0));
 
     if (facility.type === "فندق") {
         setValue("suitesCount", Number(facility.suites || 0));
         setValue("roomsCount", Number(facility.rooms || 0));
-        setValue("averageBedsPerRoom", averageBeds);
+        setValue("bedsPerRoom", averageBeds);
         setValue("bedsCount", Number(facility.beds || 0));
     }
 
@@ -1427,7 +2203,7 @@ function fillFacilityCapacityFields(facility) {
         setValue("apBedsCount", Number(facility.beds || 0));
     }
 
-    if (facility.type === "نزل") {
+    if (facility.type === "نزل" || facility.type === "بيوت الشباب" || facility.type === "موتيل") {
         setValue("hsRoomsCount", Number(facility.rooms || 0));
         setValue("hsAverageBedsPerRoom", averageBeds);
         setValue("hsBedsCount", Number(facility.beds || 0));
@@ -1456,6 +2232,8 @@ function fillFacilityCapacityFields(facility) {
 function fillFacilityForm(facility) {
     setValue("editingFacilityCode", facility.facility_code || "");
     setValue("facilityName", facility.name || "");
+    setValue("facilityNameEn", facility.name_en || "");
+    setValue("nationalNumber", facility.national_number || "");
     setSelectValue("facilityType", facility.type || "فندق");
     setValue("facilityMunicipality", facility.municipality || "");
     setValue("facilityCity", facility.city || "");
@@ -1476,6 +2254,8 @@ function fillFacilityForm(facility) {
 
     toggleFacilityFields();
     fillFacilityCapacityFields(facility);
+    fillFacilityExtendedFields(facility);
+    updateFacilityCapacityTotals();
 }
 
 function startFacilityEdit(facilityCode) {
@@ -1552,7 +2332,7 @@ function toggleFacilityFields() {
         apartmentsFields.classList.remove("hidden");
     }
 
-    if (type === "نزل" && hostelFields) {
+    if ((type === "نزل" || type === "بيوت الشباب" || type === "موتيل") && hostelFields) {
         hostelFields.classList.remove("hidden");
     }
 }
@@ -1705,6 +2485,7 @@ function toggleSeasonalWorkersFields() {
 function updateAllFacilityCalculatedFields() {
     calculatePermanentWorkersTotal();
     calculateSeasonalWorkersTotal();
+    updateFacilityCapacityTotals();
 }
 
 function getCapacityByType(type) {
@@ -1738,13 +2519,14 @@ function getCapacityByType(type) {
         foreign_female_workers: foreignFemaleWorkers,
         total_workers: nationalMaleWorkers + nationalFemaleWorkers + foreignMaleWorkers + foreignFemaleWorkers,
         seasonal_workers: seasonalWorkers,
-        extras: ""
+        extras: "",
+        floors_count: getNumberValue("floorsCount")
     };
 
     if (type === "فندق") {
         capacity.suites = getNumberValue("suitesCount");
         capacity.rooms = getNumberValue("roomsCount");
-        capacity.average_beds_per_room = getNumberValue("averageBedsPerRoom");
+        capacity.average_beds_per_room = getNumberValue("bedsPerRoom");
         capacity.beds = getNumberValue("bedsCount");
     }
 
@@ -1763,11 +2545,28 @@ function getCapacityByType(type) {
         capacity.beds = getNumberValue("apBedsCount");
     }
 
-    if (type === "نزل") {
+    if (type === "نزل" || type === "بيوت الشباب" || type === "موتيل") {
         capacity.rooms = getNumberValue("hsRoomsCount");
         capacity.average_beds_per_room = getNumberValue("hsAverageBedsPerRoom");
         capacity.beds = getNumberValue("hsBedsCount");
     }
+
+    const roomTotals = calculateRoomDetailsTotals();
+    const suiteTotals = calculateSuiteDetailsTotals();
+
+    if (roomTotals.totalRooms > 0 || roomTotals.totalBeds > 0) {
+        capacity.rooms = roomTotals.totalRooms;
+        capacity.beds = roomTotals.totalBeds;
+        capacity.average_beds_per_room = roomTotals.totalRooms > 0 && roomTotals.totalBeds > 0
+            ? Number((roomTotals.totalBeds / roomTotals.totalRooms).toFixed(2))
+            : capacity.average_beds_per_room;
+    }
+
+    if (suiteTotals.totalSuites > 0) {
+        capacity.suites = suiteTotals.totalSuites;
+    }
+
+    capacity.beds_per_room = capacity.average_beds_per_room;
 
     return capacity;
 }
@@ -1790,6 +2589,10 @@ function handleFacilitySubmit(event) {
         return;
     }
 
+    if (!validateFacilityExtendedFields()) {
+        return;
+    }
+
     updateAllFacilityCalculatedFields();
 
     const editingCode = getTextValue("editingFacilityCode") || currentEditingFacilityCode;
@@ -1807,6 +2610,8 @@ function handleFacilitySubmit(event) {
         facility_code: existingFacility ? existingFacility.facility_code : generateFacilityCode(facilityType, facilityCity),
 
         name: facilityName,
+        name_en: getTextValue("facilityNameEn"),
+        national_number: getTextValue("nationalNumber"),
         type: facilityType,
         municipality: facilityMunicipality,
         city: facilityCity,
@@ -1828,12 +2633,14 @@ function handleFacilitySubmit(event) {
         latitude: latitudeValue ? parseFloat(latitudeValue) : null,
         longitude: longitudeValue ? parseFloat(longitudeValue) : null,
 
+        floors_count: capacity.floors_count,
         suites: capacity.suites,
         rooms: capacity.rooms,
         beds: capacity.beds,
         chalets: capacity.chalets,
         apartments: capacity.apartments,
         average_beds_per_room: capacity.average_beds_per_room,
+        beds_per_room: capacity.beds_per_room,
         local_workers: capacity.local_workers,
         foreign_workers: capacity.foreign_workers,
         national_male_workers: capacity.national_male_workers,
@@ -1842,12 +2649,27 @@ function handleFacilitySubmit(event) {
         foreign_female_workers: capacity.foreign_female_workers,
         total_workers: capacity.total_workers,
         seasonal_workers: capacity.seasonal_workers,
+        room_details: getRoomDetailsFromForm(),
+        suite_details: getSuiteDetailsFromForm(),
+        services: getServicesFromForm(),
+        accessibility: getAccessibilityFromForm(),
+        restaurant_cafe_details: getRestaurantCafeDetailsFromForm(),
+        meeting_hall_details: getMeetingHallDetailsFromForm(),
+        safety: getSafetyFromForm(),
+        sustainability: getSustainabilityFromForm(),
+        form_filled_by: getTextValue("formFilledBy"),
+        form_filled_by_position: getTextValue("formFilledByPosition"),
+        form_filled_date: getTextValue("formFilledDate"),
         extras: capacity.extras,
 
         documents: {
             passport_file: getFileName("passportFile") || existingDocuments.passport_file || "",
             national_id_file: getFileName("nationalIdFile") || existingDocuments.national_id_file || "",
-            facility_documents: selectedDocuments.length > 0 ? selectedDocuments : (existingDocuments.facility_documents || [])
+            facility_documents: selectedDocuments.length > 0 ? selectedDocuments : (existingDocuments.facility_documents || []),
+            commercial_register_file: getFileName("commercialRegisterFile") || existingDocuments.commercial_register_file || "",
+            tourism_license_file: getFileName("tourismLicenseFile") || existingDocuments.tourism_license_file || "",
+            facility_photos: getMultipleFileNames("facilityPhotos").length > 0 ? getMultipleFileNames("facilityPhotos") : (existingDocuments.facility_photos || []),
+            inspection_report_file: getFileName("inspectionReportFile") || existingDocuments.inspection_report_file || ""
         },
 
         created_at: existingFacility ? existingFacility.created_at : new Date().toISOString(),
@@ -1878,6 +2700,7 @@ function handleFacilitySubmit(event) {
     resetFacilityFormState();
     toggleFacilityFields();
     toggleSeasonalWorkersFields();
+    clearFacilityDetailForms();
     resetMap();
 
     showSection("facilities");
@@ -2713,6 +3536,8 @@ function printLicensesStatusReport() {
 const advancedReportColumnDefinitions = [
     { key: "facility_code", label: "الكود الوطني", basic: true },
     { key: "facility_name", label: "اسم المرفق", basic: true },
+    { key: "name_en", label: "الاسم الإنجليزي", basic: false },
+    { key: "national_number", label: "الرقم الوطني 12 خانة", basic: false },
     { key: "facility_type", label: "نوع المرفق", basic: true },
     { key: "municipality", label: "البلدية", basic: true },
     { key: "city", label: "المدينة", basic: true },
@@ -2726,9 +3551,19 @@ const advancedReportColumnDefinitions = [
     { key: "issue_date", label: "تاريخ الإصدار", basic: false },
     { key: "expiry_date", label: "تاريخ الانتهاء", basic: false },
     { key: "days_remaining", label: "عدد الأيام المتبقية", basic: false },
+    { key: "floors_count", label: "عدد الطوابق", basic: false },
+    { key: "single_rooms", label: "عدد الغرف المفردة", basic: false },
+    { key: "double_rooms", label: "عدد الغرف الزوجية", basic: false },
+    { key: "triple_rooms", label: "عدد الغرف الثلاثية", basic: false },
+    { key: "quad_rooms", label: "عدد الغرف الرباعية", basic: false },
+    { key: "twin_rooms", label: "عدد الغرف المزدوجة", basic: false },
+    { key: "accessible_rooms", label: "غرف ذوي الاحتياجات الخاصة", basic: false },
     { key: "rooms", label: "عدد الغرف", basic: true },
     { key: "beds", label: "عدد الأسرة", basic: true },
-    { key: "suites", label: "عدد الأجنحة", basic: false },
+    { key: "suites", label: "إجمالي الأجنحة", basic: false },
+    { key: "presidential_suites", label: "أجنحة رئاسية", basic: false },
+    { key: "premium_suites", label: "أجنحة ممتازة", basic: false },
+    { key: "standard_suites", label: "أجنحة عادية", basic: false },
     { key: "chalets", label: "عدد الشاليهات أو الوحدات", basic: false },
     { key: "total_workers", label: "إجمالي العاملين", basic: true },
     { key: "national_workers", label: "العمالة الوطنية", basic: false },
@@ -2738,6 +3573,29 @@ const advancedReportColumnDefinitions = [
     { key: "room_occupancy", label: "متوسط إشغال الغرف", basic: false },
     { key: "bed_occupancy", label: "متوسط إشغال الأسرة", basic: false },
     { key: "average_stay", label: "متوسط مدة الإقامة", basic: false },
+    { key: "restaurants_count", label: "عدد المطاعم والمقاهي", basic: false },
+    { key: "restaurant_seats", label: "إجمالي مقاعد المطاعم والمقاهي", basic: false },
+    { key: "meeting_halls_count", label: "عدد قاعات الاجتماعات", basic: false },
+    { key: "meeting_hall_seats", label: "إجمالي مقاعد قاعات الاجتماعات", basic: false },
+    { key: "parking_available", label: "موقف سيارات", basic: false },
+    { key: "parking_capacity", label: "سعة موقف السيارات", basic: false },
+    { key: "wifi_status", label: "Wi-Fi", basic: false },
+    { key: "pool", label: "مسبح", basic: false },
+    { key: "gym", label: "صالة رياضية", basic: false },
+    { key: "spa", label: "سبا", basic: false },
+    { key: "playgrounds", label: "ملاعب", basic: false },
+    { key: "accessibility_facilities", label: "مرافق لذوي الاحتياجات الخاصة", basic: false },
+    { key: "fire_system_status", label: "منظومة إطفاء الحريق", basic: false },
+    { key: "cctv_status", label: "كاميرات مراقبة", basic: false },
+    { key: "emergency_exits_status", label: "مخارج طوارئ", basic: false },
+    { key: "first_aid_available", label: "إسعافات أولية", basic: false },
+    { key: "solar_energy", label: "طاقة شمسية", basic: false },
+    { key: "water_recycling", label: "تدوير مياه", basic: false },
+    { key: "energy_saving_systems", label: "أنظمة توفير طاقة", basic: false },
+    { key: "inspection_report_file", label: "تقرير المعاينة الفنية", basic: false },
+    { key: "form_filled_by", label: "اسم معبئ النموذج", basic: false },
+    { key: "form_filled_by_position", label: "الصفة الوظيفية", basic: false },
+    { key: "form_filled_date", label: "تاريخ تعبئة النموذج", basic: false },
     { key: "notes", label: "ملاحظات", basic: false }
 ];
 
@@ -2747,29 +3605,67 @@ const advancedReportOutputPresets = {
         columns: [
             "facility_code",
             "facility_name",
+            "name_en",
+            "national_number",
             "facility_type",
             "municipality",
             "city",
+            "address",
             "classification_status",
             "classification",
             "facility_status",
             "license_status",
             "license_number",
+            "license_type",
             "issue_date",
             "expiry_date",
             "days_remaining",
+            "floors_count",
             "rooms",
             "beds",
             "suites",
             "chalets",
+            "single_rooms",
+            "double_rooms",
+            "triple_rooms",
+            "quad_rooms",
+            "twin_rooms",
+            "accessible_rooms",
+            "presidential_suites",
+            "premium_suites",
+            "standard_suites",
             "total_workers",
             "national_workers",
             "foreign_workers",
             "seasonal_workers",
+            "restaurants_count",
+            "restaurant_seats",
+            "meeting_halls_count",
+            "meeting_hall_seats",
+            "parking_available",
+            "parking_capacity",
+            "wifi_status",
+            "pool",
+            "gym",
+            "spa",
+            "playgrounds",
+            "accessibility_facilities",
+            "fire_system_status",
+            "cctv_status",
+            "emergency_exits_status",
+            "first_aid_available",
+            "solar_energy",
+            "water_recycling",
+            "energy_saving_systems",
+            "inspection_report_file",
+            "form_filled_by",
+            "form_filled_by_position",
+            "form_filled_date",
             "latest_occupancy",
             "room_occupancy",
             "bed_occupancy",
-            "average_stay"
+            "average_stay",
+            "notes"
         ]
     },
     core: {
@@ -2777,9 +3673,12 @@ const advancedReportOutputPresets = {
         columns: [
             "facility_code",
             "facility_name",
+            "name_en",
+            "national_number",
             "facility_type",
             "municipality",
             "city",
+            "address",
             "classification_status",
             "classification",
             "facility_status",
@@ -2794,10 +3693,20 @@ const advancedReportOutputPresets = {
             "facility_type",
             "municipality",
             "city",
+            "floors_count",
             "rooms",
             "beds",
             "suites",
-            "chalets"
+            "chalets",
+            "single_rooms",
+            "double_rooms",
+            "triple_rooms",
+            "quad_rooms",
+            "twin_rooms",
+            "accessible_rooms",
+            "presidential_suites",
+            "premium_suites",
+            "standard_suites"
         ]
     },
     licenses: {
@@ -3057,6 +3966,30 @@ function getFacilityOccupancyStats(facilityCode, filters = {}) {
     };
 }
 
+function getRoomDetailReportValue(facility, roomType, field = "rooms_count") {
+    const rows = normalizeRoomDetails(facility || {});
+    const row = rows.find(item => item.room_type === roomType) || {};
+    return toSafeNumber(row[field]);
+}
+
+function getSuiteDetailReportValue(facility, suiteType, field = "suites_count") {
+    const rows = normalizeSuiteDetails(facility || {});
+    const row = rows.find(item => item.suite_type === suiteType) || {};
+    return toSafeNumber(row[field]);
+}
+
+function getFacilityAccessibilitySummary(facility) {
+    const accessibility = normalizeAccessibility(facility || {});
+    const labels = [];
+
+    if (accessibility.accessible_rooms_available) labels.push("غرف مهيأة");
+    if (accessibility.accessible_entrances_available) labels.push("مداخل ميسرة");
+    if (accessibility.accessible_elevators_available) labels.push("مصاعد مناسبة");
+    if (accessibility.accessible_bathrooms_available) labels.push("دورات مياه مهيأة");
+
+    return labels.length ? labels.join("، ") : "لا توجد بيانات";
+}
+
 function getFacilityAdvancedRow(facility, index, filters = {}) {
     const license = getFacilityLatestLicense(facility.facility_code);
     const issueDate = license ? getLicenseIssueDateValue(license) : (facility.license_issue_date || "");
@@ -3067,11 +4000,20 @@ function getFacilityAdvancedRow(facility, index, filters = {}) {
         : normalizeLicenseStatusValue(facility.licenseStatus || facility.license_status || "");
     const hasLicenseData = Boolean(license || facility.license_number || facility.license_issue_date || facility.license_expiry_date);
     const occupancy = getFacilityOccupancyStats(facility.facility_code, filters);
+    const services = normalizeServices(facility);
+    const restaurantTotals = getRestaurantCafeTotalsFromData(normalizeRestaurantCafeDetails(facility));
+    const meetingHallTotals = getMeetingHallTotalsFromData(normalizeMeetingHallDetails(facility));
+    const safety = normalizeSafety(facility);
+    const sustainability = normalizeSustainability(facility);
+    const documents = normalizeFacilityDocuments(facility);
+    const recreation = services.recreation || {};
 
     return {
         sequence: index,
         facility_code: facility.facility_code || "-",
         facility_name: facility.name || "-",
+        name_en: facility.name_en || "-",
+        national_number: facility.national_number || "-",
         facility_type: facility.type || "-",
         municipality: facility.municipality || "-",
         city: facility.city || "-",
@@ -3087,9 +4029,19 @@ function getFacilityAdvancedRow(facility, index, filters = {}) {
         issue_date: formatDateOnly(issueDate),
         expiry_date: formatDateOnly(expiryDate),
         days_remaining: daysRemaining === null ? "-" : daysRemaining,
+        floors_count: toSafeNumber(facility.floors_count),
+        single_rooms: getRoomDetailReportValue(facility, "فردية"),
+        double_rooms: getRoomDetailReportValue(facility, "زوجية"),
+        triple_rooms: getRoomDetailReportValue(facility, "ثلاثية"),
+        quad_rooms: getRoomDetailReportValue(facility, "رباعية"),
+        twin_rooms: getRoomDetailReportValue(facility, "مزدوجة"),
+        accessible_rooms: getRoomDetailReportValue(facility, "غرف مجهزة لذوي الاحتياجات الخاصة"),
         rooms: toSafeNumber(facility.rooms),
         beds: toSafeNumber(facility.beds),
         suites: toSafeNumber(facility.suites),
+        presidential_suites: getSuiteDetailReportValue(facility, "أجنحة رئاسية"),
+        premium_suites: getSuiteDetailReportValue(facility, "أجنحة ممتازة"),
+        standard_suites: getSuiteDetailReportValue(facility, "أجنحة عادية"),
         chalets: getFacilityUnitsTotal(facility),
         total_workers: getTotalWorkers(facility),
         national_workers: getFacilityNationalWorkers(facility),
@@ -3099,6 +4051,29 @@ function getFacilityAdvancedRow(facility, index, filters = {}) {
         room_occupancy: occupancy.room_occupancy,
         bed_occupancy: occupancy.bed_occupancy,
         average_stay: occupancy.average_stay,
+        restaurants_count: toSafeNumber(services.restaurants_count) || restaurantTotals.count,
+        restaurant_seats: restaurantTotals.seats,
+        meeting_halls_count: meetingHallTotals.count || (services.meeting_halls_available ? 1 : 0),
+        meeting_hall_seats: meetingHallTotals.seats || toSafeNumber(services.meeting_halls_capacity),
+        parking_available: getYesNoLabel(services.parking_available),
+        parking_capacity: toSafeNumber(services.parking_capacity),
+        wifi_status: services.wifi_status || "-",
+        pool: getYesNoLabel(Boolean(recreation.pool || recreation.swimming_pools)),
+        gym: getYesNoLabel(recreation.gym),
+        spa: getYesNoLabel(recreation.spa),
+        playgrounds: getYesNoLabel(recreation.playgrounds),
+        accessibility_facilities: getFacilityAccessibilitySummary(facility),
+        fire_system_status: safety.fire_system_status || "-",
+        cctv_status: safety.cctv_status || "-",
+        emergency_exits_status: safety.emergency_exits_status || "-",
+        first_aid_available: getYesNoLabel(safety.first_aid_available),
+        solar_energy: getYesNoLabel(sustainability.solar_energy),
+        water_recycling: getYesNoLabel(sustainability.water_recycling),
+        energy_saving_systems: getYesNoLabel(sustainability.energy_saving_systems),
+        inspection_report_file: documents.inspection_report_file || "-",
+        form_filled_by: facility.form_filled_by || "-",
+        form_filled_by_position: facility.form_filled_by_position || "-",
+        form_filled_date: facility.form_filled_date || "-",
         notes: facility.notes || (license ? license.notes : "") || "-"
     };
 }
@@ -4586,7 +5561,7 @@ function printReport() {
 
 function bindFacilityCalculationEvents() {
     [
-        ["roomsCount", "averageBedsPerRoom", "bedsCount"],
+        ["roomsCount", "bedsPerRoom", "bedsCount"],
         ["vrRoomsCount", "vrAverageBedsPerRoom", "vrBedsCount"],
         ["apRoomsCount", "apAverageBedsPerRoom", "apBedsCount"],
         ["hsRoomsCount", "hsAverageBedsPerRoom", "hsBedsCount"]
@@ -4634,6 +5609,25 @@ function bindFacilityCalculationEvents() {
                 field.value = 0;
             }
         });
+    });
+
+    document.querySelectorAll("#roomDetailsTable input, #suiteDetailsTable input, #restaurantCafeDetailsTable input, #meetingHallDetailsTable input").forEach(field => {
+        field.addEventListener("input", updateFacilityCapacityTotals);
+    });
+
+    [
+        "restaurantsAvailable",
+        "meetingHallsAvailable",
+        "parkingAvailable",
+        "accessibleRoomsAvailable",
+        "accessibleEntrancesAvailable",
+        "accessibleElevatorsAvailable",
+        "accessibleBathroomsAvailable"
+    ].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) {
+            field.addEventListener("change", updateFacilityCapacityTotals);
+        }
     });
 }
 

@@ -184,16 +184,18 @@
                                 <tr>
                                     <th>الكود الوطني</th>
                                     <th>اسم المرفق</th>
+                                    <th>الاسم الإنجليزي</th>
                                     <th>النوع</th>
                                     <th>البلدية</th>
                                     <th>المدينة</th>
                                     <th>التصنيف</th>
-                                    <th>درجة التصنيف</th>
-                                    <th>حالة المرفق</th>
                                     <th>حالة الترخيص</th>
+                                    <th>عدد الطوابق</th>
                                     <th>عدد الغرف</th>
                                     <th>عدد الأسرة</th>
+                                    <th>عدد الأجنحة</th>
                                     <th>إجمالي العاملين</th>
+                                    <th>حالة المرفق</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
@@ -215,7 +217,7 @@
                 <section id="addFacility" class="section">
                     <div class="section-header">
                         <h2 id="facilityFormTitle">إضافة مرفق إيواء سياحي</h2>
-                        <p id="facilityFormDescription">تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، أو نزل ضمن السجل الوطني</p>
+                        <p id="facilityFormDescription">تسجيل فندق، قرية سياحية، منتجع، شقق فندقية، نزل، بيوت الشباب، أو موتيل ضمن السجل الوطني</p>
                     </div>
 
                     <form id="facilityForm">
@@ -232,6 +234,11 @@
                                 </div>
 
                                 <div>
+                                    <label for="facilityNameEn">اسم المرفق باللغة الإنجليزية</label>
+                                    <input type="text" id="facilityNameEn" dir="ltr" placeholder="Facility name">
+                                </div>
+
+                                <div>
                                     <label for="facilityType">نوع المرفق</label>
                                     <select id="facilityType" required>
                                         <option value="فندق">فندق</option>
@@ -239,7 +246,14 @@
                                         <option value="منتجع">منتجع</option>
                                         <option value="شقق فندقية">شقق فندقية</option>
                                         <option value="نزل">نزل</option>
+                                        <option value="بيوت الشباب">بيوت الشباب</option>
+                                        <option value="موتيل">موتيل</option>
                                     </select>
+                                </div>
+
+                                <div>
+                                    <label for="nationalNumber">الرقم الوطني / الرقم الإداري 12 خانة</label>
+                                    <input type="text" id="nationalNumber" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="000000000000">
                                 </div>
 
                                 <div>
@@ -352,9 +366,21 @@
                             </div>
                         </div>
 
+                        <!-- الطاقة الاستيعابية والتفاصيل الهندسية -->
+                        <div class="form-section">
+                            <h3>رابعاً: الطاقة الاستيعابية والتفاصيل الهندسية</h3>
+
+                            <div class="form-grid">
+                                <div>
+                                    <label for="floorsCount">عدد الطوابق</label>
+                                    <input type="number" id="floorsCount" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- الطاقة الاستيعابية للفندق -->
                         <div id="hotelFields" class="form-section facility-type-fields">
-                            <h3>رابعاً: الطاقة الاستيعابية للفندق</h3>
+                            <h3>تفاصيل الطاقة الاستيعابية للفندق</h3>
 
                             <div class="form-grid">
                                 <div>
@@ -368,8 +394,8 @@
                                 </div>
 
                                 <div>
-                                    <label for="averageBedsPerRoom">متوسط الأسرة لكل غرفة</label>
-                                    <input type="number" id="averageBedsPerRoom" min="0" step="0.01" value="0">
+                                    <label for="bedsPerRoom">متوسط الأسرة لكل غرفة</label>
+                                    <input type="number" id="bedsPerRoom" min="0" step="0.01" value="0">
                                 </div>
 
                                 <div>
@@ -381,7 +407,7 @@
 
                         <!-- الطاقة الاستيعابية للقرية / المنتجع -->
                         <div id="villageResortFields" class="form-section facility-type-fields hidden">
-                            <h3>رابعاً: الطاقة الاستيعابية للقرية السياحية / المنتجع</h3>
+                            <h3>تفاصيل الطاقة الاستيعابية للقرية السياحية / المنتجع</h3>
 
                             <div class="form-grid">
                                 <div>
@@ -413,7 +439,7 @@
 
                         <!-- الطاقة الاستيعابية للشقق الفندقية -->
                         <div id="apartmentsFields" class="form-section facility-type-fields hidden">
-                            <h3>رابعاً: الطاقة الاستيعابية للشقق الفندقية</h3>
+                            <h3>تفاصيل الطاقة الاستيعابية للشقق الفندقية</h3>
 
                             <div class="form-grid">
                                 <div>
@@ -440,7 +466,7 @@
 
                         <!-- الطاقة الاستيعابية للنزل -->
                         <div id="hostelFields" class="form-section facility-type-fields hidden">
-                            <h3>رابعاً: الطاقة الاستيعابية للنزل</h3>
+                            <h3>تفاصيل الطاقة الاستيعابية للنزل / بيوت الشباب / الموتيل</h3>
 
                             <div class="form-grid">
                                 <div>
@@ -457,6 +483,69 @@
                                     <label for="hsBedsCount">عدد الأسرة</label>
                                     <input type="number" id="hsBedsCount" min="0" value="0">
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- تفصيل الغرف -->
+                        <div class="form-section">
+                            <h3>تفصيل الغرف</h3>
+
+                            <div class="table-wrapper">
+                                <table class="detail-input-table" id="roomDetailsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>نوع الغرفة</th>
+                                            <th>عدد الغرف</th>
+                                            <th>عدد الأسرة</th>
+                                            <th>تسعيرة الغرفة</th>
+                                            <th>ملاحظات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr data-room-type="فردية"><td>فردية</td><td><input type="number" class="room-detail-rooms" min="0" value="0"></td><td><input type="number" class="room-detail-beds" min="0" value="0"></td><td><input type="number" class="room-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="room-detail-notes"></td></tr>
+                                        <tr data-room-type="زوجية"><td>زوجية</td><td><input type="number" class="room-detail-rooms" min="0" value="0"></td><td><input type="number" class="room-detail-beds" min="0" value="0"></td><td><input type="number" class="room-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="room-detail-notes"></td></tr>
+                                        <tr data-room-type="ثلاثية"><td>ثلاثية</td><td><input type="number" class="room-detail-rooms" min="0" value="0"></td><td><input type="number" class="room-detail-beds" min="0" value="0"></td><td><input type="number" class="room-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="room-detail-notes"></td></tr>
+                                        <tr data-room-type="رباعية"><td>رباعية</td><td><input type="number" class="room-detail-rooms" min="0" value="0"></td><td><input type="number" class="room-detail-beds" min="0" value="0"></td><td><input type="number" class="room-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="room-detail-notes"></td></tr>
+                                        <tr data-room-type="مزدوجة"><td>مزدوجة</td><td><input type="number" class="room-detail-rooms" min="0" value="0"></td><td><input type="number" class="room-detail-beds" min="0" value="0"></td><td><input type="number" class="room-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="room-detail-notes"></td></tr>
+                                        <tr data-room-type="غرف مجهزة لذوي الاحتياجات الخاصة"><td>غرف مجهزة لذوي الاحتياجات الخاصة</td><td><input type="number" class="room-detail-rooms" min="0" value="0"></td><td><input type="number" class="room-detail-beds" min="0" value="0"></td><td><input type="number" class="room-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="room-detail-notes"></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="summary-line">
+                                <span>إجمالي الغرف: <strong id="roomDetailsTotalRooms">0</strong></span>
+                                <span>إجمالي الأسرة: <strong id="roomDetailsTotalBeds">0</strong></span>
+                                <span>متوسط التسعيرة: <strong id="roomDetailsAverageRate">0</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- تفصيل الأجنحة -->
+                        <div class="form-section">
+                            <h3>تفصيل الأجنحة</h3>
+
+                            <div class="table-wrapper">
+                                <table class="detail-input-table" id="suiteDetailsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>نوع الجناح</th>
+                                            <th>عدد الأجنحة</th>
+                                            <th>عدد الأسرة</th>
+                                            <th>تسعيرة الجناح</th>
+                                            <th>ملاحظات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr data-suite-type="أجنحة رئاسية"><td>أجنحة رئاسية</td><td><input type="number" class="suite-detail-suites" min="0" value="0"></td><td><input type="number" class="suite-detail-beds" min="0" value="0"></td><td><input type="number" class="suite-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="suite-detail-notes"></td></tr>
+                                        <tr data-suite-type="أجنحة ممتازة"><td>أجنحة ممتازة</td><td><input type="number" class="suite-detail-suites" min="0" value="0"></td><td><input type="number" class="suite-detail-beds" min="0" value="0"></td><td><input type="number" class="suite-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="suite-detail-notes"></td></tr>
+                                        <tr data-suite-type="أجنحة عادية"><td>أجنحة عادية</td><td><input type="number" class="suite-detail-suites" min="0" value="0"></td><td><input type="number" class="suite-detail-beds" min="0" value="0"></td><td><input type="number" class="suite-detail-rate" min="0" step="0.01" value="0"></td><td><input type="text" class="suite-detail-notes"></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="summary-line">
+                                <span>إجمالي الأجنحة: <strong id="suiteDetailsTotalSuites">0</strong></span>
+                                <span>إجمالي أسرة الأجنحة: <strong id="suiteDetailsTotalBeds">0</strong></span>
+                                <span>متوسط التسعيرة: <strong id="suiteDetailsAverageRate">0</strong></span>
                             </div>
                         </div>
 
@@ -547,6 +636,78 @@
                             </div>
                         </div>
 
+                        <!-- الخدمات والمرافق المتوفرة -->
+                        <div class="form-section">
+                            <h3>الخدمات والمرافق المتوفرة</h3>
+
+                            <div class="form-grid">
+                                <div><label for="restaurantsAvailable">المطاعم والمقاهي</label><select id="restaurantsAvailable"><option value="no">غير متوفر</option><option value="yes">متوفر</option></select></div>
+                                <div><label for="restaurantsCount">عدد المطاعم والمقاهي</label><input type="number" id="restaurantsCount" min="0" value="0"></div>
+                                <div><label for="meetingHallsAvailable">قاعات الاجتماعات والمناسبات</label><select id="meetingHallsAvailable"><option value="no">غير متوفر</option><option value="yes">متوفر</option></select></div>
+                                <div><label for="meetingHallsCapacity">السعة القصوى للقاعات</label><input type="number" id="meetingHallsCapacity" min="0" value="0"></div>
+                                <div><label for="parkingAvailable">مواقف السيارات</label><select id="parkingAvailable"><option value="no">غير متوفر</option><option value="yes">متوفر</option></select></div>
+                                <div><label for="parkingCapacity">سعة مواقف السيارات</label><input type="number" id="parkingCapacity" min="0" value="0"></div>
+                                <div><label for="wifiStatus">الإنترنت Wi-Fi</label><select id="wifiStatus"><option value="غير متوفر">غير متوفر</option><option value="مجاني في كل المرفق">مجاني في كل المرفق</option><option value="في اللوبي فقط">في اللوبي فقط</option></select></div>
+                            </div>
+
+                            <div class="checkbox-grid">
+                                <label><input type="checkbox" id="hasPool"> مسبح</label>
+                                <label><input type="checkbox" id="hasGym"> صالة رياضية Gym</label>
+                                <label><input type="checkbox" id="hasSpa"> سبا وصالون Spa</label>
+                                <label><input type="checkbox" id="hasKidsArea"> منطقة ألعاب أطفال</label>
+                                <label><input type="checkbox" id="hasPlaygrounds"> ملاعب</label>
+                                <label><input type="checkbox" id="hasSwimmingPools"> أحواض سباحة</label>
+                            </div>
+
+                            <h4>الاحتياجات الخاصة والسياحة الميسرة</h4>
+                            <div class="form-grid">
+                                <div><label for="accessibleRoomsAvailable">غرف مجهزة لذوي الاحتياجات الخاصة</label><select id="accessibleRoomsAvailable"><option value="no">لا</option><option value="yes">نعم</option></select></div>
+                                <div><label for="accessibleEntrancesAvailable">مداخل أو منحدرات ميسرة</label><select id="accessibleEntrancesAvailable"><option value="no">لا</option><option value="yes">نعم</option></select></div>
+                                <div><label for="accessibleElevatorsAvailable">مصاعد مناسبة</label><select id="accessibleElevatorsAvailable"><option value="no">لا</option><option value="yes">نعم</option></select></div>
+                                <div><label for="accessibleBathroomsAvailable">دورات مياه مهيأة</label><select id="accessibleBathroomsAvailable"><option value="no">لا</option><option value="yes">نعم</option></select></div>
+                                <div style="grid-column: span 4;"><label for="accessibilityNotes">ملاحظات السياحة الميسرة</label><textarea id="accessibilityNotes"></textarea></div>
+                            </div>
+                        </div>
+
+                        <!-- تفصيل المطاعم والمقاهي -->
+                        <div class="form-section">
+                            <h3>تفصيل المطاعم والمقاهي</h3>
+                            <div class="table-wrapper"><table class="detail-input-table" id="restaurantCafeDetailsTable"><thead><tr><th>ر.م</th><th>الاسم</th><th>عدد المقاعد</th><th>عدد الطاولات</th><th>ملاحظات</th></tr></thead><tbody>
+                                <tr><td>1</td><td><input type="text" class="restaurant-name"></td><td><input type="number" class="restaurant-seats" min="0" value="0"></td><td><input type="number" class="restaurant-tables" min="0" value="0"></td><td><input type="text" class="restaurant-notes"></td></tr>
+                                <tr><td>2</td><td><input type="text" class="restaurant-name"></td><td><input type="number" class="restaurant-seats" min="0" value="0"></td><td><input type="number" class="restaurant-tables" min="0" value="0"></td><td><input type="text" class="restaurant-notes"></td></tr>
+                                <tr><td>3</td><td><input type="text" class="restaurant-name"></td><td><input type="number" class="restaurant-seats" min="0" value="0"></td><td><input type="number" class="restaurant-tables" min="0" value="0"></td><td><input type="text" class="restaurant-notes"></td></tr>
+                                <tr><td>4</td><td><input type="text" class="restaurant-name"></td><td><input type="number" class="restaurant-seats" min="0" value="0"></td><td><input type="number" class="restaurant-tables" min="0" value="0"></td><td><input type="text" class="restaurant-notes"></td></tr>
+                                <tr><td>5</td><td><input type="text" class="restaurant-name"></td><td><input type="number" class="restaurant-seats" min="0" value="0"></td><td><input type="number" class="restaurant-tables" min="0" value="0"></td><td><input type="text" class="restaurant-notes"></td></tr>
+                            </tbody></table></div>
+                            <div class="summary-line"><span>العدد الكلي: <strong id="restaurantCafeTotalCount">0</strong></span><span>إجمالي المقاعد: <strong id="restaurantCafeTotalSeats">0</strong></span><span>إجمالي الطاولات: <strong id="restaurantCafeTotalTables">0</strong></span></div>
+                        </div>
+
+                        <!-- قاعات المؤتمرات والاجتماعات -->
+                        <div class="form-section">
+                            <h3>قاعات المؤتمرات والاجتماعات</h3>
+                            <div class="table-wrapper"><table class="detail-input-table" id="meetingHallDetailsTable"><thead><tr><th>ر.م</th><th>اسم القاعة</th><th>عدد المقاعد</th><th>ملاحظات</th></tr></thead><tbody>
+                                <tr><td>1</td><td><input type="text" class="meeting-hall-name"></td><td><input type="number" class="meeting-hall-seats" min="0" value="0"></td><td><input type="text" class="meeting-hall-notes"></td></tr>
+                                <tr><td>2</td><td><input type="text" class="meeting-hall-name"></td><td><input type="number" class="meeting-hall-seats" min="0" value="0"></td><td><input type="text" class="meeting-hall-notes"></td></tr>
+                                <tr><td>3</td><td><input type="text" class="meeting-hall-name"></td><td><input type="number" class="meeting-hall-seats" min="0" value="0"></td><td><input type="text" class="meeting-hall-notes"></td></tr>
+                                <tr><td>4</td><td><input type="text" class="meeting-hall-name"></td><td><input type="number" class="meeting-hall-seats" min="0" value="0"></td><td><input type="text" class="meeting-hall-notes"></td></tr>
+                                <tr><td>5</td><td><input type="text" class="meeting-hall-name"></td><td><input type="number" class="meeting-hall-seats" min="0" value="0"></td><td><input type="text" class="meeting-hall-notes"></td></tr>
+                            </tbody></table></div>
+                            <div class="summary-line"><span>إجمالي القاعات: <strong id="meetingHallTotalCount">0</strong></span><span>إجمالي المقاعد: <strong id="meetingHallTotalSeats">0</strong></span></div>
+                        </div>
+
+                        <!-- الأمن والسلامة والاستدامة -->
+                        <div class="form-section">
+                            <h3>الأمن والسلامة والاستدامة</h3>
+                            <div class="form-grid">
+                                <div><label for="fireSystemStatus">منظومة إطفاء الحريق</label><select id="fireSystemStatus"><option value="غير معتمدة / تحت التجهيز">غير معتمدة / تحت التجهيز</option><option value="معتمدة من الدفاع المدني">معتمدة من الدفاع المدني</option></select></div>
+                                <div><label for="cctvStatus">كاميرات المراقبة والحراسة</label><select id="cctvStatus"><option value="غير متوفرة">غير متوفرة</option><option value="متوفرة 24/7">متوفرة 24/7</option></select></div>
+                                <div><label for="emergencyExitsStatus">مخارج الطوارئ وممرات الهروب</label><select id="emergencyExitsStatus"><option value="غير مطابقة">غير مطابقة</option><option value="واضحة ومطابقة للمواصفات">واضحة ومطابقة للمواصفات</option></select></div>
+                                <div><label for="firstAidAvailable">عيادة طبية / الإسعافات الأولية</label><select id="firstAidAvailable"><option value="no">غير متوفر</option><option value="yes">متوفر</option></select></div>
+                            </div>
+                            <h4>الاستدامة البيئية</h4>
+                            <div class="checkbox-grid"><label><input type="checkbox" id="usesSolarEnergy"> المرفق يستخدم طاقة شمسية</label><label><input type="checkbox" id="usesWaterRecycling"> تدوير مياه</label><label><input type="checkbox" id="usesEnergySavingSystems"> أنظمة توفير طاقة</label></div>
+                        </div>
+
                         <!-- الموقع الجغرافي -->
                         <div class="form-section">
                             <h3>سابعاً: الموقع الجغرافي</h3>
@@ -589,14 +750,55 @@
                                     <label for="facilityDocuments">مستندات المرفق</label>
                                     <input type="file" id="facilityDocuments" multiple>
                                 </div>
+
+                                <div>
+                                    <label for="commercialRegisterFile">نسخة من السجل التجاري</label>
+                                    <input type="file" id="commercialRegisterFile">
+                                </div>
+
+                                <div>
+                                    <label for="tourismLicenseFile">نسخة من الترخيص السياحي الساري</label>
+                                    <input type="file" id="tourismLicenseFile">
+                                </div>
+
+                                <div>
+                                    <label for="facilityPhotos">صور فوتوغرافية واضحة للمرفق</label>
+                                    <input type="file" id="facilityPhotos" multiple>
+                                </div>
+
+                                <div>
+                                    <label for="inspectionReportFile">تقرير المعاينة الفنية إن وجد</label>
+                                    <input type="file" id="inspectionReportFile">
+                                </div>
                             </div>
 
                             <p class="file-note">
                                 هذه الحقول للتجربة حالياً. رفع الملفات الفعلي سيتم تفعيله عند ربط النظام بالخادم وقاعدة البيانات.
                             </p>
                         </div>
+                        <!-- بيانات معبئ النموذج -->
+                        <div class="form-section">
+                            <h3>بيانات معبئ النموذج</h3>
 
-                        <div class="form-actions">
+                            <div class="form-grid">
+                                <div>
+                                    <label for="formFilledBy">اسم معبئ النموذج</label>
+                                    <input type="text" id="formFilledBy">
+                                </div>
+
+                                <div>
+                                    <label for="formFilledByPosition">الصفة الوظيفية</label>
+                                    <input type="text" id="formFilledByPosition">
+                                </div>
+
+                                <div>
+                                    <label for="formFilledDate">تاريخ تعبئة النموذج</label>
+                                    <input type="date" id="formFilledDate">
+                                </div>
+                            </div>
+                        </div>
+
+<div class="form-actions">
                             <button type="submit" id="facilitySubmitButton">حفظ المرفق وتوليد الكود الوطني</button>
                             <button type="button" id="cancelFacilityEditButton" class="secondary-button hidden" onclick="cancelFacilityEdit()">إلغاء التعديل</button>
                             <button type="reset" class="secondary-button">مسح النموذج</button>
@@ -1025,6 +1227,8 @@
                                         <option value="منتجع">منتجع</option>
                                         <option value="شقق فندقية">شقق فندقية</option>
                                         <option value="نزل">نزل</option>
+                                        <option value="بيوت الشباب">بيوت الشباب</option>
+                                        <option value="موتيل">موتيل</option>
                                         <option value="إقامة سياحية">إقامة سياحية</option>
                                         <option value="شاليه سياحي">شاليه سياحي</option>
                                     </select>
@@ -1070,6 +1274,8 @@
                                             <option value="منتجع">منتجع</option>
                                             <option value="شقق فندقية">شقق فندقية</option>
                                             <option value="نزل">نزل</option>
+                                        <option value="بيوت الشباب">بيوت الشباب</option>
+                                        <option value="موتيل">موتيل</option>
                                             <option value="إقامة سياحية">إقامة سياحية</option>
                                             <option value="شاليه سياحي">شاليه سياحي</option>
                                         </select>
@@ -1150,6 +1356,8 @@
                                     <div id="advancedReportColumns" class="advanced-columns-grid">
                                         <label><input type="checkbox" value="facility_code" checked> الكود الوطني</label>
                                         <label><input type="checkbox" value="facility_name" checked> اسم المرفق</label>
+                                        <label><input type="checkbox" value="name_en"> الاسم الإنجليزي</label>
+                                        <label><input type="checkbox" value="national_number"> الرقم الوطني 12 خانة</label>
                                         <label><input type="checkbox" value="facility_type" checked> نوع المرفق</label>
                                         <label><input type="checkbox" value="municipality" checked> البلدية</label>
                                         <label><input type="checkbox" value="city" checked> المدينة</label>
@@ -1163,18 +1371,51 @@
                                         <label><input type="checkbox" value="issue_date"> تاريخ الإصدار</label>
                                         <label><input type="checkbox" value="expiry_date"> تاريخ الانتهاء</label>
                                         <label><input type="checkbox" value="days_remaining"> عدد الأيام المتبقية</label>
+                                        <label><input type="checkbox" value="floors_count"> عدد الطوابق</label>
+                                        <label><input type="checkbox" value="single_rooms"> عدد الغرف المفردة</label>
+                                        <label><input type="checkbox" value="double_rooms"> عدد الغرف الزوجية</label>
+                                        <label><input type="checkbox" value="triple_rooms"> عدد الغرف الثلاثية</label>
+                                        <label><input type="checkbox" value="quad_rooms"> عدد الغرف الرباعية</label>
+                                        <label><input type="checkbox" value="twin_rooms"> عدد الغرف المزدوجة</label>
+                                        <label><input type="checkbox" value="accessible_rooms"> غرف ذوي الاحتياجات الخاصة</label>
                                         <label><input type="checkbox" value="rooms" checked> عدد الغرف</label>
                                         <label><input type="checkbox" value="beds" checked> عدد الأسرة</label>
-                                        <label><input type="checkbox" value="suites"> عدد الأجنحة</label>
+                                        <label><input type="checkbox" value="suites"> إجمالي الأجنحة</label>
+                                        <label><input type="checkbox" value="presidential_suites"> أجنحة رئاسية</label>
+                                        <label><input type="checkbox" value="premium_suites"> أجنحة ممتازة</label>
+                                        <label><input type="checkbox" value="standard_suites"> أجنحة عادية</label>
                                         <label><input type="checkbox" value="chalets"> عدد الشاليهات أو الوحدات</label>
                                         <label><input type="checkbox" value="total_workers" checked> إجمالي العاملين</label>
                                         <label><input type="checkbox" value="national_workers"> العمالة الوطنية</label>
                                         <label><input type="checkbox" value="foreign_workers"> العمالة الأجنبية</label>
                                         <label><input type="checkbox" value="seasonal_workers"> العمالة الموسمية</label>
                                         <label><input type="checkbox" value="latest_occupancy"> آخر بيانات إشغال مسجلة</label>
-                                        <label><input type="checkbox" value="room_occupancy"> إشغال الغرف</label>
-                                        <label><input type="checkbox" value="bed_occupancy"> إشغال الأسرة</label>
+                                        <label><input type="checkbox" value="room_occupancy"> متوسط إشغال الغرف</label>
+                                        <label><input type="checkbox" value="bed_occupancy"> متوسط إشغال الأسرة</label>
                                         <label><input type="checkbox" value="average_stay"> متوسط مدة الإقامة</label>
+                                        <label><input type="checkbox" value="restaurants_count"> عدد المطاعم والمقاهي</label>
+                                        <label><input type="checkbox" value="restaurant_seats"> إجمالي مقاعد المطاعم والمقاهي</label>
+                                        <label><input type="checkbox" value="meeting_halls_count"> عدد قاعات الاجتماعات</label>
+                                        <label><input type="checkbox" value="meeting_hall_seats"> إجمالي مقاعد قاعات الاجتماعات</label>
+                                        <label><input type="checkbox" value="parking_available"> موقف سيارات</label>
+                                        <label><input type="checkbox" value="parking_capacity"> سعة موقف السيارات</label>
+                                        <label><input type="checkbox" value="wifi_status"> Wi-Fi</label>
+                                        <label><input type="checkbox" value="pool"> مسبح</label>
+                                        <label><input type="checkbox" value="gym"> صالة رياضية</label>
+                                        <label><input type="checkbox" value="spa"> سبا</label>
+                                        <label><input type="checkbox" value="playgrounds"> ملاعب</label>
+                                        <label><input type="checkbox" value="accessibility_facilities"> مرافق لذوي الاحتياجات الخاصة</label>
+                                        <label><input type="checkbox" value="fire_system_status"> منظومة إطفاء الحريق</label>
+                                        <label><input type="checkbox" value="cctv_status"> كاميرات مراقبة</label>
+                                        <label><input type="checkbox" value="emergency_exits_status"> مخارج طوارئ</label>
+                                        <label><input type="checkbox" value="first_aid_available"> إسعافات أولية</label>
+                                        <label><input type="checkbox" value="solar_energy"> طاقة شمسية</label>
+                                        <label><input type="checkbox" value="water_recycling"> تدوير مياه</label>
+                                        <label><input type="checkbox" value="energy_saving_systems"> أنظمة توفير طاقة</label>
+                                        <label><input type="checkbox" value="inspection_report_file"> تقرير المعاينة الفنية</label>
+                                        <label><input type="checkbox" value="form_filled_by"> اسم معبئ النموذج</label>
+                                        <label><input type="checkbox" value="form_filled_by_position"> الصفة الوظيفية</label>
+                                        <label><input type="checkbox" value="form_filled_date"> تاريخ تعبئة النموذج</label>
                                         <label><input type="checkbox" value="notes"> ملاحظات</label>
                                     </div>
                                 </div>

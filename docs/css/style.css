@@ -1034,3 +1034,143 @@ tr:hover {
         padding: 8px;
     }
 }
+
+
+.detail-input-table input,
+.detail-input-table select {
+    min-width: 110px;
+    padding: 8px 10px;
+    font-size: 13px;
+}
+
+.detail-input-table td:first-child,
+.detail-input-table th:first-child {
+    min-width: 130px;
+    font-weight: 700;
+}
+
+.summary-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border: 1px solid #d6e4ec;
+    border-radius: 8px;
+    background: #f8fbfd;
+    color: #37474f;
+}
+
+.summary-line span {
+    min-width: 160px;
+}
+
+.summary-line strong {
+    color: #0277bd;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px 14px;
+    margin: 14px 0 18px;
+}
+
+.checkbox-grid label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #37474f;
+    font-weight: 700;
+}
+
+.checkbox-grid input {
+    width: auto;
+    margin: 0;
+}
+
+.facility-details-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 30000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(20, 40, 50, 0.48);
+    overflow: auto;
+}
+
+.facility-details-modal.hidden {
+    display: none;
+}
+
+.facility-details-card {
+    width: min(1180px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.facility-details-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    border-bottom: 1px solid #d6e4ec;
+}
+
+.facility-details-header h3 {
+    margin: 0 0 6px;
+    color: #015f96;
+}
+
+.facility-details-header p {
+    margin: 0;
+    color: #607d8b;
+}
+
+.facility-details-body {
+    display: grid;
+    gap: 18px;
+    padding: 20px;
+}
+
+.detail-section {
+    border: 1px solid #d6e4ec;
+    border-radius: 8px;
+    padding: 14px;
+    background: #fbfdff;
+}
+
+.detail-section h4 {
+    margin: 0 0 12px;
+    color: #0277bd;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.detail-grid div {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid #e3edf3;
+}
+
+.detail-grid span {
+    display: block;
+    color: #607d8b;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.facility-details-table {
+    min-width: 760px;
+}
