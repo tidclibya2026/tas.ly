@@ -252,6 +252,37 @@
                                 </div>
 
                                 <div>
+                                    <label for="facilityRecordType">نوع السجل</label>
+                                    <select id="facilityRecordType">
+                                        <option value="standalone">مرفق مستقل</option>
+                                        <option value="branch">فرع تابع لمجموعة / اسم تجاري</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="hasFacilityGroup">هل يتبع اسماً تجارياً أو مجموعة؟</label>
+                                    <select id="hasFacilityGroup">
+                                        <option value="no">لا</option>
+                                        <option value="yes">نعم</option>
+                                    </select>
+                                </div>
+
+                                <div class="facility-group-field hidden">
+                                    <label for="facilityGroupName">اسم المجموعة / الاسم التجاري</label>
+                                    <input type="text" id="facilityGroupName" placeholder="مثال: HT">
+                                </div>
+
+                                <div class="facility-group-field hidden">
+                                    <label for="facilityGroupCode">كود المجموعة</label>
+                                    <input type="text" id="facilityGroupCode" placeholder="يولّد تلقائياً عند الحفظ">
+                                </div>
+
+                                <div class="facility-group-field hidden">
+                                    <label for="branchName">اسم الفرع</label>
+                                    <input type="text" id="branchName" placeholder="مثال: فرع الخمس">
+                                </div>
+
+                                <div>
                                     <label for="nationalNumber">الرقم الوطني / الرقم الإداري 12 خانة</label>
                                     <input type="text" id="nationalNumber" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="000000000000">
                                 </div>
@@ -843,6 +874,28 @@
                                 </div>
 
                                 <div>
+                                    <label for="licenseOperationType">نوع العملية</label>
+                                    <select id="licenseOperationType">
+                                        <option value="إصدار جديد">إصدار جديد</option>
+                                        <option value="تجديد">تجديد</option>
+                                        <option value="تعديل بيانات">تعديل بيانات</option>
+                                        <option value="بدل فاقد">بدل فاقد</option>
+                                        <option value="إيقاف">إيقاف</option>
+                                        <option value="إعادة تفعيل">إعادة تفعيل</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="licenseYear">سنة الترخيص</label>
+                                    <input type="number" id="licenseYear" min="1900" max="2100" value="2026">
+                                </div>
+
+                                <div>
+                                    <label for="licenseRenewalDate">تاريخ التجديد</label>
+                                    <input type="date" id="licenseRenewalDate">
+                                </div>
+
+                                <div>
                                     <label for="licenseStatusInput">حالة الترخيص</label>
                                     <select id="licenseStatusInput" required>
                                         <option value="Active">ساري</option>
@@ -905,7 +958,10 @@
                                         <th>رقم الترخيص</th>
                                         <th>اسم المرفق</th>
                                         <th>نوع الترخيص</th>
+                                        <th>نوع العملية</th>
+                                        <th>السنة</th>
                                         <th>تاريخ الإصدار</th>
+                                        <th>تاريخ التجديد</th>
                                         <th>تاريخ الانتهاء</th>
                                         <th>الحالة</th>
                                         <th>عدد التجديدات</th>
@@ -1158,6 +1214,13 @@
                                             <option value="advanced_municipality">تقرير حسب البلدية</option>
                                             <option value="advanced_license_expiry">تقرير أذونات المزاولة القريبة من الانتهاء</option>
                                             <option value="advanced_expired_licenses">تقرير أذونات المزاولة المنتهية خلال فترة</option>
+                                            <option value="advanced_facility_licenses">تقرير تراخيص مرفق محدد</option>
+                                            <option value="advanced_facility_full_history">التقرير التاريخي الكامل للمرفق</option>
+                                            <option value="advanced_licenses_by_years">تقرير عدد التراخيص حسب السنوات</option>
+                                            <option value="advanced_branches">تقرير الفروع حسب الاسم التجاري</option>
+                                            <option value="advanced_facility_timeline">تقرير مرفق عبر الزمن</option>
+                                            <option value="advanced_capacity_development">تقرير تطور الطاقة الاستيعابية</option>
+                                            <option value="advanced_branches_comparison">تقرير مقارنة الفروع</option>
                                         </optgroup>
                                     </select>
                                 </div>
@@ -1261,6 +1324,9 @@
                                             <option value="licenses">التراخيص والأذونات</option>
                                             <option value="workforce">العمالة</option>
                                             <option value="occupancy">الإشغال</option>
+                                            <option value="timeline">التسلسل الزمني</option>
+                                            <option value="licenseYears">التراخيص حسب السنوات</option>
+                                            <option value="branches">الفروع والمجموعات</option>
                                             <option value="missing">النواقص الرقابية</option>
                                         </select>
                                     </div>
@@ -1289,6 +1355,22 @@
                                     <div>
                                         <label for="advancedCity">المدينة</label>
                                         <input type="text" id="advancedCity" placeholder="الكل">
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedGroupQuery">المجموعة / الاسم التجاري</label>
+                                        <input type="text" id="advancedGroupQuery" placeholder="اسم المجموعة أو كودها">
+                                    </div>
+
+                                    <div>
+                                        <label for="advancedLicenseType">نوع الترخيص</label>
+                                        <select id="advancedLicenseType">
+                                            <option value="">الكل</option>
+                                            <option value="إذن مزاولة">إذن مزاولة</option>
+                                            <option value="تجديد إذن مزاولة">تجديد إذن مزاولة</option>
+                                            <option value="ترخيص مؤقت">ترخيص مؤقت</option>
+                                            <option value="ترخيص نهائي">ترخيص نهائي</option>
+                                        </select>
                                     </div>
 
                                     <div>
@@ -1358,6 +1440,11 @@
                                         <label><input type="checkbox" value="facility_name" checked> اسم المرفق</label>
                                         <label><input type="checkbox" value="name_en"> الاسم الإنجليزي</label>
                                         <label><input type="checkbox" value="national_number"> الرقم الوطني 12 خانة</label>
+                                        <label><input type="checkbox" value="record_type"> نوع السجل</label>
+                                        <label><input type="checkbox" value="group_name"> المجموعة / الاسم التجاري</label>
+                                        <label><input type="checkbox" value="group_code"> كود المجموعة</label>
+                                        <label><input type="checkbox" value="branch_name"> اسم الفرع</label>
+                                        <label><input type="checkbox" value="branch_count"> عدد فروع المجموعة</label>
                                         <label><input type="checkbox" value="facility_type" checked> نوع المرفق</label>
                                         <label><input type="checkbox" value="municipality" checked> البلدية</label>
                                         <label><input type="checkbox" value="city" checked> المدينة</label>
@@ -1371,6 +1458,22 @@
                                         <label><input type="checkbox" value="issue_date"> تاريخ الإصدار</label>
                                         <label><input type="checkbox" value="expiry_date"> تاريخ الانتهاء</label>
                                         <label><input type="checkbox" value="days_remaining"> عدد الأيام المتبقية</label>
+                                        <label><input type="checkbox" value="license_year"> سنة الترخيص</label>
+                                        <label><input type="checkbox" value="operation_type"> نوع العملية</label>
+                                        <label><input type="checkbox" value="renewal_date"> تاريخ التجديد</label>
+                                        <label><input type="checkbox" value="created_by"> أضيف بواسطة</label>
+                                        <label><input type="checkbox" value="created_at"> تاريخ الإدخال</label>
+                                        <label><input type="checkbox" value="capacity_effective_from"> بداية سريان الطاقة</label>
+                                        <label><input type="checkbox" value="capacity_effective_to"> نهاية سريان الطاقة</label>
+                                        <label><input type="checkbox" value="change_reason"> سبب تغيير الطاقة</label>
+                                        <label><input type="checkbox" value="event_date"> تاريخ الحدث</label>
+                                        <label><input type="checkbox" value="event_type"> نوع الحدث</label>
+                                        <label><input type="checkbox" value="event_title"> عنوان الحدث</label>
+                                        <label><input type="checkbox" value="event_details"> تفاصيل الحدث</label>
+                                        <label><input type="checkbox" value="license_count"> عدد التراخيص</label>
+                                        <label><input type="checkbox" value="active_license_count"> التراخيص السارية</label>
+                                        <label><input type="checkbox" value="expired_license_count"> التراخيص المنتهية</label>
+                                        <label><input type="checkbox" value="pending_license_count"> قيد الإجراء</label>
                                         <label><input type="checkbox" value="floors_count"> عدد الطوابق</label>
                                         <label><input type="checkbox" value="single_rooms"> عدد الغرف المفردة</label>
                                         <label><input type="checkbox" value="double_rooms"> عدد الغرف الزوجية</label>

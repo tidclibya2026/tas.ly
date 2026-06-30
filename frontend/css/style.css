@@ -1174,3 +1174,56 @@ tr:hover {
 .facility-details-table {
     min-width: 760px;
 }
+
+
+/* =========================
+   الملف الرقمي والسجل التاريخي
+========================= */
+
+.facility-file-card {
+    width: min(1280px, 96vw);
+    max-height: 92vh;
+}
+
+.facility-details-header .inline-actions {
+    justify-content: flex-start;
+}
+
+.facility-group-field.hidden {
+    display: none !important;
+}
+
+.capacity-history-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border-radius: 8px;
+    background: #e1f5fe;
+    color: #015f96;
+    font-weight: 700;
+}
+
+@media print {
+    .sidebar,
+    .top-header,
+    .form-actions,
+    .record-actions,
+    .report-filter-card,
+    button {
+        display: none !important;
+    }
+
+    body {
+        background: #ffffff;
+    }
+
+    .content,
+    .section,
+    .form-section {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+}
